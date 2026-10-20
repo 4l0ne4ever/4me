@@ -30,9 +30,9 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm dlx vercel@62.2.0 pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-      - run: pnpm dlx vercel@62.2.0 build --token=${{ secrets.VERCEL_TOKEN }}
+      - run: pnpm dlx --allow-build=esbuild vercel@64.3.1 pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - run: pnpm dlx --allow-build=esbuild vercel@64.3.1 build --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy
         id: deploy
-        run: echo "url=$(pnpm dlx vercel@62.2.0 deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
+        run: echo "url=$(pnpm dlx --allow-build=esbuild vercel@64.3.1 deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
       - run: echo "Preview ready at ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
