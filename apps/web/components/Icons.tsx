@@ -50,6 +50,16 @@ export const IconBin = ({ className }: P) => (
     <path d="M14 15h2l1 16h-2zM19 15h2v16h-2zM24 15h2l-1 16h-2z" fill="#5c6878" />
   </svg>
 );
+export const IconDisplay = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <rect x="5" y="7" width="30" height="21" fill="#c9ced6" />
+    <rect x="8" y="10" width="24" height="15" fill="#3a6ea5" />
+    <path d="M8 25l7-7 5 4 4-3 8 6z" fill="#2f7d4f" />
+    <circle cx="27" cy="14" r="2" fill="#f0d36b" />
+    <rect x="16" y="28" width="8" height="3" fill="#aeb5bf" />
+    <rect x="11" y="31" width="18" height="2" fill="#8d96a3" />
+  </svg>
+);
 export const IconMin = () => (
   <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
     <rect x="2" y="8" width="8" height="2" fill="currentColor" />

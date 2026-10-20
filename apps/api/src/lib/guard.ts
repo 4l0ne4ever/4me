@@ -3,12 +3,14 @@ import type { Context } from "hono";
 import { rateHits } from "../db/schema";
 import type { AppEnv } from "../env";
 
-async function sha256(text: string): Promise<string> {
+export async function sha256(text: string): Promise<string> {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 export function clientIp(c: Context<AppEnv>): string {
+  const forwarded = c.get("clientIp");
+  if (forwarded) return forwarded.slice(0, 64);
   return (c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ?? "local").slice(
     0,
     64,
@@ -25,8 +27,12 @@ export async function ipHash(c: Context<AppEnv>): Promise<string> {
  * Returns true when the call is allowed.
  */
 export async function allow(c: Context<AppEnv>, bucket: string, max: number, windowSeconds: number): Promise<boolean> {
+  return allowKey(c, `${bucket}:${await ipHash(c)}`, max, windowSeconds);
+}
+
+/** The same limit on any key: a member id, or a hashed email address for sign-in attempts. */
+export async function allowKey(c: Context<AppEnv>, key: string, max: number, windowSeconds: number): Promise<boolean> {
   const db = c.get("db");
-  const key = `${bucket}:${await ipHash(c)}`;
   const window = Math.floor(Date.now() / 1000 / windowSeconds);
   const [row] = await db
     .insert(rateHits)
@@ -61,6 +67,15 @@ export async function humanCheck(c: Context<AppEnv>, token: string | undefined):
 /** Links are the usual sign of spam: hold those notes for the author to approve. */
 export function looksLikeSpam(text: string): boolean {
   return /https?:\/\/|www\.|\.(ru|xyz|top)\b/i.test(text);
+}
+
+/** Names nobody may take, so no one can pass as the author. */
+export function isReservedName(name: string): boolean {
+  const k = name
+    .trim()
+    .toLowerCase()
+    .replace(/[\s._-]+/g, "");
+  return ["4me", "4meauthor", "author", "admin", "administrator", "ink"].includes(k);
 }
 
 export async function sameSecret(given: string, expected: string): Promise<boolean> {

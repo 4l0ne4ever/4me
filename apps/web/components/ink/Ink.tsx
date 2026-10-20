@@ -1,6 +1,6 @@
 "use client";
 
-import type { CatStats } from "@4me/shared";
+import type { CatStats, Me } from "@4me/shared";
 import {
   type CSSProperties,
   type KeyboardEvent,
@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { apiSend } from "@/lib/api";
+import { saveInk } from "@/lib/member-actions";
 import { IconHeart } from "../Icons";
 import * as N from "./needs";
 import { BOWL, FISH, FRAMES, type FrameName, H, paint, W, YARN } from "./sprites";
@@ -50,7 +51,9 @@ function Sprite({ rows, className }: { rows: readonly string[]; className?: stri
 
 const STORE = "4me-ink";
 
-export function Ink({ awake, stats, onStats }: { awake: boolean; stats: CatStats; onStats: (s: CatStats) => void }) {
+type InkProps = { awake: boolean; stats: CatStats; onStats: (s: CatStats) => void; me: Me | null };
+
+export function Ink({ awake, stats, onStats, me }: InkProps) {
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [bubble, setBubble] = useState<string | null>(null);
@@ -98,6 +101,8 @@ export function Ink({ awake, stats, onStats }: { awake: boolean; stats: CatStats
     window.setTimeout(() => setPops((p) => p.filter((x) => !fresh.includes(x))), 1300);
   }, []);
 
+  const signedIn = useRef(false);
+  const syncTimer = useRef(0);
   const saveNeeds = useCallback((next: N.Needs) => {
     needsRef.current = next;
     setNeeds(next);
@@ -106,7 +111,23 @@ export function Ink({ awake, stats, onStats }: { awake: boolean; stats: CatStats
     } catch {
       // storage can be off (private windows); Ink just forgets between visits
     }
+    // Members keep Ink in their account too, so she is the same cat on every device. Saves are batched.
+    if (signedIn.current) {
+      window.clearTimeout(syncTimer.current);
+      syncTimer.current = window.setTimeout(() => void saveInk(needsRef.current), 4000);
+    }
   }, []);
+
+  useEffect(() => {
+    signedIn.current = Boolean(me);
+    if (!me?.ink) return;
+    const now = Date.now();
+    const local = N.decay(needsRef.current, now);
+    const remote = N.decay(me.ink, now);
+    // Whichever copy was cared for most recently wins.
+    if (me.ink.at > needsRef.current.at) saveNeeds(remote);
+    else saveNeeds(local);
+  }, [me, saveNeeds]);
 
   const report = useCallback(
     async (action: "pet" | "feed" | "play") => {

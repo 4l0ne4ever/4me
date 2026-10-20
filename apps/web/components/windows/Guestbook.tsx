@@ -1,14 +1,15 @@
 "use client";
 
-import type { Shout } from "@4me/shared";
+import { avatarUrl, type Me, type Shout } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiSend, hhmm } from "@/lib/api";
+import { shoutAsMember } from "@/lib/member-actions";
 import { nudgeInk } from "../ink/Ink";
 import { useTurnstile } from "../Turnstile";
 
 const EMOTICONS = [":-)", ":-(", "<3", ";-)", "zzz", "^_^"];
 
-export function Guestbook({ initial }: { initial: Shout[] }) {
+export function Guestbook({ initial, me }: { initial: Shout[]; me: Me | null }) {
   const [shouts, setShouts] = useState(initial);
   const [name, setName] = useState("");
   const [text, setText] = useState("");
@@ -27,13 +28,19 @@ export function Guestbook({ initial }: { initial: Shout[] }) {
     if (!text.trim() || busy) return;
     setBusy(true);
     setNote(null);
-    const res = await apiSend<{ shout: Shout; pending: boolean }>("/guestbook", {
-      name,
-      body: text,
-      turnstileToken: human.token,
-    });
+    const res = me
+      ? await shoutAsMember(text).then((r) =>
+          r.ok
+            ? { ok: true as const, data: { shout: r.shout, pending: r.pending } }
+            : { ok: false as const, error: r.error },
+        )
+      : await apiSend<{ shout: Shout; pending: boolean }>("/guestbook", {
+          name,
+          body: text,
+          turnstileToken: human.token,
+        });
     setBusy(false);
-    human.reset();
+    if (!me) human.reset();
     if (!res.ok) return setNote(res.error);
     setText("");
     if (res.data.pending) setNote("thanks. your shout shows up once 4me has seen it.");
@@ -48,7 +55,8 @@ export function Guestbook({ initial }: { initial: Shout[] }) {
         {shouts.map((s) => (
           <div className="shout" key={s.id}>
             <div>
-              <b>{s.name}</b>
+              {s.member && <img className="av" src={s.member.avatar} alt="" width={16} height={16} />}
+              <b title={s.member ? "member" : undefined}>{s.name}</b>
               <span> · {hhmm(s.createdAt)}</span>
             </div>
             <p>{s.body}</p>
@@ -60,7 +68,7 @@ export function Guestbook({ initial }: { initial: Shout[] }) {
           {note}
         </p>
       )}
-      {human.widget}
+      {!me && human.widget}
       <form className="gform" onSubmit={send}>
         <fieldset className="emos">
           <legend className="sr">Add an emoticon</legend>
@@ -78,18 +86,27 @@ export function Guestbook({ initial }: { initial: Shout[] }) {
           ))}
         </fieldset>
         <div className="grow">
-          <label htmlFor="g-name" className="sr">
-            Your name
-          </label>
-          <input
-            id="g-name"
-            className="field"
-            style={{ flex: "0 0 96px" }}
-            placeholder="name"
-            maxLength={32}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          {me ? (
+            <span className="as-me" title={`Signing as ${me.displayName}`}>
+              <img src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
+              <span className="sr">Signing as {me.displayName}</span>
+            </span>
+          ) : (
+            <>
+              <label htmlFor="g-name" className="sr">
+                Your name
+              </label>
+              <input
+                id="g-name"
+                className="field"
+                style={{ flex: "0 0 96px" }}
+                placeholder="name"
+                maxLength={32}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </>
+          )}
           <label htmlFor="g-text" className="sr">
             Your shout
           </label>
@@ -102,7 +119,7 @@ export function Guestbook({ initial }: { initial: Shout[] }) {
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-          <button className="btn" type="submit" disabled={busy || (human.needed && !human.token)}>
+          <button className="btn" type="submit" disabled={busy || (!me && human.needed && !human.token)}>
             Shout!
           </button>
         </div>

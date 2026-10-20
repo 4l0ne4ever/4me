@@ -5,19 +5,30 @@ import type { DB } from "./db/types";
 import type { AppEnv, Bindings } from "./env";
 import { adminRoutes } from "./routes/admin";
 import { entryRoutes } from "./routes/entries";
+import { internalRoutes } from "./routes/internal";
 import { socialRoutes } from "./routes/social";
 
 /** The whole API, independent of where it runs: Workers + Neon in production, Node + PGlite locally and in tests. */
 export function createApp(resolveDb: (env: Bindings) => DB) {
   const app = new Hono<AppEnv>();
 
-  app.use("*", secureHeaders());
+  app.use(
+    "*",
+    secureHeaders({
+      // Browsers remember to use HTTPS for two years, subdomains included.
+      strictTransportSecurity: "max-age=63072000; includeSubDomains; preload",
+      contentSecurityPolicy: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] },
+      crossOriginResourcePolicy: "same-site",
+    }),
+  );
   app.use(
     "*",
     cors({
       origin: (origin, c) => {
         const allowed = (c.env.WEB_ORIGIN ?? "").split(",").map((o: string) => o.trim());
-        return allowed.includes(origin) ? origin : null;
+        // Only HTTPS origins, apart from localhost while developing.
+        const secure = origin.startsWith("https://") || /^http:\/\/localhost(:\d+)?$/.test(origin);
+        return secure && allowed.includes(origin) ? origin : null;
       },
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowHeaders: ["Content-Type", "Authorization"],
@@ -32,10 +43,13 @@ export function createApp(resolveDb: (env: Bindings) => DB) {
   app.route("/entries", entryRoutes);
   app.route("/", socialRoutes);
   app.route("/admin", adminRoutes);
+  app.route("/internal", internalRoutes);
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {
-    console.error(err);
+    // Never log query parameters: they can hold emails and password hashes.
+    const message = err instanceof Error ? err.message.split(/\nparams:/)[0] : "unknown error";
+    console.error(`${err instanceof Error ? err.name : "Error"}: ${message}`);
     return c.json({ error: "something went wrong" }, 500);
   });
 

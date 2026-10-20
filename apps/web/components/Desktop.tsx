@@ -2,22 +2,47 @@
 
 import {
   type Almost as AlmostItem,
+  avatarUrl,
   type Blast,
   type CatStats,
   type Entry,
   type EntrySummary,
   isAwakeHour,
+  type Me,
   type Note,
   type NowPlaying,
   type Shout,
 } from "@4me/shared";
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { signOut } from "@/app/welcome/actions";
 import { API_URL, apiSend, hhmm } from "@/lib/api";
-import { IconBin, IconDiary, IconGuestbook, IconHeart, IconMessenger, IconMixtape, IconPhotos } from "./Icons";
+import { DEFAULT_PREF, PREF_KEY, parsePref, resolveBackground, type WallpaperPref } from "@/lib/wallpaper";
+import { deleteUpload, loadUpload, saveUpload } from "@/lib/wallpaper-store";
+import {
+  IconBin,
+  IconDiary,
+  IconDisplay,
+  IconGuestbook,
+  IconHeart,
+  IconMessenger,
+  IconMixtape,
+  IconPhotos,
+} from "./Icons";
 import { Ink, nudgeInk } from "./ink/Ink";
 import { type Pos, Window } from "./Window";
+import { Account } from "./windows/Account";
 import { Almost } from "./windows/Almost";
 import { Diary } from "./windows/Diary";
+import { DisplayProperties, paintStyle } from "./windows/DisplayProperties";
 import { Guestbook } from "./windows/Guestbook";
 import { Messenger } from "./windows/Messenger";
 import { Mixtape } from "./windows/Mixtape";
@@ -33,7 +58,7 @@ export type DesktopData = {
   cat: CatStats;
 };
 
-type WinId = "diary" | "msn" | "guest" | "amp" | "photos" | "almost";
+type WinId = "diary" | "msn" | "guest" | "amp" | "photos" | "almost" | "display" | "account";
 type WinState = { open: boolean; min: boolean; z: number; pos?: Pos };
 
 const WINDOWS: Record<WinId, { title: string; task: string; icon: (c?: string) => ReactNode; className: string }> = {
@@ -67,6 +92,18 @@ const WINDOWS: Record<WinId, { title: string; task: string; icon: (c?: string) =
     task: "Almost posted",
     icon: (c) => <IconBin className={c} />,
     className: "w-almost",
+  },
+  display: {
+    title: "Display Properties",
+    task: "Display",
+    icon: (c) => <IconDisplay className={c} />,
+    className: "w-display",
+  },
+  account: {
+    title: "My account",
+    task: "My account",
+    icon: (c) => <IconMessenger className={c} />,
+    className: "w-account",
   },
 };
 const ICON_ORDER: Array<[WinId, string]> = [
@@ -121,6 +158,8 @@ export function Desktop({ data }: { data: DesktopData }) {
     guest: { open: false, min: false, z: 10 },
     photos: { open: false, min: false, z: 10 },
     almost: { open: false, min: false, z: 10 },
+    display: { open: false, min: false, z: 10 },
+    account: { open: false, min: false, z: 10 },
   });
   const [focus, setFocus] = useState<WinId>("diary");
   const zTop = useRef(20);
@@ -137,11 +176,25 @@ export function Desktop({ data }: { data: DesktopData }) {
   const [cat, setCat] = useState(data.cat);
   const [live, setLive] = useState<NowPlaying | null>(null);
   const [photoView, setPhotoView] = useState<number | null>(null);
+  const [wallPref, setWallPref] = useState<WallpaperPref>(DEFAULT_PREF);
+  const [uploadUrl, setUploadUrl] = useState<string | null>(null);
+  const [deskMenu, setDeskMenu] = useState<{ x: number; y: number } | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
+  const [path, setPath] = useState("/");
   const startBtn = useRef<HTMLButtonElement>(null);
   const startMenu = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const awake = preview ?? (hour === null ? true : isAwakeHour(hour));
-  const wall = !awake && skin !== "snow" ? DAY_WALL : (SKINS.find((s) => s.id === skin)?.wall ?? SKINS[0].wall);
+  const skinWall = SKINS.find((s) => s.id === skin)?.wall ?? SKINS[0].wall;
+  const background = resolveBackground(wallPref, {
+    skinWall,
+    dayWall: skin === "snow" ? skinWall : DAY_WALL,
+    awake,
+    uploadUrl,
+  });
+  const paintClass =
+    background.kind === "color" ? "color" : `${background.fit}${wallPref.wallpaper.source === "skin" ? "" : " mine"}`;
 
   const pictures = useMemo<Picture[]>(() => {
     const seen = new Set<string>();
@@ -200,6 +253,88 @@ export function Desktop({ data }: { data: DesktopData }) {
   useEffect(() => {
     if (entry) void apiSend(`/entries/${entry.slug}/read`);
   }, [entry]);
+
+  /* who is signed in: asked after the page renders, so the page itself can be cached for everyone */
+  useEffect(() => {
+    setPath(window.location.pathname);
+    fetch("/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v: Me | null) => setMe(v))
+      .catch(() => undefined);
+  }, []);
+
+  /* the reader's own wallpaper: the choice in localStorage, their picture in IndexedDB */
+  useEffect(() => {
+    let url: string | null = null;
+    try {
+      setWallPref(parsePref(localStorage.getItem(PREF_KEY)));
+    } catch {
+      // storage off; the skin's wallpaper it is
+    }
+    void loadUpload().then((blob) => {
+      if (!blob) return;
+      url = URL.createObjectURL(blob);
+      setUploadUrl(url);
+    });
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, []);
+
+  const applyWallpaper = useCallback((pref: WallpaperPref) => {
+    setWallPref(pref);
+    try {
+      localStorage.setItem(PREF_KEY, JSON.stringify(pref));
+    } catch {
+      // applied for this visit only
+    }
+  }, []);
+
+  const storeUpload = useCallback(async (picture: Blob) => {
+    await saveUpload(picture);
+    setUploadUrl((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return URL.createObjectURL(picture);
+    });
+  }, []);
+
+  const removeUpload = useCallback(async () => {
+    await deleteUpload();
+    setUploadUrl((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return null;
+    });
+    setWallPref((p) => {
+      if (p.wallpaper.source !== "upload") return p;
+      const next = { ...p, wallpaper: { source: "skin" as const } };
+      try {
+        localStorage.setItem(PREF_KEY, JSON.stringify(next));
+      } catch {
+        // fine
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!deskMenu) return;
+    const close = (e: KeyboardEvent | MouseEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !(e.target as Element).closest(".deskmenu"))
+        setDeskMenu(null);
+    };
+    window.addEventListener("keydown", close);
+    window.addEventListener("pointerdown", close);
+    return () => {
+      window.removeEventListener("keydown", close);
+      window.removeEventListener("pointerdown", close);
+    };
+  }, [deskMenu]);
+
+  const onDeskContext = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if ((e.target as Element).closest(".win, .icon, button, a, input, textarea, select")) return;
+    e.preventDefault();
+    setDeskMenu({ x: Math.min(e.clientX, window.innerWidth - 210), y: Math.min(e.clientY, window.innerHeight - 140) });
+  };
 
   useEffect(() => {
     if (!startOpen) return;
@@ -276,20 +411,52 @@ export function Desktop({ data }: { data: DesktopData }) {
         onGuestbook={() => open("guest")}
       />
     ),
-    msn: <Messenger entry={entry} notes={data.notes} blasts={data.blasts} awake={awake} live={live} onBuzz={buzz} />,
-    guest: <Guestbook initial={data.shouts} />,
+    msn: (
+      <Messenger
+        entry={entry}
+        notes={data.notes}
+        blasts={data.blasts}
+        awake={awake}
+        live={live}
+        onBuzz={buzz}
+        me={me}
+      />
+    ),
+    guest: <Guestbook initial={data.shouts} me={me} />,
     amp: <Mixtape entries={entries} currentSlug={entry?.slug} live={live} />,
     photos: <Photos pictures={pictures} view={photoView} onView={setPhotoView} />,
     almost: <Almost items={data.almost} />,
+    display: (
+      <DisplayProperties
+        pref={wallPref}
+        skinWall={skinWall}
+        uploadUrl={uploadUrl}
+        onApply={applyWallpaper}
+        onClose={() => patch("display", { open: false, min: false })}
+        onUpload={storeUpload}
+        onRemoveUpload={removeUpload}
+      />
+    ),
+    account: me ? (
+      <Account me={me} onMe={setMe} />
+    ) : (
+      <div className="body acc">
+        <p>
+          You&apos;re not logged on.{" "}
+          <a href={`/welcome?next=${encodeURIComponent(path)}`}>Log on or create an account</a>.
+        </p>
+      </div>
+    ),
   };
 
   const visible = (Object.keys(WINDOWS) as WinId[]).filter((id) => wins[id].open);
 
   return (
     <>
-      <div className={`desk${shaking ? " shake" : ""}`}>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: right-click on empty desktop; the same actions are in the Start menu */}
+      <div className={`desk${shaking ? " shake" : ""}`} onContextMenu={onDeskContext}>
         <div className="wall" aria-hidden="true">
-          <img src={wall} alt="" width={1000} height={1250} />
+          <div className={`paint ${paintClass}`} style={paintStyle(background)} />
         </div>
         <nav className="icons" aria-label="Desktop">
           {ICON_ORDER.map(([id, label]) => (
@@ -324,10 +491,10 @@ export function Desktop({ data }: { data: DesktopData }) {
       {startOpen && (
         <div className="startmenu" ref={startMenu} id="startmenu" role="menu" aria-label="Start">
           <div className="sm-head">
-            <img src="/photos/pic-1014.jpg" alt="" width={44} height={44} />
+            <img src={me ? avatarUrl(me.avatar) : "/photos/pic-229.jpg"} alt="" width={44} height={44} />
             <div>
-              <b>4me</b>
-              <span>{awake ? "awake since 17:00" : "asleep until 17:00"}</span>
+              <b>{me ? me.displayName : "Guest"}</b>
+              <span>4me is {awake ? "awake since 17:00" : "asleep until 17:00"}</span>
             </div>
           </div>
           <ul className="sm-list">
@@ -357,6 +524,12 @@ export function Desktop({ data }: { data: DesktopData }) {
             ))}
             <li className="sm-sep" aria-hidden="true" />
             <li>
+              <button type="button" role="menuitem" onClick={() => open("display")}>
+                <IconDisplay />
+                Change background…
+              </button>
+            </li>
+            <li>
               <a href="/rss.xml" role="menuitem">
                 RSS feed
               </a>
@@ -366,6 +539,32 @@ export function Desktop({ data }: { data: DesktopData }) {
                 Write (author)
               </a>
             </li>
+            <li className="sm-sep" aria-hidden="true" />
+            {me ? (
+              <>
+                <li>
+                  <button type="button" role="menuitem" onClick={() => open("account")}>
+                    <img className="sm-av" src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
+                    My account…
+                  </button>
+                </li>
+                <li>
+                  <form action={signOut}>
+                    <button type="submit" role="menuitem">
+                      <span className="sm-power" aria-hidden="true" />
+                      Log off {me.displayName}
+                    </button>
+                  </form>
+                </li>
+              </>
+            ) : (
+              <li>
+                <a href={`/welcome?next=${encodeURIComponent(path)}`} role="menuitem">
+                  <span className="sm-power" aria-hidden="true" />
+                  Log on…
+                </a>
+              </li>
+            )}
           </ul>
 
           <fieldset className="skins">
@@ -386,7 +585,46 @@ export function Desktop({ data }: { data: DesktopData }) {
         </div>
       )}
 
-      <Ink awake={awake} stats={cat} onStats={setCat} />
+      {deskMenu && (
+        <div className="deskmenu" role="menu" aria-label="Desktop" style={{ left: deskMenu.x, top: deskMenu.y }}>
+          <button
+            type="button"
+            role="menuitem"
+            // biome-ignore lint/a11y/noAutofocus: a context menu takes focus when it opens
+            autoFocus
+            onClick={() => {
+              setDeskMenu(null);
+              open("display");
+            }}
+          >
+            Change background…
+          </button>
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setDeskMenu(null);
+              router.refresh();
+            }}
+          >
+            Refresh
+          </button>
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setDeskMenu(null);
+              nudgeInk("call");
+            }}
+          >
+            Call Ink over
+          </button>
+        </div>
+      )}
+
+      <Ink awake={awake} stats={cat} onStats={setCat} me={me} />
 
       <footer className="task">
         <button

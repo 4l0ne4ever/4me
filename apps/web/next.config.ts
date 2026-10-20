@@ -1,5 +1,28 @@
 import type { NextConfig } from "next";
 
+const dev = process.env.NODE_ENV !== "production";
+const apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787").origin;
+const https = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
+
+// Scripts keep 'unsafe-inline' because Next.js inlines its bootstrap; React escapes everything it renders,
+// and every other source is pinned to the hosts this site really uses.
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self'",
+  "media-src 'self' blob:",
+  `connect-src 'self' ${apiOrigin} https://challenges.cloudflare.com${dev ? " ws:" : ""}`,
+  "frame-src https://open.spotify.com https://www.youtube-nocookie.com https://w.soundcloud.com https://challenges.cloudflare.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  // Any stray http:// load is fetched over https instead, once the site itself is served over https.
+  ...(https ? ["upgrade-insecure-requests"] : []),
+].join("; ");
+
 const config: NextConfig = {
   transpilePackages: ["@4me/shared"],
   poweredByHeader: false,
@@ -9,9 +32,14 @@ const config: NextConfig = {
       {
         source: "/:path*",
         headers: [
+          // HTTPS only, for two years, subdomains included (ignored by browsers on plain-http localhost).
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          { key: "Content-Security-Policy", value: csp },
+          { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
         ],
       },
     ];

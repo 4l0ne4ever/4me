@@ -1,11 +1,12 @@
 import { shoutInput } from "@4me/shared";
 import { desc, eq, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
-import { almost, blasts, catStats, shouts } from "../db/schema";
+import { almost, blasts, catStats, shouts, users } from "../db/schema";
 import type { AppEnv } from "../env";
 import { allow, humanCheck, ipHash, looksLikeSpam } from "../lib/guard";
 import { toAlmost, toBlast, toShout } from "../lib/map";
 import { nowPlaying } from "../lib/music";
+import { anonymousNameProblem } from "../lib/names";
 import { json } from "../lib/validate";
 
 const catActions = { pet: catStats.pets, feed: catStats.fish, play: catStats.plays } as const;
@@ -20,18 +21,21 @@ export const socialRoutes = new Hono<AppEnv>()
     const limit = Math.min(Math.max(Number(c.req.query("limit")) || 40, 1), 100);
     const rows = await c
       .get("db")
-      .select()
+      .select({ s: shouts, avatar: users.avatar })
       .from(shouts)
+      .leftJoin(users, eq(users.id, shouts.userId))
       .where(eq(shouts.status, "visible"))
       .orderBy(desc(shouts.createdAt))
       .limit(limit);
     c.header("Cache-Control", "public, max-age=10, s-maxage=10");
-    return c.json(rows.reverse().map(toShout));
+    return c.json(rows.reverse().map((r) => toShout(r.s, r.avatar)));
   })
   .post("/guestbook", json(shoutInput), async (c) => {
     const input = c.req.valid("json");
     if (!(await humanCheck(c, input.turnstileToken))) return c.json({ error: "please confirm you are human" }, 403);
     if (!(await allow(c, "shout", 5, 600))) return c.json({ error: "slow down a little, try again soon" }, 429);
+    const nameProblem = await anonymousNameProblem(c, input.name);
+    if (nameProblem) return c.json({ error: nameProblem }, 409);
     const status = looksLikeSpam(input.body) ? "pending" : "visible";
     const [row] = await c
       .get("db")

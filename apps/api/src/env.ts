@@ -14,4 +14,5 @@ export type Bindings = {
   LASTFM_USER?: string;
 };
 
-export type AppEnv = { Bindings: Bindings; Variables: { db: DB } };
+/** `clientIp` is set only for calls from the web server, which forwards the reader's real address. */
+export type AppEnv = { Bindings: Bindings; Variables: { db: DB; clientIp?: string } };

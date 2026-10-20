@@ -1,4 +1,4 @@
-import type { Almost, Blast, Entry, EntrySummary, Note, Shout } from "@4me/shared";
+import { type Almost, avatarUrl, type Blast, type Entry, type EntrySummary, type Note, type Shout } from "@4me/shared";
 import type { almost, blasts, entries, notes, shouts } from "../db/schema";
 
 type EntryRow = typeof entries.$inferSelect & { noteCount?: number };
@@ -39,17 +39,21 @@ export function toEntry(row: EntryRow): Entry {
   };
 }
 
-export const toNote = (r: typeof notes.$inferSelect): Note => ({
+const member = (userId: number | null, avatar?: string | null) => (userId ? { avatar: avatarUrl(avatar) } : null);
+
+export const toNote = (r: typeof notes.$inferSelect, avatar?: string | null): Note => ({
   id: r.id,
   name: r.name,
   body: r.body,
   isAuthor: r.isAuthor,
+  member: member(r.userId, avatar),
   createdAt: r.createdAt.toISOString(),
 });
-export const toShout = (r: typeof shouts.$inferSelect): Shout => ({
+export const toShout = (r: typeof shouts.$inferSelect, avatar?: string | null): Shout => ({
   id: r.id,
   name: r.name,
   body: r.body,
+  member: member(r.userId, avatar),
   createdAt: r.createdAt.toISOString(),
 });
 export const toBlast = (r: typeof blasts.$inferSelect): Blast => ({

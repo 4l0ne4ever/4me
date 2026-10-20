@@ -1,8 +1,9 @@
 "use client";
 
-import type { Blast, Entry, Note, NowPlaying } from "@4me/shared";
+import { avatarUrl, type Blast, type Entry, type Me, type Note, type NowPlaying } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiSend, hhmm, shortDate } from "@/lib/api";
+import { noteAsMember } from "@/lib/member-actions";
 import { Eq } from "../Icons";
 import { nudgeInk } from "../ink/Ink";
 import { useTurnstile } from "../Turnstile";
@@ -45,9 +46,10 @@ type Props = {
   awake: boolean;
   live: NowPlaying | null;
   onBuzz: () => void;
+  me: Me | null;
 };
 
-export function Messenger({ entry, notes, blasts, awake, live, onBuzz }: Props) {
+export function Messenger({ entry, notes, blasts, awake, live, onBuzz, me }: Props) {
   const [lines, setLines] = useState<Line[]>(() => notes.map((note) => ({ kind: "note", note })));
   const [text, setText] = useState("");
   const [name, setName] = useState("");
@@ -72,13 +74,20 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz }: Props) 
     if (!entry || !text.trim() || busy) return;
     setBusy(true);
     setError(null);
-    const res = await apiSend<{ note: Note; pending: boolean }>(`/entries/${entry.slug}/notes`, {
-      name,
-      body: text,
-      turnstileToken: human.token,
-    });
+    // Members write through the web server under their own name; guests go straight to the API.
+    const res = me
+      ? await noteAsMember(entry.slug, text).then((r) =>
+          r.ok
+            ? { ok: true as const, data: { note: r.note, pending: r.pending } }
+            : { ok: false as const, error: r.error },
+        )
+      : await apiSend<{ note: Note; pending: boolean }>(`/entries/${entry.slug}/notes`, {
+          name,
+          body: text,
+          turnstileToken: human.token,
+        });
     setBusy(false);
-    human.reset();
+    if (!me) human.reset();
     if (!res.ok) return setError(res.error);
     setText("");
     if (res.data.pending)
@@ -162,7 +171,11 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz }: Props) 
             l.kind === "note" ? (
               <p className="ln" key={`n${l.note.id}`}>
                 <span className="t">({hhmm(l.note.createdAt)})</span>{" "}
-                <span className={`n${l.note.isAuthor ? " own" : ""}`}>{l.note.name}:</span> {l.note.body}
+                {l.note.member && <img className="av" src={l.note.member.avatar} alt="" width={16} height={16} />}
+                <span className={`n${l.note.isAuthor ? " own" : ""}`} title={l.note.member ? "member" : undefined}>
+                  {l.note.name}:
+                </span>{" "}
+                {l.note.body}
               </p>
             ) : (
               // biome-ignore lint/suspicious/noArrayIndexKey: system lines are append-only
@@ -178,20 +191,34 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz }: Props) 
           {error}
         </p>
       )}
-      {human.widget}
+      {!me && human.widget}
+      {!me && (
+        <p className="compose-hint">
+          Writing as a guest. <a href="/welcome">Log on</a> to keep your name.
+        </p>
+      )}
       <form className="compose" onSubmit={send}>
-        <label htmlFor="note-name" className="sr">
-          Your name
-        </label>
-        <input
-          id="note-name"
-          className="field"
-          style={{ flex: "0 0 84px" }}
-          placeholder="name"
-          maxLength={32}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+        {me ? (
+          <span className="as-me" title={`Writing as ${me.displayName}`}>
+            <img src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
+            <span className="sr">Writing as {me.displayName}</span>
+          </span>
+        ) : (
+          <>
+            <label htmlFor="note-name" className="sr">
+              Your name
+            </label>
+            <input
+              id="note-name"
+              className="field"
+              style={{ flex: "0 0 84px" }}
+              placeholder="name"
+              maxLength={32}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </>
+        )}
         <label htmlFor="note-text" className="sr">
           Leave a note on tonight&apos;s page
         </label>
@@ -204,7 +231,7 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz }: Props) 
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <button className="btn" type="submit" disabled={busy || !entry || (human.needed && !human.token)}>
+        <button className="btn" type="submit" disabled={busy || !entry || (!me && human.needed && !human.token)}>
           Send
         </button>
         <button className="btn buzz" type="button" onClick={buzz} disabled={!entry} title="Shake the diary">

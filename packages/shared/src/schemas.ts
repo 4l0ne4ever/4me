@@ -14,6 +14,10 @@ export const noteInput = z.object({
 });
 export type NoteInput = z.input<typeof noteInput>;
 
+/** A signed-in reader writes under their own name, so only the text is needed. */
+export const memberNoteInput = z.object({ body: z.string().trim().min(1).max(500) });
+export const memberShoutInput = z.object({ body: z.string().trim().min(1).max(280) });
+
 export const shoutInput = z.object({
   name: name.default("a stranger"),
   body: z.string().trim().min(1).max(280),
@@ -88,8 +92,10 @@ export type Entry = EntrySummary & {
   buzzCount: number;
 };
 
-export type Note = { id: number; name: string; body: string; isAuthor: boolean; createdAt: string };
-export type Shout = { id: number; name: string; body: string; createdAt: string };
+/** `member` is set when a signed-in reader wrote it: their avatar, and the name is theirs alone. */
+export type Member = { avatar: string } | null;
+export type Note = { id: number; name: string; body: string; isAuthor: boolean; member: Member; createdAt: string };
+export type Shout = { id: number; name: string; body: string; member: Member; createdAt: string };
 export type Blast = { id: number; body: string; createdAt: string };
 export type Almost = { id: number; body: string; deletedAt: string };
 export type CatStats = { pets: number; fish: number; plays: number };

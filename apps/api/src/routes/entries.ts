@@ -1,10 +1,11 @@
 import { noteInput } from "@4me/shared";
 import { and, asc, desc, eq, lt, sql } from "drizzle-orm";
 import { Hono } from "hono";
-import { entries, notes } from "../db/schema";
+import { entries, notes, users } from "../db/schema";
 import type { AppEnv } from "../env";
 import { allow, humanCheck, ipHash, looksLikeSpam } from "../lib/guard";
 import { toEntry, toNote, toSummary } from "../lib/map";
+import { anonymousNameProblem } from "../lib/names";
 import { json } from "../lib/validate";
 
 // Written out with explicit table names: inside the subquery an unqualified "id" would mean notes.id.
@@ -83,19 +84,22 @@ export const entryRoutes = new Hono<AppEnv>()
   .get("/:slug/notes", async (c) => {
     const db = c.get("db");
     const rows = await db
-      .select({ n: notes })
+      .select({ n: notes, avatar: users.avatar })
       .from(notes)
       .innerJoin(entries, eq(entries.id, notes.entryId))
+      .leftJoin(users, eq(users.id, notes.userId))
       .where(and(isPublic, eq(entries.slug, c.req.param("slug")), eq(notes.status, "visible")))
       .orderBy(asc(notes.createdAt))
       .limit(200);
     c.header("Cache-Control", "public, max-age=10, s-maxage=10");
-    return c.json(rows.map((r) => toNote(r.n)));
+    return c.json(rows.map((r) => toNote(r.n, r.avatar)));
   })
   .post("/:slug/notes", json(noteInput), async (c) => {
     const input = c.req.valid("json");
     if (!(await humanCheck(c, input.turnstileToken))) return c.json({ error: "please confirm you are human" }, 403);
     if (!(await allow(c, "note", 5, 600))) return c.json({ error: "slow down a little, try again soon" }, 429);
+    const nameProblem = await anonymousNameProblem(c, input.name);
+    if (nameProblem) return c.json({ error: nameProblem }, 409);
     const db = c.get("db");
     const [entry] = await db
       .select({ id: entries.id })

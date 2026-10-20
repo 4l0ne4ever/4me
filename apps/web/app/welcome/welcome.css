@@ -1,0 +1,274 @@
+/* The Windows XP welcome screen, at night. */
+.welcome {
+  --wl-band: #08142c;
+  --wl-mid: #12305f;
+  --wl-mid-ink: #e8eefc;
+  --wl-dim: #b9c8e6;
+  --wl-tile-hover: #1d4486;
+  --wl-go: #2f8152;
+  --wl-error: #ffb4a8;
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-rows: 64px 1fr auto;
+  background: var(--wl-mid);
+  color: var(--wl-mid-ink);
+  font-family: var(--ui);
+}
+.wl-top,
+.wl-bottom {
+  background: var(--wl-band);
+}
+.wl-top {
+  border-bottom: 2px solid #3c6fc4;
+}
+.wl-bottom {
+  border-top: 2px solid #e08a3c;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px 32px;
+  flex-wrap: wrap;
+  padding: 16px max(24px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px))
+    max(24px, env(safe-area-inset-left, 0px));
+  font-size: 13px;
+  color: var(--wl-dim);
+}
+.wl-bottom p {
+  max-width: 34em;
+  text-align: right;
+}
+.wl-off {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--wl-mid-ink);
+  text-decoration: none;
+  font-size: 15px;
+  min-height: 44px;
+}
+.wl-off:visited {
+  color: var(--wl-mid-ink);
+}
+.wl-power {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #c4423a;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+  position: relative;
+}
+.wl-power::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 2px;
+  height: 9px;
+  margin-left: -1px;
+  background: #fff;
+}
+.wl-mid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2px minmax(0, 1fr);
+  gap: 48px;
+  align-items: center;
+  padding: 48px max(24px, env(safe-area-inset-right, 0px)) 48px max(24px, env(safe-area-inset-left, 0px));
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+.wl-brand {
+  justify-self: end;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+.wl-logo {
+  font-family: var(--font-hand), cursive;
+  font-size: clamp(72px, 9vw, 120px);
+  line-height: 0.8;
+  color: #fff;
+}
+.wl-brand h1 {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--wl-dim);
+}
+.wl-divider {
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.35);
+}
+.wl-users {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+}
+.wl-tile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px 8px 8px;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  color: var(--wl-mid-ink);
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+.wl-tile:visited {
+  color: var(--wl-mid-ink);
+}
+.wl-tile:hover,
+.wl-tile[aria-expanded="true"] {
+  background: var(--wl-tile-hover);
+}
+.wl-tile img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border: 3px solid #fff;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.wl-tile span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wl-tile b {
+  font-size: 18px;
+  font-weight: 400;
+}
+.wl-tile small {
+  font-size: 13px;
+  color: var(--wl-dim);
+}
+.wl-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: -4px 0 6px 82px;
+  animation: rise 200ms ease both;
+}
+.wl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--wl-dim);
+}
+.wl-field input {
+  font-size: 15px;
+  padding: 8px 10px;
+  min-height: 42px;
+  background: #fff;
+  color: #10213f;
+  border: 1px solid #7f9dd6;
+  border-radius: 4px;
+}
+.wl-field input[aria-invalid="true"] {
+  border-color: var(--wl-error);
+  box-shadow: 0 0 0 2px rgba(255, 180, 168, 0.5);
+}
+.wl-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.wl-go {
+  align-self: flex-start;
+  background: var(--wl-go);
+  color: #fff;
+  border: 1px solid #5fbe86;
+  border-radius: 4px;
+  padding: 0 18px;
+  min-height: 42px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 150ms ease;
+}
+.wl-go:hover {
+  filter: brightness(1.15);
+}
+.wl-go:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+.wl-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #cfe0ff;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: 44px;
+}
+.wl-help {
+  font-size: 13px;
+  color: var(--wl-dim);
+  line-height: 1.5;
+}
+.wl-error,
+.wl-note {
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  line-height: 1.4;
+}
+.wl-error {
+  background: rgba(196, 66, 58, 0.25);
+  color: var(--wl-error);
+}
+.wl-note {
+  background: rgba(79, 191, 95, 0.2);
+  color: #c6f0cd;
+}
+.wl-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0 0 82px;
+  align-self: flex-start;
+  background: #fff;
+  color: #1f1f1f;
+  border-radius: 4px;
+  padding: 0 16px;
+  min-height: 42px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.wl-google:visited {
+  color: #1f1f1f;
+}
+@media (max-width: 899px) {
+  .wl-mid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  .wl-brand {
+    justify-self: start;
+    text-align: left;
+    align-items: flex-start;
+  }
+  .wl-divider {
+    height: 2px;
+  }
+  .wl-form,
+  .wl-google {
+    margin-left: 0;
+  }
+  .wl-bottom p {
+    text-align: left;
+  }
+}

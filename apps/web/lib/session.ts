@@ -1,7 +1,8 @@
 import "server-only";
 import { cookies } from "next/headers";
 
-const COOKIE = "4me_author";
+// __Host- in production: the browser only accepts it over HTTPS, for this exact host and path "/".
+const COOKIE = process.env.NODE_ENV === "production" ? "__Host-4me_author" : "4me_author";
 const MAX_AGE = 60 * 60 * 24 * 14;
 
 function secret(): string {
