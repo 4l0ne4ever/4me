@@ -272,3 +272,7 @@
     text-align: left;
   }
 }
+.wl-bottom p a,
+.wl-bottom p a:visited {
+  color: inherit;
+}

@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { lt, sql } from "drizzle-orm";
 import type { Context } from "hono";
 import { rateHits } from "../db/schema";
 import type { AppEnv } from "../env";
@@ -30,10 +30,17 @@ export async function allow(c: Context<AppEnv>, bucket: string, max: number, win
   return allowKey(c, `${bucket}:${await ipHash(c)}`, max, windowSeconds);
 }
 
+/** The longest window any limit uses; rows older than this are swept. */
+const MAX_WINDOW_SECONDS = 3600;
+
 /** The same limit on any key: a member id, or a hashed email address for sign-in attempts. */
 export async function allowKey(c: Context<AppEnv>, key: string, max: number, windowSeconds: number): Promise<boolean> {
   const db = c.get("db");
-  const window = Math.floor(Date.now() / 1000 / windowSeconds);
+  const now = Math.floor(Date.now() / 1000);
+  // The window is stored as the second it started, so finished windows of every bucket can be swept together.
+  const window = now - (now % windowSeconds);
+  // No limit runs longer than an hour; now and then, drop the windows that ended, hashed keys and all.
+  if (Math.random() < 0.02) await db.delete(rateHits).where(lt(rateHits.window, now - MAX_WINDOW_SECONDS));
   const [row] = await db
     .insert(rateHits)
     .values({ key, window, count: 1 })

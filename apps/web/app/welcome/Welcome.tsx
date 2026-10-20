@@ -238,7 +238,10 @@ export function Welcome({ next, google, mail, start, notice, error }: Props) {
           <span aria-hidden="true" className="wl-power" />
           Back to the diary
         </Link>
-        <p>After you log on, you can change your picture and name. Just go to Start, then My account.</p>
+        <p>
+          After you log on, you can change your picture and name. Just go to Start, then My account.{" "}
+          <Link href="/privacy">What we keep about you</Link>.
+        </p>
       </footer>
     </main>
   );

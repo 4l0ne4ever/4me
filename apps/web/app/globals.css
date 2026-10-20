@@ -1733,3 +1733,35 @@ body.daytime .tray .state-dot {
 .acc-danger h3 {
   color: var(--buzz);
 }
+
+/* /privacy: one sheet of the diary's paper */
+.privacy {
+  max-width: 680px;
+  margin: 8vh auto;
+  font-size: 17px;
+  line-height: 1.6;
+}
+.privacy h2 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 400;
+  font-size: 24px;
+  margin: 28px 0 8px;
+}
+.privacy ul {
+  padding-left: 1.2em;
+  display: grid;
+  gap: 6px;
+}
+.privacy-updated {
+  color: var(--paper-dim);
+  font-size: 14px;
+  margin: -12px 0 18px;
+}
+.privacy-back {
+  margin-top: 32px;
+}
+@media (max-width: 720px) {
+  .privacy {
+    margin: 0;
+  }
+}

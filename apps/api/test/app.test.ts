@@ -1,7 +1,8 @@
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { beforeAll, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import * as schema from "../src/db/schema";
 import type { DB } from "../src/db/types";
@@ -16,6 +17,7 @@ const env: Bindings = {
 };
 
 let app: ReturnType<typeof createApp>;
+let db: DB;
 let ipCounter = 0;
 
 function call(path: string, init: RequestInit & { ip?: string; admin?: boolean } = {}) {
@@ -27,7 +29,7 @@ function call(path: string, init: RequestInit & { ip?: string; admin?: boolean }
 }
 
 beforeAll(async () => {
-  const db = drizzle(new PGlite(), { schema }) as unknown as DB;
+  db = drizzle(new PGlite(), { schema }) as unknown as DB;
   await migrate(db as never, { migrationsFolder: "./drizzle" });
   await seedIfEmpty(db);
   app = createApp(() => db);
@@ -123,6 +125,19 @@ describe("counters", () => {
     const cat = (await (await call("/cat/feed", { method: "POST" })).json()) as { fish: number };
     expect(cat.fish).toBe(319);
     expect((await call("/cat/dance", { method: "POST" })).status).toBe(404);
+  });
+
+  it("sweeps rate-limit windows that ended over an hour ago", async () => {
+    const now = Math.floor(Date.now() / 1000);
+    await db.insert(schema.rateHits).values([
+      { key: "old", window: now - 7200, count: 3 },
+      { key: "fresh", window: now - 60, count: 1 },
+    ]);
+    const roll = vi.spyOn(Math, "random").mockReturnValue(0);
+    await call("/entries/the-lamps-came-on-early/buzz", { method: "POST" });
+    roll.mockRestore();
+    expect(await db.select().from(schema.rateHits).where(eq(schema.rateHits.key, "old"))).toHaveLength(0);
+    expect(await db.select().from(schema.rateHits).where(eq(schema.rateHits.key, "fresh"))).toHaveLength(1);
   });
 });
 
