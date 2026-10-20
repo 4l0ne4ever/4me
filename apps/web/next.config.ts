@@ -22,9 +22,11 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
+  // Photos are served by the API (http on localhost while developing), song covers and other pictures over https.
+  `img-src 'self' data: blob: https: ${apiOrigin}`,
   "font-src 'self'",
-  "media-src 'self' blob:",
+  // The 30-second song previews come from Apple's servers.
+  "media-src 'self' blob: https://*.apple.com https://*.mzstatic.com",
   `connect-src 'self' ${apiOrigin} https://challenges.cloudflare.com${dev ? " ws:" : ""}`,
   "frame-src https://open.spotify.com https://www.youtube-nocookie.com https://w.soundcloud.com https://challenges.cloudflare.com",
   "object-src 'none'",

@@ -15,6 +15,13 @@
       "when": 1792468086399,
       "tag": "0001_ordinary_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792489044780,
+      "tag": "0002_narrow_starjammers",
+      "breakpoints": true
     }
   ]
 }

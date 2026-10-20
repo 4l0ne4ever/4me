@@ -7,6 +7,7 @@ import { createApp } from "./app";
 import * as schema from "./db/schema";
 import type { DB } from "./db/types";
 import type { Bindings } from "./env";
+import { memoryStore, s3Store } from "./lib/media";
 import { seedIfEmpty } from "./seed";
 
 try {
@@ -27,9 +28,18 @@ const env: Bindings = {
   TURNSTILE_SECRET: process.env.TURNSTILE_SECRET,
   LASTFM_API_KEY: process.env.LASTFM_API_KEY,
   LASTFM_USER: process.env.LASTFM_USER,
+  S3_ENDPOINT: process.env.S3_ENDPOINT,
+  S3_REGION: process.env.S3_REGION,
+  S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID,
+  S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
 };
 
-const app = createApp(() => db);
+// Photos stay in memory unless a bucket is configured in .env; they are gone when the dev server restarts.
+const media = s3Store(env) ?? memoryStore();
+const app = createApp(
+  () => db,
+  () => media,
+);
 const port = Number(process.env.PORT ?? 8787);
 serve({ fetch: (req) => app.fetch(req, env), port });
 console.log(`4me api on http://localhost:${port}`);

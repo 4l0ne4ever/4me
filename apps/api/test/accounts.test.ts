@@ -65,7 +65,14 @@ describe("accounts", () => {
     const res = await post("/internal/users", { email: "Wren@Example.com", displayName: "Wren", passwordHash: HASH });
     expect(res.status).toBe(201);
     const body = (await res.json()) as Record<string, unknown>;
-    expect(body).toMatchObject({ displayName: "Wren", email: "wren@example.com", hasPassword: true, google: false });
+    expect(body).toMatchObject({
+      displayName: "Wren",
+      handle: "wren",
+      email: "wren@example.com",
+      hasPassword: true,
+      google: false,
+      suspended: false,
+    });
     expect(JSON.stringify(body)).not.toContain("scrypt");
     wren = body as unknown as typeof wren;
   });
@@ -103,26 +110,57 @@ describe("accounts", () => {
     expect(res.status).toBe(409);
   });
 
-  it("lets a member write under their own name, with their avatar", async () => {
-    const res = await post(`/internal/users/${wren.id}/notes/the-lamps-came-on-early`, { body: "signed in now" });
+  it("lets a member write under their own name, with their avatar and desktop", async () => {
+    const { id: lamps } = (await (
+      await call("/entries/by/4me/the-lamps-came-on-early", { internal: false })
+    ).json()) as {
+      id: number;
+    };
+    const res = await post(`/internal/users/${wren.id}/notes/${lamps}`, { body: "signed in now" });
     expect(res.status).toBe(201);
-    const notes = (await (await call("/entries/the-lamps-came-on-early/notes", { internal: false })).json()) as Array<{
+    const notes = (await (await call(`/entries/${lamps}/notes`, { internal: false })).json()) as Array<{
       name: string;
-      member: { avatar: string } | null;
+      member: { avatar: string; handle: string } | null;
     }>;
     const mine = notes.find((x) => x.name === "Wren");
-    expect(mine?.member?.avatar).toBe("/photos/pic-229.jpg");
+    expect(mine?.member).toEqual({ avatar: "/photos/pic-229.jpg", handle: "wren" });
     expect(notes.find((x) => x.name === "grey_cloud_92")?.member).toBeNull();
-    const list = (await (await call(`/internal/users/${wren.id}/notes`)).json()) as unknown[];
+    const list = (await (await call(`/internal/users/${wren.id}/notes`)).json()) as Array<{ handle: string }>;
     expect(list).toHaveLength(1);
+    expect(list[0]?.handle).toBe("4me");
   });
 
   it("changes the profile and syncs Ink", async () => {
     const res = await call(`/internal/users/${wren.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ avatar: "red-coat", ink: { hunger: 50, joy: 60, at: 1_000 } }),
+      body: JSON.stringify({
+        avatar: "red-coat",
+        ink: { hunger: 50, joy: 60, at: 1_000 },
+        handle: "Wren_Writes",
+        bio: "tram notes",
+        lastfmUser: "wrenfm",
+      }),
     });
-    expect(await res.json()).toMatchObject({ avatar: "red-coat", ink: { hunger: 50, joy: 60 } });
+    expect(await res.json()).toMatchObject({
+      avatar: "red-coat",
+      ink: { hunger: 50, joy: 60 },
+      handle: "wren_writes",
+      bio: "tram notes",
+      lastfmUser: "wrenfm",
+    });
+  });
+
+  it("keeps desktop addresses unique and off the site's own paths", async () => {
+    const taken = await call(`/internal/users/${wren.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ handle: "lan" }),
+    });
+    expect(taken.status).toBe(409);
+    const reserved = await call(`/internal/users/${wren.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ handle: "admin" }),
+    });
+    expect(reserved.status).toBe(400);
   });
 
   it("revokes sessions when the password changes", async () => {
@@ -153,7 +191,7 @@ describe("Google", () => {
     });
     expect(first.status).toBe(201);
     const me = (await first.json()) as { displayName: string; google: boolean; hasPassword: boolean };
-    expect(me).toMatchObject({ displayName: "Wren 2", google: true, hasPassword: false });
+    expect(me).toMatchObject({ displayName: "Wren 2", handle: "wren_2", google: true, hasPassword: false });
     const again = await post("/internal/oauth/google", {
       sub: "g-1",
       email: "mai@gmail.com",

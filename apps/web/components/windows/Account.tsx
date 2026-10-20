@@ -22,6 +22,8 @@ function Line({ msg }: { msg: Msg }) {
 export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
   const [pending, start] = useTransition();
   const [name, setName] = useState(me.displayName);
+  const [about, setAbout] = useState({ handle: me.handle, bio: me.bio, lastfmUser: me.lastfmUser });
+  const [aboutMsg, setAboutMsg] = useState<Msg>(null);
   const [profileMsg, setProfileMsg] = useState<Msg>(null);
   const [notes, setNotes] = useState<MyNote[] | null>(null);
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
@@ -41,6 +43,17 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
         setProfileMsg({ kind: "ok", text: "Saved." });
       } else setProfileMsg({ kind: "err", text: res.error, field: res.field });
     });
+
+  const saveAbout = (e: FormEvent) => {
+    e.preventDefault();
+    start(async () => {
+      const res = await updateProfile(about);
+      if (res.ok) {
+        onMe(res.me);
+        setAboutMsg({ kind: "ok", text: "Saved." });
+      } else setAboutMsg({ kind: "err", text: res.error, field: res.field });
+    });
+  };
 
   const savePassword = (e: FormEvent) => {
     e.preventDefault();
@@ -62,6 +75,9 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
         <img src={AVATARS.find((a) => a.id === me.avatar)?.url} alt="" width={64} height={64} />
         <div>
           <b>{me.displayName}</b>
+          <span>
+            <a href={`/u/${me.handle}`}>/u/{me.handle}</a>
+          </span>
           <span>{me.email ?? "no email on this account"}</span>
           <span>Member since {shortDate(me.createdAt)}</span>
         </div>
@@ -112,6 +128,56 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
         <Line msg={profileMsg} />
       </form>
 
+      <form className="acc-sec" onSubmit={saveAbout}>
+        <h3>Your desktop</h3>
+        <label htmlFor="acc-handle">
+          Address: /u/…
+          <input
+            id="acc-handle"
+            className="field"
+            value={about.handle}
+            minLength={2}
+            maxLength={20}
+            pattern="[a-zA-Z0-9][a-zA-Z0-9_]*"
+            autoComplete="off"
+            onChange={(e) => setAbout({ ...about, handle: e.target.value.toLowerCase() })}
+            aria-invalid={aboutMsg?.field === "handle" || undefined}
+          />
+        </label>
+        <label htmlFor="acc-bio">
+          A line about you (on your desktop)
+          <input
+            id="acc-bio"
+            className="field"
+            value={about.bio}
+            maxLength={160}
+            placeholder="night shifts, early trams."
+            onChange={(e) => setAbout({ ...about, bio: e.target.value })}
+          />
+        </label>
+        <label htmlFor="acc-lastfm">
+          Last.fm username, to show what you&apos;re listening to (optional)
+          <input
+            id="acc-lastfm"
+            className="field"
+            value={about.lastfmUser}
+            maxLength={15}
+            autoComplete="off"
+            onChange={(e) => setAbout({ ...about, lastfmUser: e.target.value.trim() })}
+            aria-invalid={aboutMsg?.field === "lastfmUser" || undefined}
+          />
+        </label>
+        {about.handle !== me.handle && (
+          <p className="acc-dim">Links to your old address stop working once you change it.</p>
+        )}
+        <span className="acc-row">
+          <button className="btn" type="submit" disabled={pending}>
+            Save
+          </button>
+        </span>
+        <Line msg={aboutMsg} />
+      </form>
+
       <section className="acc-sec">
         <h3>My notes</h3>
         {notes === null && <p className="acc-dim">Loading…</p>}
@@ -121,7 +187,7 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
             <li key={n.id}>
               <p>{n.body}</p>
               <small>
-                on <Link href={`/n/${n.slug}`}>{n.title}</Link> · {shortDate(n.createdAt)}
+                on <Link href={`/u/${n.handle}/${n.slug}`}>{n.title}</Link> · {shortDate(n.createdAt)}
                 {n.status !== "visible" && ` · ${n.status === "pending" ? "waiting for 4me" : "hidden"}`}
               </small>
             </li>
@@ -216,8 +282,8 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
       >
         <h3>Delete my account</h3>
         <p className="acc-dim">
-          Your account, picture and Ink are deleted. Notes you left stay in the diary, signed “a former reader”. This
-          can&apos;t be undone.
+          Your account, your pages and their photos, your guestbook, picture and Ink are deleted. Notes you left on
+          other people&apos;s pages stay, signed “a former reader”. This can&apos;t be undone.
         </p>
         <label htmlFor="acc-delete">Type your name, {me.displayName}, to confirm</label>
         <div className="acc-row">

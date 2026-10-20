@@ -1,23 +1,46 @@
 import {
   AVATARS,
   type AvatarId,
+  almostInput,
+  blastInput,
   displayName,
   email,
+  entryInput,
+  handleFrom,
+  handle as handleSchema,
+  type InboxNote,
   inkState,
   type Me,
+  type MyEntry,
   memberNoteInput,
   memberShoutInput,
+  moderationInput,
   nameKey,
   profileInput,
+  reportReason,
 } from "@4me/shared";
 import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
-import { entries, notes, oauthAccounts, passwordResets, shouts, users } from "../db/schema";
+import { almost, blasts, entries, notes, oauthAccounts, passwordResets, shouts, uploads, users } from "../db/schema";
 import type { AppEnv } from "../env";
+import {
+  authorCols,
+  dropUnusedPhotos,
+  entryValues,
+  fileReport,
+  isUniqueViolation,
+  noteCount,
+  origin,
+  photoKeys,
+  positiveId,
+  readableEntry,
+} from "../lib/entries";
 import { allow, allowKey, humanCheck, isReservedName, looksLikeSpam, sameSecret, sha256 } from "../lib/guard";
-import { toNote, toShout } from "../lib/map";
+import { toAlmost, toBlast, toEntry, toNote, toShout } from "../lib/map";
 import { json } from "../lib/validate";
+import { activeMember } from "./social";
 
 // Account storage for the web server. Every route needs the server token; browsers never reach these.
 // Passwords arrive already hashed (scrypt, done by the web server) and are never logged or returned to a browser.
@@ -39,7 +62,11 @@ async function toMe(c: Context<AppEnv>, u: UserRow): Promise<Me & { sessionVersi
     .limit(1);
   return {
     id: u.id,
+    handle: u.handle,
     displayName: u.displayName,
+    bio: u.bio,
+    lastfmUser: u.lastfmUser,
+    suspended: u.status !== "active",
     email: u.email,
     avatar: (AVATAR_IDS.includes(u.avatar) ? u.avatar : "pines") as AvatarId,
     hasPassword: Boolean(u.passwordHash),
@@ -60,6 +87,33 @@ async function loadUser(c: Context<AppEnv>, raw: string): Promise<UserRow | null
   if (!id) return null;
   const [u] = await c.get("db").select().from(users).where(eq(users.id, id)).limit(1);
   return u ?? null;
+}
+
+const noteAuthor = alias(users, "note_author");
+
+/** The member behind the request, if they may write. Suspended members get a plain refusal. */
+async function writer(c: Context<AppEnv>): Promise<UserRow | Response> {
+  const u = await loadUser(c, c.req.param("id") ?? "");
+  if (!u) return c.json({ error: "not found" }, 404);
+  if (u.status !== "active") return c.json({ error: "this account can't post right now" }, 403);
+  return u;
+}
+
+/** One of the member's own pages, any visibility. Everything else is "not found", even someone else's page. */
+async function ownEntry(c: Context<AppEnv>, opts: { write?: boolean } = {}) {
+  const u = opts.write ? await writer(c) : await loadUser(c, c.req.param("id") ?? "");
+  if (u instanceof Response) return u;
+  if (!u) return c.json({ error: "not found" }, 404);
+  const entryId = positiveId(c.req.param("entryId"));
+  if (!entryId) return c.json({ error: "not found" }, 404);
+  const [row] = await c
+    .get("db")
+    .select({ e: entries, a: authorCols })
+    .from(entries)
+    .innerJoin(users, eq(users.id, entries.authorId))
+    .where(and(eq(entries.id, entryId), eq(entries.authorId, u.id)))
+    .limit(1);
+  return row ? { u, ...row } : c.json({ error: "not found" }, 404);
 }
 
 async function nameFree(c: Context<AppEnv>, name: string, exceptId?: number): Promise<boolean> {
@@ -86,7 +140,22 @@ async function freeNameLike(c: Context<AppEnv>, wanted: string): Promise<string>
   return `reader ${crypto.randomUUID().slice(0, 8)}`;
 }
 
-function uniqueField(e: unknown): "email" | "name" | null {
+async function handleFree(c: Context<AppEnv>, handle: string, exceptId?: number): Promise<boolean> {
+  const [hit] = await c.get("db").select({ id: users.id }).from(users).where(eq(users.handle, handle)).limit(1);
+  return !hit || hit.id === exceptId;
+}
+
+/** "Đêm mưa" -> "dem_mua", then "dem_mua2", "dem_mua3"… until one is free. */
+async function freeHandleLike(c: Context<AppEnv>, name: string): Promise<string> {
+  const base = handleFrom(name);
+  for (let i = 1; i < 200; i++) {
+    const candidate = i === 1 ? base : `${base.slice(0, 20 - String(i).length)}${i}`;
+    if (handleSchema.safeParse(candidate).success && (await handleFree(c, candidate))) return candidate;
+  }
+  return `reader_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+}
+
+function uniqueField(e: unknown): "email" | "name" | "handle" | null {
   const err = e as {
     code?: string;
     constraint?: string;
@@ -96,7 +165,7 @@ function uniqueField(e: unknown): "email" | "name" | null {
   const code = err?.code ?? err?.cause?.code;
   if (code !== "23505") return null;
   const where = `${err?.constraint ?? err?.cause?.constraint ?? ""} ${err?.message ?? ""}`;
-  return where.includes("email") ? "email" : "name";
+  return where.includes("email") ? "email" : where.includes("handle") ? "handle" : "name";
 }
 
 const randomToken = () => {
@@ -134,6 +203,7 @@ export const internalRoutes = new Hono<AppEnv>()
             email: input.email,
             displayName: input.displayName,
             nameKey: nameKey(input.displayName),
+            handle: await freeHandleLike(c, input.displayName),
             passwordHash: input.passwordHash,
           })
           .returning();
@@ -144,6 +214,7 @@ export const internalRoutes = new Hono<AppEnv>()
         if (field === "email")
           return c.json({ error: "an account with that email already exists", field: "email" }, 409);
         if (field === "name") return c.json({ error: "that name is taken", field: "displayName" }, 409);
+        if (field === "handle") return c.json({ error: "try again in a moment" }, 409);
         throw e;
       }
     },
@@ -199,6 +270,7 @@ export const internalRoutes = new Hono<AppEnv>()
           emailVerified: Boolean(g.email && g.emailVerified),
           displayName: name,
           nameKey: nameKey(name),
+          handle: await freeHandleLike(c, name),
         })
         .returning();
       await db.insert(oauthAccounts).values({ provider: "google", providerUserId: g.sub, userId: u!.id });
@@ -222,6 +294,13 @@ export const internalRoutes = new Hono<AppEnv>()
       set.displayName = input.displayName;
       set.nameKey = nameKey(input.displayName);
     }
+    if (input.handle && input.handle !== u.handle) {
+      if (!(await handleFree(c, input.handle, u.id)))
+        return c.json({ error: "that address is taken", field: "handle" }, 409);
+      set.handle = input.handle;
+    }
+    if (input.bio !== undefined) set.bio = input.bio;
+    if (input.lastfmUser !== undefined) set.lastfmUser = input.lastfmUser;
     if (input.avatar) set.avatar = input.avatar;
     if (input.ink) set.ink = input.ink;
     if (Object.keys(set).length === 0) return c.json(await toMe(c, u));
@@ -229,7 +308,9 @@ export const internalRoutes = new Hono<AppEnv>()
       const [next] = await c.get("db").update(users).set(set).where(eq(users.id, u.id)).returning();
       return c.json(await toMe(c, next!));
     } catch (e) {
-      if (uniqueField(e)) return c.json({ error: "that name is taken", field: "displayName" }, 409);
+      const field = uniqueField(e);
+      if (field === "handle") return c.json({ error: "that address is taken", field: "handle" }, 409);
+      if (field) return c.json({ error: "that name is taken", field: "displayName" }, 409);
       throw e;
     }
   })
@@ -260,7 +341,10 @@ export const internalRoutes = new Hono<AppEnv>()
     const id = userId(c.req.param("id"));
     if (!id) return c.json({ error: "not found" }, 404);
     const db = c.get("db");
-    // Their words stay in the diary's history, but no longer carry their name.
+    // Their photos go first, while the list of what they uploaded still exists.
+    const files = await db.select({ key: uploads.key }).from(uploads).where(eq(uploads.userId, id));
+    await Promise.allSettled(files.map((f) => c.get("media")?.delete(f.key)));
+    // Their notes on other people's pages stay, but no longer carry their name. Their own pages go with them.
     await db.update(notes).set({ name: "a former reader" }).where(eq(notes.userId, id));
     await db.update(shouts).set({ name: "a former reader" }).where(eq(shouts.userId, id));
     const [gone] = await db.delete(users).where(eq(users.id, id)).returning({ id: users.id });
@@ -271,9 +355,10 @@ export const internalRoutes = new Hono<AppEnv>()
     if (!id) return c.json([]);
     const rows = await c
       .get("db")
-      .select({ n: notes, slug: entries.slug, title: entries.title })
+      .select({ n: notes, slug: entries.slug, title: entries.title, handle: users.handle })
       .from(notes)
       .innerJoin(entries, eq(entries.id, notes.entryId))
+      .innerJoin(users, eq(users.id, entries.authorId))
       .where(eq(notes.userId, id))
       .orderBy(desc(notes.createdAt))
       .limit(100);
@@ -282,6 +367,7 @@ export const internalRoutes = new Hono<AppEnv>()
         id: r.n.id,
         body: r.n.body,
         createdAt: r.n.createdAt.toISOString(),
+        handle: r.handle,
         slug: r.slug,
         title: r.title,
         status: r.n.status,
@@ -290,38 +376,228 @@ export const internalRoutes = new Hono<AppEnv>()
   })
 
   /* ---------- members write under their own name ---------- */
-  .post("/users/:id/notes/:slug", json(memberNoteInput), async (c) => {
-    const u = await loadUser(c, c.req.param("id"));
-    if (!u) return c.json({ error: "not found" }, 404);
+  .post("/users/:id/notes/:entryId", json(memberNoteInput), async (c) => {
+    const u = await writer(c);
+    if (u instanceof Response) return u;
     if (!(await allowKey(c, `member-note:${u.id}`, 10, 600)))
       return c.json({ error: "slow down a little, try again soon" }, 429);
-    const db = c.get("db");
-    const [entry] = await db
-      .select({ id: entries.id })
-      .from(entries)
-      .where(and(eq(entries.visibility, "public"), eq(entries.slug, c.req.param("slug"))));
+    const entryId = positiveId(c.req.param("entryId"));
+    const entry = entryId ? await readableEntry(c, entryId) : null;
     if (!entry) return c.json({ error: "not found" }, 404);
     const { body } = c.req.valid("json");
-    const status = looksLikeSpam(body) ? "pending" : "visible";
-    const [row] = await db
+    // The page's own author answering on it is marked, and never held for review.
+    const isAuthor = entry.authorId === u.id;
+    const status = !isAuthor && looksLikeSpam(body) ? "pending" : "visible";
+    const [row] = await c
+      .get("db")
       .insert(notes)
-      .values({ entryId: entry.id, userId: u.id, name: u.displayName, body, status })
+      .values({ entryId: entry.id, userId: u.id, name: u.displayName, body, status, isAuthor })
       .returning();
-    return c.json({ note: toNote(row!, u.avatar), pending: status === "pending" }, 201);
+    return c.json({ note: toNote(row!, u), pending: status === "pending" }, 201);
   })
   .post("/users/:id/shouts", json(memberShoutInput), async (c) => {
-    const u = await loadUser(c, c.req.param("id"));
-    if (!u) return c.json({ error: "not found" }, 404);
+    const u = await writer(c);
+    if (u instanceof Response) return u;
     if (!(await allowKey(c, `member-shout:${u.id}`, 10, 600)))
       return c.json({ error: "slow down a little, try again soon" }, 429);
-    const { body } = c.req.valid("json");
-    const status = looksLikeSpam(body) ? "pending" : "visible";
+    const { body, owner: ownerHandle } = c.req.valid("json");
+    const owner = ownerHandle ? await activeMember(c, ownerHandle) : null;
+    if (ownerHandle && !owner) return c.json({ error: "not found" }, 404);
+    const status = owner?.id !== u.id && looksLikeSpam(body) ? "pending" : "visible";
     const [row] = await c
       .get("db")
       .insert(shouts)
-      .values({ userId: u.id, name: u.displayName, body, status })
+      .values({ ownerId: owner?.id ?? null, userId: u.id, name: u.displayName, body, status })
       .returning();
-    return c.json({ shout: toShout(row!, u.avatar), pending: status === "pending" }, 201);
+    return c.json({ shout: toShout(row!, u), pending: status === "pending" }, 201);
+  })
+  .post("/users/:id/reports/:entryId", json(z.object({ reason: reportReason })), async (c) => {
+    const u = await loadUser(c, c.req.param("id"));
+    if (!u) return c.json({ error: "not found" }, 404);
+    if (!(await allowKey(c, `member-report:${u.id}`, 20, 3600)))
+      return c.json({ error: "too many reports, try later" }, 429);
+    const entryId = positiveId(c.req.param("entryId"));
+    const entry = entryId ? await readableEntry(c, entryId) : null;
+    if (!entry) return c.json({ error: "not found" }, 404);
+    if (entry.authorId === u.id) return c.json({ error: "that's your own page" }, 400);
+    await fileReport(c, entry.id, `u:${u.id}`, c.req.valid("json").reason);
+    return c.json({ ok: true });
+  })
+
+  /* ---------- a member's own pages ---------- */
+  .get("/users/:id/entries", async (c) => {
+    const u = await loadUser(c, c.req.param("id"));
+    if (!u) return c.json([]);
+    const rows = await c
+      .get("db")
+      .select({ e: entries, noteCount })
+      .from(entries)
+      .where(eq(entries.authorId, u.id))
+      .orderBy(desc(entries.writtenAt))
+      .limit(500);
+    const mine: MyEntry[] = rows.map((r) => ({
+      id: r.e.id,
+      slug: r.e.slug,
+      title: r.e.title,
+      visibility: r.e.visibility,
+      status: r.e.status,
+      writtenAt: r.e.writtenAt.toISOString(),
+      noteCount: r.noteCount,
+    }));
+    return c.json(mine);
+  })
+  .get("/users/:id/entries/:entryId", async (c) => {
+    const own = await ownEntry(c);
+    if (own instanceof Response) return own;
+    return c.json({ ...toEntry(own.e, own.a, origin(c)), songId: own.e.songId });
+  })
+  .post("/users/:id/entries", json(entryInput), async (c) => {
+    const u = await writer(c);
+    if (u instanceof Response) return u;
+    if (!(await allowKey(c, `entry:${u.id}`, 10, 86400)))
+      return c.json({ error: "that's ten pages today already, the rest can wait for tomorrow" }, 429);
+    const made = await entryValues(c, u.id, c.req.valid("json"));
+    if ("problem" in made) return c.json({ error: made.problem }, made.status);
+    try {
+      const [row] = await c
+        .get("db")
+        .insert(entries)
+        .values({ ...made.values, authorId: u.id })
+        .returning();
+      return c.json(toEntry(row!, { handle: u.handle, name: u.displayName, avatar: u.avatar }, origin(c)), 201);
+    } catch (e) {
+      if (isUniqueViolation(e)) return c.json({ error: "you already have a page at that address", field: "slug" }, 409);
+      throw e;
+    }
+  })
+  .put("/users/:id/entries/:entryId", json(entryInput), async (c) => {
+    const own = await ownEntry(c, { write: true });
+    if (own instanceof Response) return own;
+    const made = await entryValues(c, own.u.id, c.req.valid("json"), own.e);
+    if ("problem" in made) return c.json({ error: made.problem }, made.status);
+    try {
+      const [row] = await c.get("db").update(entries).set(made.values).where(eq(entries.id, own.e.id)).returning();
+      await dropUnusedPhotos(c, own.u.id, photoKeys(own.e.photos));
+      return c.json(toEntry(row!, own.a, origin(c)));
+    } catch (e) {
+      if (isUniqueViolation(e)) return c.json({ error: "you already have a page at that address", field: "slug" }, 409);
+      throw e;
+    }
+  })
+  .delete("/users/:id/entries/:entryId", async (c) => {
+    const own = await ownEntry(c);
+    if (own instanceof Response) return own;
+    await c.get("db").delete(entries).where(eq(entries.id, own.e.id));
+    await dropUnusedPhotos(c, own.u.id, photoKeys(own.e.photos));
+    return c.json({ deleted: own.e.id });
+  })
+  .get("/users/:id/blasts", async (c) => {
+    const id = userId(c.req.param("id"));
+    if (!id) return c.json([]);
+    const rows = await c
+      .get("db")
+      .select()
+      .from(blasts)
+      .where(eq(blasts.authorId, id))
+      .orderBy(desc(blasts.createdAt))
+      .limit(50);
+    return c.json(rows.map(toBlast));
+  })
+  .post("/users/:id/blasts", json(blastInput), async (c) => {
+    const u = await writer(c);
+    if (u instanceof Response) return u;
+    if (!(await allowKey(c, `blast:${u.id}`, 30, 86400))) return c.json({ error: "enough blasts for today" }, 429);
+    const [row] = await c
+      .get("db")
+      .insert(blasts)
+      .values({ authorId: u.id, body: c.req.valid("json").body })
+      .returning();
+    return c.json(toBlast(row!), 201);
+  })
+  .delete("/users/:id/blasts/:blastId", async (c) => {
+    const id = userId(c.req.param("id"));
+    const blastId = positiveId(c.req.param("blastId"));
+    if (!id || !blastId) return c.json({ error: "not found" }, 404);
+    const [gone] = await c
+      .get("db")
+      .delete(blasts)
+      .where(and(eq(blasts.id, blastId), eq(blasts.authorId, id)))
+      .returning({ id: blasts.id });
+    return gone ? c.json({ deleted: gone.id }) : c.json({ error: "not found" }, 404);
+  })
+  .get("/users/:id/almost", async (c) => {
+    const id = userId(c.req.param("id"));
+    if (!id) return c.json([]);
+    const rows = await c
+      .get("db")
+      .select()
+      .from(almost)
+      .where(eq(almost.authorId, id))
+      .orderBy(desc(almost.deletedAt))
+      .limit(100);
+    return c.json(rows.map(toAlmost));
+  })
+  .post("/users/:id/almost", json(almostInput), async (c) => {
+    const u = await writer(c);
+    if (u instanceof Response) return u;
+    if (!(await allowKey(c, `almost:${u.id}`, 30, 86400))) return c.json({ error: "the bin is full for today" }, 429);
+    const input = c.req.valid("json");
+    const [row] = await c
+      .get("db")
+      .insert(almost)
+      .values({ authorId: u.id, body: input.body, deletedAt: input.deletedAt ? new Date(input.deletedAt) : new Date() })
+      .returning();
+    return c.json(toAlmost(row!), 201);
+  })
+  .delete("/users/:id/almost/:almostId", async (c) => {
+    const id = userId(c.req.param("id"));
+    const almostId = positiveId(c.req.param("almostId"));
+    if (!id || !almostId) return c.json({ error: "not found" }, 404);
+    const [gone] = await c
+      .get("db")
+      .delete(almost)
+      .where(and(eq(almost.id, almostId), eq(almost.authorId, id)))
+      .returning({ id: almost.id });
+    return gone ? c.json({ deleted: gone.id }) : c.json({ error: "not found" }, 404);
+  })
+  /** Notes other people left on this member's pages, newest first, the ones waiting for approval included. */
+  .get("/users/:id/inbox", async (c) => {
+    const id = userId(c.req.param("id"));
+    if (!id) return c.json([]);
+    const rows = await c
+      .get("db")
+      .select({ n: notes, title: entries.title, m: { avatar: noteAuthor.avatar, handle: noteAuthor.handle } })
+      .from(notes)
+      .innerJoin(entries, eq(entries.id, notes.entryId))
+      .leftJoin(noteAuthor, eq(noteAuthor.id, notes.userId))
+      .where(and(eq(entries.authorId, id), eq(notes.isAuthor, false)))
+      .orderBy(desc(notes.createdAt))
+      .limit(100);
+    const inbox: InboxNote[] = rows.map((r) => ({
+      ...toNote(r.n, r.m),
+      entryId: r.n.entryId,
+      title: r.title,
+      status: r.n.status,
+    }));
+    return c.json(inbox);
+  })
+  .patch("/users/:id/inbox/:noteId", json(moderationInput), async (c) => {
+    const id = userId(c.req.param("id"));
+    const noteId = positiveId(c.req.param("noteId"));
+    if (!id || !noteId) return c.json({ error: "not found" }, 404);
+    const db = c.get("db");
+    const [mine] = await db
+      .select({ id: notes.id })
+      .from(notes)
+      .innerJoin(entries, eq(entries.id, notes.entryId))
+      .where(and(eq(notes.id, noteId), eq(entries.authorId, id)))
+      .limit(1);
+    if (!mine) return c.json({ error: "not found" }, 404);
+    await db
+      .update(notes)
+      .set({ status: c.req.valid("json").status })
+      .where(eq(notes.id, noteId));
+    return c.json({ ok: true });
   })
 
   /* ---------- forgotten passwords ---------- */

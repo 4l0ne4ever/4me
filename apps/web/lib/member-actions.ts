@@ -14,44 +14,40 @@ import {
 } from "@4me/shared";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { ApiError, endSession, getMe, internalApi, type MeWithVersion, publicMe, startSession } from "./auth";
+import { type Fail, fail, type Ok, signedOut } from "./action-result";
+import { endSession, getMe, internalApi, type MeWithVersion, publicMe, startSession } from "./auth";
 import { hashPassword, verifyPassword } from "./crypto";
 
 // Everything a signed-in reader can do. Each action re-reads the session itself; nothing trusts the browser's word.
 
-type Fail = { ok: false; error: string; field?: string };
-type Ok<T> = { ok: true } & T;
-
-const fail = (e: unknown): Fail =>
-  e instanceof ApiError
-    ? { ok: false, error: e.message, field: e.field }
-    : { ok: false, error: "something went wrong, try again in a moment" };
-const signedOut: Fail = { ok: false, error: "you've been signed out, sign in again" };
-
-export async function noteAsMember(slug: string, body: string): Promise<Ok<{ note: Note; pending: boolean }> | Fail> {
+export async function noteAsMember(
+  entryId: number,
+  body: string,
+): Promise<Ok<{ note: Note; pending: boolean }> | Fail> {
   const me = await getMe();
   if (!me) return signedOut;
   const input = memberNoteInput.safeParse({ body });
-  if (!input.success) return { ok: false, error: "write something first (500 characters at most)" };
+  if (!input.success || !Number.isInteger(entryId))
+    return { ok: false, error: "write something first (500 characters at most)" };
   try {
-    const res = await internalApi<{ note: Note; pending: boolean }>(
-      `/users/${me.id}/notes/${encodeURIComponent(slug)}`,
-      {
-        method: "POST",
-        body: input.data,
-      },
-    );
-    revalidatePath(`/n/${slug}`);
+    const res = await internalApi<{ note: Note; pending: boolean }>(`/users/${me.id}/notes/${entryId}`, {
+      method: "POST",
+      body: input.data,
+    });
     return { ok: true, ...res };
   } catch (e) {
     return fail(e);
   }
 }
 
-export async function shoutAsMember(body: string): Promise<Ok<{ shout: Shout; pending: boolean }> | Fail> {
+/** `owner` is the member whose guestbook it is; without it, the shared one on the front desktop. */
+export async function shoutAsMember(
+  body: string,
+  owner?: string,
+): Promise<Ok<{ shout: Shout; pending: boolean }> | Fail> {
   const me = await getMe();
   if (!me) return signedOut;
-  const input = memberShoutInput.safeParse({ body });
+  const input = memberShoutInput.safeParse({ body, owner });
   if (!input.success) return { ok: false, error: "write something first (280 characters at most)" };
   try {
     return {
@@ -76,6 +72,9 @@ export async function saveInk(state: InkState): Promise<void> {
 export async function updateProfile(changes: {
   displayName?: string;
   avatar?: string;
+  handle?: string;
+  bio?: string;
+  lastfmUser?: string;
 }): Promise<Ok<{ me: Me }> | Fail> {
   const me = await getMe();
   if (!me) return signedOut;
@@ -86,6 +85,9 @@ export async function updateProfile(changes: {
   }
   try {
     const next = await internalApi<MeWithVersion>(`/users/${me.id}`, { method: "PATCH", body: input.data });
+    // Their name, picture or address shows on their desktop and pages.
+    revalidatePath(`/u/${me.handle}`, "layout");
+    if (next.handle !== me.handle) revalidatePath(`/u/${next.handle}`, "layout");
     return { ok: true, me: publicMe(next) };
   } catch (e) {
     return fail(e);
@@ -137,7 +139,7 @@ export async function signOutEverywhere(): Promise<void> {
   redirect("/welcome");
 }
 
-/** The reader types their own name to confirm. Their notes stay, signed "a former reader". */
+/** The reader types their own name to confirm. Their pages and photos go; their notes stay, signed "a former reader". */
 export async function deleteAccount(confirmName: string): Promise<Fail | undefined> {
   const me = await getMe();
   if (!me) return signedOut;
@@ -149,6 +151,7 @@ export async function deleteAccount(confirmName: string): Promise<Fail | undefin
   } catch (e) {
     return fail(e);
   }
+  revalidatePath("/", "layout");
   await endSession();
   redirect("/?goodbye=1");
 }

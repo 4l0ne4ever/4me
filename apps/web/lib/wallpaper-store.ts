@@ -48,11 +48,14 @@ export async function deleteUpload(): Promise<void> {
   }
 }
 
-/** Decodes the picture and re-encodes it at most 2560 px wide as JPEG, so storage stays small. */
-export async function shrink(file: Blob): Promise<Blob> {
+/**
+ * Decodes the picture and re-encodes it as JPEG at most `maxSide` px on its longest side, so storage stays small.
+ * Re-encoding also drops whatever metadata the file carried (EXIF, GPS), after applying its rotation.
+ */
+export async function shrink(file: Blob, maxSide = MAX_SIDE): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   try {
-    const { width, height } = fitWithin(bitmap.width, bitmap.height, MAX_SIDE);
+    const { width, height } = fitWithin(bitmap.width, bitmap.height, maxSide);
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;

@@ -3,24 +3,29 @@ import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import type { DB } from "./db/types";
 import type { AppEnv, Bindings } from "./env";
+import type { MediaStore } from "./lib/media";
 import { adminRoutes } from "./routes/admin";
 import { entryRoutes } from "./routes/entries";
 import { internalRoutes } from "./routes/internal";
+import { mediaRoutes } from "./routes/media";
+import { musicRoutes } from "./routes/music";
 import { socialRoutes } from "./routes/social";
 
 /** The whole API, independent of where it runs: Workers + Neon in production, Node + PGlite locally and in tests. */
-export function createApp(resolveDb: (env: Bindings) => DB) {
+export function createApp(
+  resolveDb: (env: Bindings) => DB,
+  resolveMedia: (env: Bindings) => MediaStore | null = () => null,
+) {
   const app = new Hono<AppEnv>();
 
-  app.use(
-    "*",
-    secureHeaders({
-      // Browsers remember to use HTTPS for two years, subdomains included.
-      strictTransportSecurity: "max-age=63072000; includeSubDomains; preload",
-      contentSecurityPolicy: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] },
-      crossOriginResourcePolicy: "same-site",
-    }),
-  );
+  const secure = secureHeaders({
+    // Browsers remember to use HTTPS for two years, subdomains included.
+    strictTransportSecurity: "max-age=63072000; includeSubDomains; preload",
+    contentSecurityPolicy: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] },
+    crossOriginResourcePolicy: "same-site",
+  });
+  // Photos set their own headers: they must be embeddable from the diary's site, which same-site would forbid.
+  app.use("*", (c, next) => (c.req.path.startsWith("/media/") ? next() : secure(c, next)));
   app.use(
     "*",
     cors({
@@ -31,16 +36,19 @@ export function createApp(resolveDb: (env: Bindings) => DB) {
         return secure && allowed.includes(origin) ? origin : null;
       },
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization"],
+      allowHeaders: ["Content-Type", "Authorization", "X-Upload-Ticket"],
       maxAge: 86400,
     }),
   );
   app.use("*", async (c, next) => {
     c.set("db", resolveDb(c.env));
+    c.set("media", resolveMedia(c.env));
     await next();
   });
 
   app.route("/entries", entryRoutes);
+  app.route("/music", musicRoutes);
+  app.route("/", mediaRoutes);
   app.route("/", socialRoutes);
   app.route("/admin", adminRoutes);
   app.route("/internal", internalRoutes);

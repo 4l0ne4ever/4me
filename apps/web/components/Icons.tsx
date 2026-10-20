@@ -60,6 +60,29 @@ export const IconDisplay = ({ className }: P) => (
     <rect x="11" y="31" width="18" height="2" fill="#8d96a3" />
   </svg>
 );
+export const IconWrite = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <rect x="7" y="5" width="22" height="30" fill="#f6f1e6" />
+    <rect x="7" y="5" width="22" height="4" fill="#3a6ea5" />
+    <rect x="10" y="13" width="15" height="2" fill="#9aa8bb" />
+    <rect x="10" y="18" width="13" height="2" fill="#9aa8bb" />
+    <rect x="10" y="23" width="9" height="2" fill="#9aa8bb" />
+    <path d="M24 31l9-14 3 2-9 14-4 1z" fill="#e0b44a" />
+    <path d="M23 34l1-3 3 2z" fill="#5c2a20" />
+  </svg>
+);
+export const IconTonight = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <rect x="4" y="8" width="32" height="24" fill="#1f3a63" />
+    <path d="M24 12a7 7 0 1 0 6 10 6 6 0 0 1-6-10z" fill="#f0d36b" />
+    <circle cx="11" cy="14" r="1" fill="#f6f1e6" />
+    <circle cx="16" cy="25" r="1" fill="#f6f1e6" />
+    <circle cx="9" cy="22" r="0.8" fill="#f6f1e6" />
+    <rect x="4" y="28" width="32" height="4" fill="#0f1d33" />
+    <rect x="9" y="25" width="3" height="3" fill="#f0ac5c" />
+    <rect x="25" y="24" width="3" height="4" fill="#f0ac5c" />
+  </svg>
+);
 export const IconMin = () => (
   <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
     <rect x="2" y="8" width="8" height="2" fill="currentColor" />

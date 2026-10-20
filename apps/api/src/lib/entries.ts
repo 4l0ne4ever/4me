@@ -1,0 +1,164 @@
+import { type entryInput, slugify } from "@4me/shared";
+import { and, eq, gt, inArray, lt, sql } from "drizzle-orm";
+import type { Context } from "hono";
+import type { z } from "zod";
+import { entries, reports, uploads, users } from "../db/schema";
+import type { AppEnv } from "../env";
+import { lookupSong } from "./music";
+
+// Written out with explicit table names: inside the subquery an unqualified "id" would mean notes.id.
+export const noteCount = sql<number>`(select count(*)::int from "notes" n where n."entry_id" = "entries"."id" and n."status" = 'visible')`;
+
+/** The author columns every page carries. Queries join `users` on `entries.author_id` to get them. */
+export const authorCols = { handle: users.handle, name: users.displayName, avatar: users.avatar };
+
+/** What anyone may read: public, not hidden by moderation, by a member who is not suspended. */
+export const isReadable = and(
+  eq(entries.visibility, "public"),
+  eq(entries.status, "visible"),
+  eq(users.status, "active"),
+);
+
+export const origin = (c: Context<AppEnv>) => new URL(c.req.url).origin;
+
+export function isUniqueViolation(e: unknown): boolean {
+  const err = e as { code?: string; cause?: { code?: string } };
+  return err?.code === "23505" || err?.cause?.code === "23505";
+}
+
+/** A public page by id, with its author, or null. */
+export async function readableEntry(c: Context<AppEnv>, id: number) {
+  const [row] = await c
+    .get("db")
+    .select({ id: entries.id, authorId: entries.authorId })
+    .from(entries)
+    .innerJoin(users, eq(users.id, entries.authorId))
+    .where(and(isReadable, eq(entries.id, id)))
+    .limit(1);
+  return row ?? null;
+}
+
+export const positiveId = (raw: string | undefined) => {
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 && n < 2 ** 31 ? n : null;
+};
+
+type EntryInput = z.output<typeof entryInput>;
+type Existing = { songId: number | null; slug: string } | undefined;
+
+/**
+ * The columns for a member's page. Photos must be their own uploads; the song is looked up again by its id
+ * (unless it is the one already on the page). Returns a reason instead when something is not acceptable.
+ */
+export async function entryValues(
+  c: Context<AppEnv>,
+  authorId: number,
+  input: EntryInput,
+  existing?: Existing,
+): Promise<{ values: Omit<typeof entries.$inferInsert, "authorId"> } | { problem: string; status: 400 | 502 }> {
+  const prefix = `/media/u/${authorId}/`;
+  const keys = input.photos.map((p) => p.url.slice("/media/".length));
+  if (input.photos.some((p) => !p.url.startsWith(prefix))) return { problem: "those photos aren't yours", status: 400 };
+  if (keys.length > 0) {
+    const owned = await c
+      .get("db")
+      .select({ key: uploads.key })
+      .from(uploads)
+      .where(and(eq(uploads.userId, authorId), inArray(uploads.key, keys)));
+    if (owned.length !== new Set(keys).size) return { problem: "a photo is missing, upload it again", status: 400 };
+  }
+
+  const writtenAt = input.writtenAt ? new Date(input.writtenAt) : new Date();
+  const values: Omit<typeof entries.$inferInsert, "authorId"> = {
+    slug: input.slug || existing?.slug || slugify(input.title, writtenAt),
+    title: input.title,
+    body: input.body,
+    mood: input.mood,
+    weather: input.weather,
+    writtenAt,
+    photos: input.photos,
+    visibility: input.visibility,
+    updatedAt: new Date(),
+  };
+  if (input.songId === undefined) {
+    // Keeps the song already on the page.
+  } else if (input.songId === null) {
+    Object.assign(values, {
+      songId: null,
+      songTitle: null,
+      songArtist: null,
+      songUrl: null,
+      songEmbedUrl: null,
+      songCoverUrl: null,
+      songPreviewUrl: null,
+    });
+  } else if (input.songId !== existing?.songId) {
+    let found: Awaited<ReturnType<typeof lookupSong>> = null;
+    try {
+      found = await lookupSong(input.songId);
+    } catch {
+      return { problem: "the music search isn't answering, try again in a moment", status: 502 };
+    }
+    if (!found) return { problem: "that song isn't available any more, pick another", status: 400 };
+    Object.assign(values, {
+      songId: found.id,
+      songTitle: found.title,
+      songArtist: found.artist,
+      songUrl: found.url || null,
+      songEmbedUrl: null,
+      songCoverUrl: found.coverUrl,
+      songPreviewUrl: found.previewUrl,
+    });
+  }
+  return { values };
+}
+
+/** Deletes uploaded photos that no page of this member uses any more: from the bucket, then from the list. */
+export async function dropUnusedPhotos(c: Context<AppEnv>, userId: number, keys: string[]) {
+  if (keys.length === 0) return;
+  const db = c.get("db");
+  const used = await db.select({ photos: entries.photos }).from(entries).where(eq(entries.authorId, userId));
+  const inUse = new Set(used.flatMap((r) => r.photos.map((p) => p.url.slice("/media/".length))));
+  const gone = [...new Set(keys)].filter((k) => !inUse.has(k));
+  if (gone.length === 0) return;
+  await Promise.allSettled(gone.map((k) => c.get("media")?.delete(k)));
+  await db.delete(uploads).where(and(eq(uploads.userId, userId), inArray(uploads.key, gone)));
+}
+
+/** Photos uploaded more than a day ago and never put on a page. */
+export async function dropAbandonedUploads(c: Context<AppEnv>, userId: number) {
+  const stale = await c
+    .get("db")
+    .select({ key: uploads.key })
+    .from(uploads)
+    .where(and(eq(uploads.userId, userId), lt(uploads.createdAt, new Date(Date.now() - 86_400_000))));
+  await dropUnusedPhotos(
+    c,
+    userId,
+    stale.map((r) => r.key),
+  );
+}
+
+export const photoKeys = (photos: { url: string }[]) =>
+  photos.filter((p) => p.url.startsWith("/media/")).map((p) => p.url.slice("/media/".length));
+
+/** This many different readers reporting a page takes it down until the moderator has looked. */
+export const REPORTS_TO_HIDE = 3;
+
+/** Records one report per reader per page, and hides the page once enough different readers have reported it. */
+export async function fileReport(
+  c: Context<AppEnv>,
+  entryId: number,
+  reporter: string,
+  reason: (typeof reports.$inferInsert)["reason"],
+) {
+  const db = c.get("db");
+  await db.insert(reports).values({ entryId, reporter, reason }).onConflictDoNothing();
+  const [entry] = await db.select({ clearedAt: entries.clearedAt }).from(entries).where(eq(entries.id, entryId));
+  const since = entry?.clearedAt ?? new Date(0);
+  const [{ n } = { n: 0 }] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(reports)
+    .where(and(eq(reports.entryId, entryId), gt(reports.createdAt, since)));
+  if (n >= REPORTS_TO_HIDE) await db.update(entries).set({ status: "hidden" }).where(eq(entries.id, entryId));
+}

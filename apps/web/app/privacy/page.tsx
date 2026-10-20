@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: "What 4me keeps about its readers, where it lives, and how to delete it.",
+  description: "What 4me keeps about its readers and writers, where it lives, and how to delete it.",
 };
 
 const UPDATED = "20 October 2026";
@@ -17,8 +17,8 @@ export default function Privacy() {
       <p className="privacy-updated">Last changed {UPDATED}</p>
 
       <p>
-        4me is one person&apos;s night diary. You can read it without an account. Nothing here sells, shares or studies
-        what you do: there are no ads, no analytics and no tracking pixels.
+        4me is a place for night diaries. You can read without an account. Nothing here sells, shares or studies what
+        you do: there are no ads, no analytics and no tracking pixels.
       </p>
 
       <h2>If you only read</h2>
@@ -27,21 +27,23 @@ export default function Privacy() {
         <li>Your wallpaper and Ink&apos;s hunger are kept in your own browser, not on our servers.</li>
         <li>
           Your IP address is never stored. A salted, one-way hash of it counts a page as read once per visitor and keeps
-          spam down; those counters are deleted after an hour.
+          spam down; those counters are deleted after a day.
         </li>
       </ul>
 
-      <h2>If you leave a note or sign the guestbook as a guest</h2>
+      <h2>If you leave a note, sign a guestbook or report a page as a guest</h2>
       <ul>
         <li>We keep the name you typed, what you wrote, the time, and the same hashed IP, so spam can be traced.</li>
-        <li>Anything with a link waits until the author approves it.</li>
+        <li>Anything with a link waits until the page&apos;s writer or the moderator approves it.</li>
+        <li>A report keeps the reason you picked and your hashed IP, so one reader is only counted once.</li>
       </ul>
 
       <h2>If you make an account</h2>
       <ul>
         <li>
-          Your email address, the name you show, the picture you picked, and Ink&apos;s state, so she remembers you on
-          every device.
+          Your email address, the name you show, your desktop&apos;s address, the line about you, the picture you
+          picked, and Ink&apos;s state, so she remembers you on every device. Your name, address, line and picture are
+          public; your email address is never shown on the site.
         </li>
         <li>
           Your password is never stored, only a scrypt hash of it. A password reset link is stored as a hash too, and
@@ -55,12 +57,34 @@ export default function Privacy() {
           One cookie keeps you signed in. It is signed, readable only by this site&apos;s server, and lasts until you
           log off or it expires.
         </li>
-        <li>Your email address is never shown on the site.</li>
+      </ul>
+
+      <h2>If you write</h2>
+      <ul>
+        <li>
+          Your pages, with their mood, weather, song and photos, are shown to everyone unless you set them to
+          &ldquo;only me&rdquo; or keep them as drafts. So are your blasts and the lines in your Almost posted bin.
+        </li>
+        <li>
+          Photos are shrunk in your browser before they leave it, and their hidden data (camera details and the location
+          where they were taken) is removed, in your browser and again on our server.
+        </li>
+        <li>
+          When you search for a song, the words you type are sent to Apple&apos;s music search through our server, not
+          from your browser. Playing a 30-second preview loads it from Apple&apos;s servers.
+        </li>
+        <li>
+          If you add a Last.fm username, what you listen to on Last.fm shows on your desktop. Leave it empty and nothing
+          is fetched.
+        </li>
       </ul>
 
       <h2>Where it lives</h2>
       <ul>
         <li>The site runs on Vercel and the API on Cloudflare. The database is Neon Postgres in Singapore.</li>
+        <li>
+          Photos are kept in a private storage bucket (Cloudflare R2 or Amazon S3) and only served through our API.
+        </li>
         <li>Password reset emails are sent through Resend.</li>
         <li>
           A song player (Spotify, YouTube or SoundCloud) loads from that service only on pages that have one; YouTube is
@@ -69,15 +93,23 @@ export default function Privacy() {
         <li>Everything travels over HTTPS.</li>
       </ul>
 
+      <h2>Moderation</h2>
+      <p>
+        A page reported by three different readers is hidden until the moderator looks at it. The moderator can hide
+        pages and suspend accounts that break the rules; a suspended account can still sign in, read and delete its own
+        pages.
+      </p>
+
       <h2>Deleting it</h2>
       <p>
-        Signed in, open <b>Start → My account → Delete my account</b>. Your account, email, picture, password hash and
-        Google link are deleted straight away. Notes you left stay in the diary, signed &ldquo;a former reader&rdquo;.
-        To have a guest note removed, sign the guestbook asking for it.
+        Signed in, open <b>Start → My account → Delete my account</b>. Your account, email, pages, photos, guestbook,
+        picture, password hash and Google link are deleted straight away. Notes you left on other people&apos;s pages
+        stay, signed &ldquo;a former reader&rdquo;. Any single page can be deleted from your Notepad. To have a guest
+        note removed, sign the guestbook asking for it.
       </p>
 
       <p className="privacy-back">
-        <Link href="/">Back to tonight&apos;s page</Link>
+        <Link href="/">Back to tonight&apos;s pages</Link>
       </p>
     </main>
   );

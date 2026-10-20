@@ -19,6 +19,7 @@ const env: Bindings = {
 let app: ReturnType<typeof createApp>;
 let db: DB;
 let ipCounter = 0;
+let lamps: number;
 
 function call(path: string, init: RequestInit & { ip?: string; admin?: boolean } = {}) {
   const headers = new Headers(init.headers);
@@ -27,76 +28,93 @@ function call(path: string, init: RequestInit & { ip?: string; admin?: boolean }
   if (init.admin) headers.set("authorization", `Bearer ${env.ADMIN_TOKEN}`);
   return app.request(path, { ...init, headers }, env);
 }
+const post = (path: string, body: unknown, extra: { ip?: string; admin?: boolean } = {}) =>
+  call(path, { method: "POST", body: JSON.stringify(body), ...extra });
 
 beforeAll(async () => {
   db = drizzle(new PGlite(), { schema }) as unknown as DB;
   await migrate(db as never, { migrationsFolder: "./drizzle" });
   await seedIfEmpty(db);
   app = createApp(() => db);
+  const [row] = await db
+    .select({ id: schema.entries.id })
+    .from(schema.entries)
+    .where(eq(schema.entries.slug, "the-lamps-came-on-early"));
+  lamps = row!.id;
 });
 
 describe("public reading", () => {
-  it("lists public entries newest first", async () => {
+  it("lists everyone's public pages newest first, each with its author", async () => {
     const res = await call("/entries");
     expect(res.status).toBe(200);
-    const list = (await res.json()) as Array<{ slug: string; noteCount: number }>;
-    expect(list[0]?.slug).toBe("the-lamps-came-on-early");
-    expect(list[0]?.noteCount).toBe(4);
+    const list = (await res.json()) as Array<{ slug: string; noteCount: number; author: { handle: string } }>;
+    expect(list[0]).toMatchObject({ slug: "the-lamps-came-on-early", noteCount: 4, author: { handle: "4me" } });
+    expect(list[1]).toMatchObject({ slug: "the-last-tram", author: { handle: "lan" } });
   });
 
-  it("returns the latest entry in full", async () => {
-    const res = await call("/entries/latest");
-    const entry = (await res.json()) as { title: string; song: { artist: string }; photos: unknown[] };
-    expect(entry.title).toBe("The lamps came on before I got home");
-    expect(entry.song.artist).toBe("Radiohead");
-    expect(entry.photos).toHaveLength(2);
+  it("lists one member's pages", async () => {
+    const list = (await (await call("/entries?author=lan")).json()) as Array<{ slug: string }>;
+    expect(list.map((e) => e.slug)).toEqual(["the-last-tram"]);
   });
 
-  it("404s an unknown slug", async () => {
-    expect((await call("/entries/nope")).status).toBe(404);
+  it("returns the latest page in full, and a page by its author's address", async () => {
+    const latest = (await (await call("/entries/latest?author=4me")).json()) as {
+      title: string;
+      song: { artist: string };
+      photos: unknown[];
+    };
+    expect(latest.title).toBe("The lamps came on before I got home");
+    expect(latest.song.artist).toBe("Radiohead");
+    expect(latest.photos).toHaveLength(2);
+    expect((await call("/entries/by/lan/the-last-tram")).status).toBe(200);
+    expect((await call("/entries/by/lan/the-lamps-came-on-early")).status).toBe(404);
+  });
+
+  it("shows a member's desktop details", async () => {
+    const profile = await (await call("/profiles/lan")).json();
+    expect(profile).toMatchObject({ handle: "lan", name: "Lan", nights: 1, bio: "night shifts, early trams." });
+    expect((await call("/profiles/nobody")).status).toBe(404);
+  });
+
+  it("404s an unknown page", async () => {
+    expect((await call("/entries/by/4me/nope")).status).toBe(404);
+    expect((await call("/entries/999999/notes")).status).toBe(404);
   });
 });
 
-describe("notes and the guestbook", () => {
+describe("notes and guestbooks", () => {
   it("accepts a note and shows it", async () => {
-    const res = await call("/entries/the-lamps-came-on-early/notes", {
-      method: "POST",
-      body: JSON.stringify({ name: "", body: "hi from the test" }),
-    });
+    const res = await post(`/entries/${lamps}/notes`, { name: "", body: "hi from the test" });
     expect(res.status).toBe(201);
     const { note, pending } = (await res.json()) as { note: { name: string }; pending: boolean };
     expect(note.name).toBe("a stranger");
     expect(pending).toBe(false);
-    const notes = (await (await call("/entries/the-lamps-came-on-early/notes")).json()) as unknown[];
+    const notes = (await (await call(`/entries/${lamps}/notes`)).json()) as unknown[];
     expect(notes).toHaveLength(5);
   });
 
   it("holds notes with links for review", async () => {
-    const res = await call("/entries/the-lamps-came-on-early/notes", {
-      method: "POST",
-      body: JSON.stringify({ body: "cheap pills at http://spam.example" }),
-    });
+    const res = await post(`/entries/${lamps}/notes`, { body: "cheap pills at http://spam.example" });
     expect(((await res.json()) as { pending: boolean }).pending).toBe(true);
   });
 
   it("rejects an empty note", async () => {
-    const res = await call("/entries/the-lamps-came-on-early/notes", {
-      method: "POST",
-      body: JSON.stringify({ body: "" }),
-    });
-    expect(res.status).toBe(400);
+    expect((await post(`/entries/${lamps}/notes`, { body: "" })).status).toBe(400);
+  });
+
+  it("keeps each member's guestbook apart from the shared one", async () => {
+    await post("/guestbook", { body: "for lan only", owner: "lan" });
+    const lans = (await (await call("/guestbook?owner=lan")).json()) as Array<{ body: string }>;
+    const shared = (await (await call("/guestbook")).json()) as Array<{ body: string }>;
+    expect(lans.map((s) => s.body)).toContain("for lan only");
+    expect(shared.map((s) => s.body)).not.toContain("for lan only");
+    expect((await post("/guestbook", { body: "hello?", owner: "nobody" })).status).toBe(404);
   });
 
   it("rate-limits one visitor", async () => {
     const statuses: number[] = [];
-    for (let i = 0; i < 6; i++) {
-      const res = await call("/guestbook", {
-        method: "POST",
-        ip: "10.9.9.9",
-        body: JSON.stringify({ body: `shout ${i}` }),
-      });
-      statuses.push(res.status);
-    }
+    for (let i = 0; i < 6; i++)
+      statuses.push((await post("/guestbook", { body: `shout ${i}` }, { ip: "10.9.9.9" })).status);
     expect(statuses.slice(0, 5).every((s) => s === 201)).toBe(true);
     expect(statuses[5]).toBe(429);
   });
@@ -104,76 +122,82 @@ describe("notes and the guestbook", () => {
 
 describe("counters", () => {
   it("counts a read once per visitor per half hour", async () => {
-    const a = (await (
-      await call("/entries/thirteen-minutes-to-three/read", { method: "POST", ip: "10.1.1.1" })
-    ).json()) as {
-      readCount: number;
-    };
-    const b = (await (
-      await call("/entries/thirteen-minutes-to-three/read", { method: "POST", ip: "10.1.1.1" })
-    ).json()) as {
-      readCount: number;
-    };
-    expect(b.readCount).toBe(a.readCount);
+    const read = async () =>
+      (
+        (await (await call(`/entries/${lamps}/read`, { method: "POST", ip: "10.1.1.1" })).json()) as {
+          readCount: number;
+        }
+      ).readCount;
+    expect(await read()).toBe(await read());
   });
 
   it("buzzes and feeds Ink", async () => {
-    const buzz = (await (await call("/entries/the-lamps-came-on-early/buzz", { method: "POST" })).json()) as {
-      buzzCount: number;
-    };
+    const buzz = (await (await call(`/entries/${lamps}/buzz`, { method: "POST" })).json()) as { buzzCount: number };
     expect(buzz.buzzCount).toBe(1);
     const cat = (await (await call("/cat/feed", { method: "POST" })).json()) as { fish: number };
     expect(cat.fish).toBe(319);
     expect((await call("/cat/dance", { method: "POST" })).status).toBe(404);
   });
 
-  it("sweeps rate-limit windows that ended over an hour ago", async () => {
+  it("sweeps rate-limit windows that ended over a day ago", async () => {
     const now = Math.floor(Date.now() / 1000);
     await db.insert(schema.rateHits).values([
-      { key: "old", window: now - 7200, count: 3 },
+      { key: "old", window: now - 90_000, count: 3 },
       { key: "fresh", window: now - 60, count: 1 },
     ]);
     const roll = vi.spyOn(Math, "random").mockReturnValue(0);
-    await call("/entries/the-lamps-came-on-early/buzz", { method: "POST" });
+    await call(`/entries/${lamps}/buzz`, { method: "POST" });
     roll.mockRestore();
     expect(await db.select().from(schema.rateHits).where(eq(schema.rateHits.key, "old"))).toHaveLength(0);
     expect(await db.select().from(schema.rateHits).where(eq(schema.rateHits.key, "fresh"))).toHaveLength(1);
   });
 });
 
-describe("author routes", () => {
-  it("refuses without the token", async () => {
-    expect((await call("/admin/entries")).status).toBe(401);
-    expect((await call("/admin/entries", { headers: { authorization: "Bearer wrong" } })).status).toBe(401);
+describe("reports and moderation", () => {
+  it("hides a page once three different readers report it, until the moderator keeps it", async () => {
+    const [tram] = await db
+      .select({ id: schema.entries.id })
+      .from(schema.entries)
+      .where(eq(schema.entries.slug, "the-last-tram"));
+    const report = (ip: string) => post(`/entries/${tram!.id}/report`, { reason: "spam" }, { ip });
+    await report("10.5.0.1");
+    await report("10.5.0.1"); // the same reader twice counts once
+    await report("10.5.0.2");
+    expect((await call("/entries/by/lan/the-last-tram")).status).toBe(200);
+    await report("10.5.0.3");
+    expect((await call("/entries/by/lan/the-last-tram")).status).toBe(404);
+
+    const queue = (await (await call("/admin/reports", { admin: true })).json()) as Array<{
+      id: number;
+      count: number;
+      reasons: string[];
+    }>;
+    expect(queue[0]).toMatchObject({ id: tram!.id, count: 3, reasons: ["spam"] });
+
+    const keep = await call(`/admin/entries/${tram!.id}`, {
+      method: "PATCH",
+      admin: true,
+      body: JSON.stringify({ status: "visible" }),
+    });
+    expect(keep.status).toBe(200);
+    expect((await call("/entries/by/lan/the-last-tram")).status).toBe(200);
+    expect((await (await call("/admin/reports", { admin: true })).json()) as unknown[]).toHaveLength(0);
   });
 
-  it("writes a private entry that readers cannot see", async () => {
-    const res = await call("/admin/entries", {
-      method: "POST",
-      admin: true,
-      body: JSON.stringify({
-        title: "Mưa rồi, không ai đón",
-        body: "just for me",
-        visibility: "private",
-        writtenAt: "2026-10-18T21:00:00+07:00",
-      }),
-    });
-    expect(res.status).toBe(201);
-    const entry = (await res.json()) as { slug: string; id: number };
-    expect(entry.slug).toBe("2026-10-18-mua-roi-khong-ai-don");
-    expect((await call(`/entries/${entry.slug}`)).status).toBe(404);
-    const dup = await call("/admin/entries", {
-      method: "POST",
-      admin: true,
-      body: JSON.stringify({ title: "again", body: "x", slug: entry.slug }),
-    });
-    expect(dup.status).toBe(409);
+  it("closes a suspended member's desktop and pages", async () => {
+    const [lan] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.handle, "lan"));
+    const suspend = (status: string) =>
+      call(`/admin/users/${lan!.id}`, { method: "PATCH", admin: true, body: JSON.stringify({ status }) });
+    await suspend("suspended");
+    expect((await call("/profiles/lan")).status).toBe(404);
+    expect((await call("/entries/by/lan/the-last-tram")).status).toBe(404);
+    await suspend("active");
+    expect((await call("/profiles/lan")).status).toBe(200);
   });
 
-  it("posts a blast that shows first", async () => {
-    await call("/admin/blasts", { method: "POST", admin: true, body: JSON.stringify({ body: "testing, testing" }) });
-    const blasts = (await (await call("/blasts")).json()) as Array<{ body: string }>;
-    expect(blasts[0]?.body).toBe("testing, testing");
+  it("refuses the moderator's routes without the token", async () => {
+    expect((await call("/admin/reports")).status).toBe(401);
+    expect((await call("/admin/users", { headers: { authorization: "Bearer wrong" } })).status).toBe(401);
   });
 });
 

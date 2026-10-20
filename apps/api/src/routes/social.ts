@@ -1,10 +1,11 @@
-import { shoutInput } from "@4me/shared";
-import { desc, eq, sql } from "drizzle-orm";
+import { handle as handleSchema, type Profile, shoutInput } from "@4me/shared";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
-import { almost, blasts, catStats, shouts, users } from "../db/schema";
+import { almost, blasts, catStats, entries, shouts, users } from "../db/schema";
 import type { AppEnv } from "../env";
+import { isReadable } from "../lib/entries";
 import { allow, humanCheck, ipHash, looksLikeSpam } from "../lib/guard";
-import { toAlmost, toBlast, toShout } from "../lib/map";
+import { toAlmost, toAuthor, toBlast, toShout } from "../lib/map";
 import { nowPlaying } from "../lib/music";
 import { anonymousNameProblem } from "../lib/names";
 import { json } from "../lib/validate";
@@ -16,19 +17,56 @@ async function readCat(c: Context<AppEnv>) {
   return { pets: row?.pets ?? 0, fish: row?.fish ?? 0, plays: row?.plays ?? 0 };
 }
 
+/** An active member by handle. Suspended members' desktops are closed to the public. */
+export async function activeMember(c: Context<AppEnv>, raw: string | undefined) {
+  const parsed = handleSchema.safeParse(raw ?? "");
+  // Reserved handles fail the schema but "4me", the original author, still has a desktop.
+  const handle = parsed.success ? parsed.data : raw?.toLowerCase() === "4me" ? "4me" : null;
+  if (!handle) return null;
+  const [u] = await c
+    .get("db")
+    .select()
+    .from(users)
+    .where(and(eq(users.handle, handle), eq(users.status, "active")))
+    .limit(1);
+  return u ?? null;
+}
+
 export const socialRoutes = new Hono<AppEnv>()
+  .get("/profiles/:handle", async (c) => {
+    const u = await activeMember(c, c.req.param("handle"));
+    if (!u) return c.json({ error: "not found" }, 404);
+    const [{ n } = { n: 0 }] = await c
+      .get("db")
+      .select({ n: sql<number>`count(*)::int` })
+      .from(entries)
+      .innerJoin(users, eq(users.id, entries.authorId))
+      .where(and(isReadable, eq(entries.authorId, u.id)));
+    const profile: Profile = {
+      ...toAuthor({ handle: u.handle, name: u.displayName, avatar: u.avatar }),
+      bio: u.bio,
+      since: u.createdAt.toISOString(),
+      nights: n,
+    };
+    c.header("Cache-Control", "public, max-age=30, s-maxage=60");
+    return c.json(profile);
+  })
+  /** `?owner=<handle>` is that member's guestbook; without it, the shared one on the front desktop. */
   .get("/guestbook", async (c) => {
     const limit = Math.min(Math.max(Number(c.req.query("limit")) || 40, 1), 100);
+    const ownerHandle = c.req.query("owner");
+    const owner = ownerHandle ? await activeMember(c, ownerHandle) : null;
+    if (ownerHandle && !owner) return c.json([]);
     const rows = await c
       .get("db")
-      .select({ s: shouts, avatar: users.avatar })
+      .select({ s: shouts, m: { avatar: users.avatar, handle: users.handle } })
       .from(shouts)
       .leftJoin(users, eq(users.id, shouts.userId))
-      .where(eq(shouts.status, "visible"))
+      .where(and(eq(shouts.status, "visible"), owner ? eq(shouts.ownerId, owner.id) : isNull(shouts.ownerId)))
       .orderBy(desc(shouts.createdAt))
       .limit(limit);
     c.header("Cache-Control", "public, max-age=10, s-maxage=10");
-    return c.json(rows.reverse().map((r) => toShout(r.s, r.avatar)));
+    return c.json(rows.reverse().map((r) => toShout(r.s, r.m)));
   })
   .post("/guestbook", json(shoutInput), async (c) => {
     const input = c.req.valid("json");
@@ -36,22 +74,40 @@ export const socialRoutes = new Hono<AppEnv>()
     if (!(await allow(c, "shout", 5, 600))) return c.json({ error: "slow down a little, try again soon" }, 429);
     const nameProblem = await anonymousNameProblem(c, input.name);
     if (nameProblem) return c.json({ error: nameProblem }, 409);
+    const owner = input.owner ? await activeMember(c, input.owner) : null;
+    if (input.owner && !owner) return c.json({ error: "not found" }, 404);
     const status = looksLikeSpam(input.body) ? "pending" : "visible";
     const [row] = await c
       .get("db")
       .insert(shouts)
-      .values({ name: input.name, body: input.body, status, ipHash: await ipHash(c) })
+      .values({ ownerId: owner?.id ?? null, name: input.name, body: input.body, status, ipHash: await ipHash(c) })
       .returning();
     return c.json({ shout: toShout(row!), pending: status === "pending" }, 201);
   })
   .get("/blasts", async (c) => {
     const limit = Math.min(Math.max(Number(c.req.query("limit")) || 6, 1), 30);
-    const rows = await c.get("db").select().from(blasts).orderBy(desc(blasts.createdAt)).limit(limit);
+    const u = await activeMember(c, c.req.query("author"));
+    if (!u) return c.json([]);
+    const rows = await c
+      .get("db")
+      .select()
+      .from(blasts)
+      .where(eq(blasts.authorId, u.id))
+      .orderBy(desc(blasts.createdAt))
+      .limit(limit);
     c.header("Cache-Control", "public, max-age=30, s-maxage=60");
     return c.json(rows.map(toBlast));
   })
   .get("/almost", async (c) => {
-    const rows = await c.get("db").select().from(almost).orderBy(desc(almost.deletedAt)).limit(50);
+    const u = await activeMember(c, c.req.query("author"));
+    if (!u) return c.json([]);
+    const rows = await c
+      .get("db")
+      .select()
+      .from(almost)
+      .where(eq(almost.authorId, u.id))
+      .orderBy(desc(almost.deletedAt))
+      .limit(50);
     c.header("Cache-Control", "public, max-age=60, s-maxage=120");
     return c.json(rows.map(toAlmost));
   })
@@ -69,8 +125,11 @@ export const socialRoutes = new Hono<AppEnv>()
       .onConflictDoUpdate({ target: catStats.id, set: { [field]: sql`${column} + 1` } });
     return c.json(await readCat(c));
   })
+  /** `?user=<handle>`: what that member is listening to, if they linked Last.fm. Otherwise the site owner's. */
   .get("/now-playing", async (c) => {
-    const value = await nowPlaying(c.env.LASTFM_API_KEY, c.env.LASTFM_USER);
+    const handle = c.req.query("user");
+    const lastfm = handle ? (await activeMember(c, handle))?.lastfmUser : c.env.LASTFM_USER;
+    const value = await nowPlaying(c.env.LASTFM_API_KEY, lastfm || undefined);
     c.header("Cache-Control", "public, max-age=30, s-maxage=30");
     return c.json(value);
   })

@@ -1,6 +1,6 @@
 "use client";
 
-import { avatarUrl, type Me, type Shout } from "@4me/shared";
+import { avatarUrl, type Me, type Profile, type Shout } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiSend, hhmm } from "@/lib/api";
 import { shoutAsMember } from "@/lib/member-actions";
@@ -9,7 +9,8 @@ import { useTurnstile } from "../Turnstile";
 
 const EMOTICONS = [":-)", ":-(", "<3", ";-)", "zzz", "^_^"];
 
-export function Guestbook({ initial, me }: { initial: Shout[]; me: Me | null }) {
+/** The shared guestbook on the front desktop, or a member's own one on theirs. */
+export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | null; owner: Profile | null }) {
   const [shouts, setShouts] = useState(initial);
   const [name, setName] = useState("");
   const [text, setText] = useState("");
@@ -29,7 +30,7 @@ export function Guestbook({ initial, me }: { initial: Shout[]; me: Me | null }) 
     setBusy(true);
     setNote(null);
     const res = me
-      ? await shoutAsMember(text).then((r) =>
+      ? await shoutAsMember(text, owner?.handle).then((r) =>
           r.ok
             ? { ok: true as const, data: { shout: r.shout, pending: r.pending } }
             : { ok: false as const, error: r.error },
@@ -37,13 +38,14 @@ export function Guestbook({ initial, me }: { initial: Shout[]; me: Me | null }) 
       : await apiSend<{ shout: Shout; pending: boolean }>("/guestbook", {
           name,
           body: text,
+          owner: owner?.handle,
           turnstileToken: human.token,
         });
     setBusy(false);
     if (!me) human.reset();
     if (!res.ok) return setNote(res.error);
     setText("");
-    if (res.data.pending) setNote("thanks. your shout shows up once 4me has seen it.");
+    if (res.data.pending) setNote("thanks. your shout shows up once it has been checked.");
     else setShouts((s) => [...s, res.data.shout]);
     nudgeInk("note");
   };
@@ -51,12 +53,16 @@ export function Guestbook({ initial, me }: { initial: Shout[]; me: Me | null }) 
   return (
     <>
       <div className="body shouts" ref={list} aria-live="polite">
-        {shouts.length === 0 && <p className="shout">Nobody has signed yet. Be the first.</p>}
+        {shouts.length === 0 && (
+          <p className="shout">Nobody has signed {owner ? `${owner.name}'s guestbook` : "yet"}. Be the first.</p>
+        )}
         {shouts.map((s) => (
           <div className="shout" key={s.id}>
             <div>
               {s.member && <img className="av" src={s.member.avatar} alt="" width={16} height={16} />}
-              <b title={s.member ? "member" : undefined}>{s.name}</b>
+              <b title={s.member ? "member" : undefined}>
+                {s.member ? <a href={`/u/${s.member.handle}`}>{s.name}</a> : s.name}
+              </b>
               <span> · {hhmm(s.createdAt)}</span>
             </div>
             <p>{s.body}</p>

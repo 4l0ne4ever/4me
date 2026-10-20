@@ -59,8 +59,8 @@ jobs:
           workingDirectory: apps/api
           packageManager: pnpm
           wranglerVersion: "4.147.0"
-          # Uploaded as Worker secrets on every deploy. Optional ones (TURNSTILE_SECRET, LASTFM_API_KEY)
-          # are set once with `wrangler secret put` so an empty value never overwrites them.
+          # Uploaded as Worker secrets on every deploy. Optional ones (TURNSTILE_SECRET, LASTFM_API_KEY and the
+          # photo bucket's S3_*) are set once by hand, so an empty value here never overwrites them.
           secrets: |
             DATABASE_URL
             ADMIN_TOKEN

@@ -1,6 +1,6 @@
 "use client";
 
-import { avatarUrl, type Blast, type Entry, type Me, type Note, type NowPlaying } from "@4me/shared";
+import { type Author, avatarUrl, type Blast, type Entry, type Me, type Note, type NowPlaying } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiSend, hhmm, shortDate } from "@/lib/api";
 import { noteAsMember } from "@/lib/member-actions";
@@ -41,6 +41,8 @@ function buzzSound() {
 
 type Props = {
   entry: Entry | null;
+  /** Whose Messenger this is: the desktop's owner, or the writer of the page that is open. */
+  persona: Author | null;
   notes: Note[];
   blasts: Blast[];
   awake: boolean;
@@ -49,7 +51,7 @@ type Props = {
   me: Me | null;
 };
 
-export function Messenger({ entry, notes, blasts, awake, live, onBuzz, me }: Props) {
+export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, me }: Props) {
   const [lines, setLines] = useState<Line[]>(() => notes.map((note) => ({ kind: "note", note })));
   const [text, setText] = useState("");
   const [name, setName] = useState("");
@@ -76,12 +78,12 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz, me }: Pro
     setError(null);
     // Members write through the web server under their own name; guests go straight to the API.
     const res = me
-      ? await noteAsMember(entry.slug, text).then((r) =>
+      ? await noteAsMember(entry.id, text).then((r) =>
           r.ok
             ? { ok: true as const, data: { note: r.note, pending: r.pending } }
             : { ok: false as const, error: r.error },
         )
-      : await apiSend<{ note: Note; pending: boolean }>(`/entries/${entry.slug}/notes`, {
+      : await apiSend<{ note: Note; pending: boolean }>(`/entries/${entry.id}/notes`, {
           name,
           body: text,
           turnstileToken: human.token,
@@ -91,7 +93,11 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz, me }: Pro
     if (!res.ok) return setError(res.error);
     setText("");
     if (res.data.pending)
-      add({ kind: "sys", text: "your note is waiting for 4me to read it first.", at: new Date().toISOString() });
+      add({
+        kind: "sys",
+        text: `your note is waiting for ${entry.author.name} to read it first.`,
+        at: new Date().toISOString(),
+      });
     else add({ kind: "note", note: res.data.note });
     nudgeInk("note");
   };
@@ -101,7 +107,7 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz, me }: Pro
     buzzSound();
     onBuzz();
     nudgeInk("buzz");
-    const res = await apiSend<{ buzzCount: number }>(`/entries/${entry.slug}/buzz`);
+    const res = await apiSend<{ buzzCount: number }>(`/entries/${entry.id}/buzz`);
     add(
       res.ok
         ? { kind: "sys", buzz: true, text: "You have just sent a BUZZ!!!", at: new Date().toISOString() }
@@ -116,13 +122,16 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz, me }: Pro
       <div className="body">
         <div className="me">
           <img
-            src="/photos/pic-1014.jpg"
-            alt="4me's display picture: a woman facing the sea, a ribbon across her eyes"
+            src={persona?.avatar ?? "/photos/pic-1014.jpg"}
+            alt={persona ? `${persona.name}'s picture` : ""}
             width={56}
             height={56}
           />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <b>4me {awake ? <span className="on-dot">(online)</span> : <span className="off-dot">(asleep)</span>}</b>
+            <b>
+              {persona ? <a href={`/u/${persona.handle}`}>{persona.name}</a> : "nobody yet"}{" "}
+              {awake ? <span className="on-dot">(online)</span> : <span className="off-dot">(asleep)</span>}
+            </b>
             {latest && (
               <div className="blast">
                 <q>{latest.body}</q>
@@ -165,7 +174,7 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz, me }: Pro
             </ul>
           </details>
         )}
-        <p className="chat-hd">{entry ? "Notes on tonight's page" : "No page yet"}</p>
+        <p className="chat-hd">{entry ? `Notes on “${entry.title}”` : "No page yet"}</p>
         <div className="chat" ref={chat} aria-live="polite">
           {lines.map((l, i) =>
             l.kind === "note" ? (
@@ -173,7 +182,7 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz, me }: Pro
                 <span className="t">({hhmm(l.note.createdAt)})</span>{" "}
                 {l.note.member && <img className="av" src={l.note.member.avatar} alt="" width={16} height={16} />}
                 <span className={`n${l.note.isAuthor ? " own" : ""}`} title={l.note.member ? "member" : undefined}>
-                  {l.note.name}:
+                  {l.note.member ? <a href={`/u/${l.note.member.handle}`}>{l.note.name}</a> : l.note.name}:
                 </span>{" "}
                 {l.note.body}
               </p>
@@ -220,7 +229,7 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz, me }: Pro
           </>
         )}
         <label htmlFor="note-text" className="sr">
-          Leave a note on tonight&apos;s page
+          Leave a note on this page
         </label>
         <input
           id="note-text"
@@ -234,7 +243,13 @@ export function Messenger({ entry, notes, blasts, awake, live, onBuzz, me }: Pro
         <button className="btn" type="submit" disabled={busy || !entry || (!me && human.needed && !human.token)}>
           Send
         </button>
-        <button className="btn buzz" type="button" onClick={buzz} disabled={!entry} title="Shake the diary">
+        <button
+          className="btn buzz"
+          type="button"
+          onClick={buzz}
+          disabled={!entry}
+          title={entry ? `Shake ${entry.author.name}'s diary` : "Shake the diary"}
+        >
           BUZZ!
         </button>
       </form>

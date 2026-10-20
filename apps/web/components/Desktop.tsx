@@ -2,6 +2,7 @@
 
 import {
   type Almost as AlmostItem,
+  type Author,
   avatarUrl,
   type Blast,
   type CatStats,
@@ -11,6 +12,7 @@ import {
   type Me,
   type Note,
   type NowPlaying,
+  type Profile,
   type Shout,
 } from "@4me/shared";
 import { useRouter } from "next/navigation";
@@ -36,6 +38,8 @@ import {
   IconMessenger,
   IconMixtape,
   IconPhotos,
+  IconTonight,
+  IconWrite,
 } from "./Icons";
 import { Ink, nudgeInk } from "./ink/Ink";
 import { type Pos, Window } from "./Window";
@@ -47,10 +51,17 @@ import { Guestbook } from "./windows/Guestbook";
 import { Messenger } from "./windows/Messenger";
 import { Mixtape } from "./windows/Mixtape";
 import { Photos, type Picture } from "./windows/Photos";
+import { Tonight } from "./windows/Tonight";
+import { Write } from "./windows/Write";
 
 export type DesktopData = {
+  /** The member whose desktop this is; null on the front desktop. */
+  owner: Profile | null;
   entry: Entry | null;
+  /** The owner's pages, or everyone's on the front desktop. */
   entries: EntrySummary[];
+  /** Everyone's newest pages, for the Tonight window. */
+  recent: EntrySummary[];
   notes: Note[];
   shouts: Shout[];
   blasts: Blast[];
@@ -58,13 +69,19 @@ export type DesktopData = {
   cat: CatStats;
 };
 
-type WinId = "diary" | "msn" | "guest" | "amp" | "photos" | "almost" | "display" | "account";
+type WinId = "tonight" | "diary" | "msn" | "guest" | "amp" | "photos" | "almost" | "write" | "display" | "account";
 type WinState = { open: boolean; min: boolean; z: number; pos?: Pos };
 
 const WINDOWS: Record<WinId, { title: string; task: string; icon: (c?: string) => ReactNode; className: string }> = {
+  tonight: {
+    title: "Tonight — everyone's nights",
+    task: "Tonight",
+    icon: (c) => <IconTonight className={c} />,
+    className: "w-tonight",
+  },
   diary: { title: "diary.doc", task: "diary", icon: (c) => <IconDiary className={c} />, className: "w-diary" },
   msn: {
-    title: "4me Messenger — tonight's notes",
+    title: "Messenger — notes on this page",
     task: "Messenger",
     icon: (c) => <IconMessenger className={c} />,
     className: "w-msn",
@@ -93,6 +110,12 @@ const WINDOWS: Record<WinId, { title: string; task: string; icon: (c?: string) =
     icon: (c) => <IconBin className={c} />,
     className: "w-almost",
   },
+  write: {
+    title: "Notepad — write tonight's page",
+    task: "Notepad",
+    icon: (c) => <IconWrite className={c} />,
+    className: "w-write",
+  },
   display: {
     title: "Display Properties",
     task: "Display",
@@ -107,6 +130,7 @@ const WINDOWS: Record<WinId, { title: string; task: string; icon: (c?: string) =
   },
 };
 const ICON_ORDER: Array<[WinId, string]> = [
+  ["tonight", "Tonight"],
   ["diary", "Diary"],
   ["msn", "Messenger"],
   ["guest", "Guestbook"],
@@ -150,11 +174,17 @@ function useLocal<T extends string>(key: string, fallback: T, valid: readonly st
 }
 
 export function Desktop({ data }: { data: DesktopData }) {
-  const { entry, entries } = data;
+  const { entry, entries, owner } = data;
+  /** Who Messenger, the blasts and the bin are about: the desktop's owner, or whoever wrote the page that is open. */
+  const persona: Author | null = owner ?? entry?.author ?? null;
+  const personaHandle = persona?.handle;
   const [wins, setWins] = useState<Record<WinId, WinState>>({
+    // The front desktop opens on everyone's newest pages; a member's desktop opens on their diary.
+    tonight: { open: !owner, min: false, z: 14 },
     diary: { open: true, min: false, z: 13 },
     msn: { open: true, min: false, z: 12 },
     amp: { open: true, min: false, z: 11 },
+    write: { open: false, min: false, z: 10 },
     guest: { open: false, min: false, z: 10 },
     photos: { open: false, min: false, z: 10 },
     almost: { open: false, min: false, z: 10 },
@@ -180,6 +210,8 @@ export function Desktop({ data }: { data: DesktopData }) {
   const [uploadUrl, setUploadUrl] = useState<string | null>(null);
   const [deskMenu, setDeskMenu] = useState<{ x: number; y: number } | null>(null);
   const [me, setMe] = useState<Me | null>(null);
+  /** The page open in Notepad: null for a new one. */
+  const [editing, setEditing] = useState<number | null>(null);
   const [path, setPath] = useState("/");
   const startBtn = useRef<HTMLButtonElement>(null);
   const startMenu = useRef<HTMLDivElement>(null);
@@ -233,7 +265,7 @@ export function Desktop({ data }: { data: DesktopData }) {
       // no grain, still fine
     }
     const loadLive = () =>
-      fetch(`${API_URL}/now-playing`)
+      fetch(`${API_URL}/now-playing${personaHandle ? `?user=${encodeURIComponent(personaHandle)}` : ""}`)
         .then((r) => (r.ok ? r.json() : null))
         .then((v: NowPlaying | null) => setLive(v))
         .catch(() => undefined);
@@ -243,7 +275,7 @@ export function Desktop({ data }: { data: DesktopData }) {
       window.clearInterval(t);
       window.clearInterval(l);
     };
-  }, []);
+  }, [personaHandle]);
 
   useEffect(() => {
     document.body.dataset.skin = skin;
@@ -251,7 +283,7 @@ export function Desktop({ data }: { data: DesktopData }) {
   }, [skin, awake]);
 
   useEffect(() => {
-    if (entry) void apiSend(`/entries/${entry.slug}/read`);
+    if (entry) void apiSend(`/entries/${entry.id}/read`);
   }, [entry]);
 
   /* who is signed in: asked after the page renders, so the page itself can be cached for everyone */
@@ -393,6 +425,11 @@ export function Desktop({ data }: { data: DesktopData }) {
     window.setTimeout(() => setShaking(false), 650);
   };
 
+  const write = (id: number | null) => {
+    setEditing(id);
+    open("write");
+  };
+
   const showPhoto = (url: string) => {
     const i = pictures.findIndex((p) => p.url === url);
     setPhotoView(i >= 0 ? i : 0);
@@ -400,11 +437,15 @@ export function Desktop({ data }: { data: DesktopData }) {
   };
 
   const content: Record<WinId, ReactNode> = {
+    tonight: <Tonight recent={data.recent} me={me} onWrite={() => write(null)} />,
     diary: (
       <Diary
         entry={entry}
         entries={entries}
+        owner={owner}
         awake={awake}
+        me={me}
+        onEdit={write}
         onPhoto={showPhoto}
         onSong={() => open("amp")}
         onNotes={() => open("msn")}
@@ -414,6 +455,7 @@ export function Desktop({ data }: { data: DesktopData }) {
     msn: (
       <Messenger
         entry={entry}
+        persona={persona}
         notes={data.notes}
         blasts={data.blasts}
         awake={awake}
@@ -422,10 +464,29 @@ export function Desktop({ data }: { data: DesktopData }) {
         me={me}
       />
     ),
-    guest: <Guestbook initial={data.shouts} me={me} />,
-    amp: <Mixtape entries={entries} currentSlug={entry?.slug} live={live} />,
+    guest: <Guestbook initial={data.shouts} me={me} owner={owner} />,
+    amp: <Mixtape entries={entries} currentId={entry?.id} live={live} />,
     photos: <Photos pictures={pictures} view={photoView} onView={setPhotoView} />,
-    almost: <Almost items={data.almost} />,
+    almost: <Almost items={data.almost} persona={persona} />,
+    write: me ? (
+      <Write
+        me={me}
+        editing={editing}
+        onEditing={setEditing}
+        onSaved={(e) => {
+          patch("write", { open: false, min: false });
+          router.push(`/u/${e.author.handle}/${e.slug}`);
+        }}
+        onDeleted={() => router.push(`/u/${me.handle}`)}
+      />
+    ) : (
+      <div className="body acc">
+        <p>
+          Everyone here keeps a night diary.{" "}
+          <a href={`/welcome?next=${encodeURIComponent(path)}`}>Log on or create an account</a> to write yours.
+        </p>
+      </div>
+    ),
     display: (
       <DisplayProperties
         pref={wallPref}
@@ -465,13 +526,25 @@ export function Desktop({ data }: { data: DesktopData }) {
               {label}
             </button>
           ))}
+          <button type="button" className="icon" onClick={() => write(null)}>
+            {WINDOWS.write.icon()}
+            Write
+          </button>
         </nav>
         {visible.map((id) =>
           wins[id].min ? null : (
             <Window
               key={id}
               id={`win-${id}`}
-              title={id === "diary" && entry ? `diary — ${entry.title}.doc` : WINDOWS[id].title}
+              title={
+                id === "diary" && entry
+                  ? `${entry.author.name} — ${entry.title}.doc`
+                  : id === "write" && editing
+                    ? "Notepad — editing a page"
+                    : id === "guest" && owner
+                      ? `${owner.name}'s guestbook`
+                      : WINDOWS[id].title
+              }
               icon={WINDOWS[id].icon()}
               className={WINDOWS[id].className}
               focused={focus === id}
@@ -494,7 +567,7 @@ export function Desktop({ data }: { data: DesktopData }) {
             <img src={me ? avatarUrl(me.avatar) : "/photos/pic-229.jpg"} alt="" width={44} height={44} />
             <div>
               <b>{me ? me.displayName : "Guest"}</b>
-              <span>4me is {awake ? "awake since 17:00" : "asleep until 17:00"}</span>
+              <span>{me ? `/u/${me.handle}` : "log on to keep a diary"}</span>
             </div>
           </div>
           <ul className="sm-list">
@@ -502,10 +575,32 @@ export function Desktop({ data }: { data: DesktopData }) {
               <li key={id}>
                 <button type="button" role="menuitem" onClick={() => open(id)}>
                   {WINDOWS[id].icon()}
-                  {id === "diary" ? "Tonight's diary" : label}
+                  {id === "diary" ? (owner ? `${owner.name}'s diary` : "The page that's open") : label}
                 </button>
               </li>
             ))}
+            <li>
+              <button type="button" role="menuitem" onClick={() => write(null)}>
+                {WINDOWS.write.icon()}
+                Write tonight&apos;s page
+              </button>
+            </li>
+            {me && (
+              <li>
+                <a href={`/u/${me.handle}`} role="menuitem">
+                  <img className="sm-av" src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
+                  My desktop
+                </a>
+              </li>
+            )}
+            {owner && (
+              <li>
+                <a href="/" role="menuitem">
+                  {WINDOWS.tonight.icon()}
+                  Front desktop
+                </a>
+              </li>
+            )}
             <li className="sm-sep" aria-hidden="true" />
             {(["feed", "play", "call"] as const).map((a) => (
               <li key={a}>
@@ -530,13 +625,8 @@ export function Desktop({ data }: { data: DesktopData }) {
               </button>
             </li>
             <li>
-              <a href="/rss.xml" role="menuitem">
+              <a href={owner ? `/u/${owner.handle}/rss.xml` : "/rss.xml"} role="menuitem">
                 RSS feed
-              </a>
-            </li>
-            <li>
-              <a href="/admin" role="menuitem">
-                Write (author)
               </a>
             </li>
             <li className="sm-sep" aria-hidden="true" />

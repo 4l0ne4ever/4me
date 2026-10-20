@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { almost, blasts, catStats, entries, notes, shouts } from "./db/schema";
+import { almost, blasts, catStats, entries, notes, shouts, users } from "./db/schema";
 import type { DB } from "./db/types";
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000);
@@ -64,15 +64,25 @@ I wore the red coat because nobody can lose you in a red coat. _That was the ide
   },
 ];
 
-/** Fills an empty database with a few nights so the desktop has something to show. */
+/** Fills an empty database with two writers and a few nights, so the desktops have something to show. */
 export async function seedIfEmpty(db: DB) {
   const [{ n } = { n: 0 }] = await db.select({ n: sql<number>`count(*)::int` }).from(entries);
   if (n > 0) return false;
+
+  // Sample writers have no password or Google link, so nobody can sign in as them.
+  const [author, lan] = await db
+    .insert(users)
+    .values([
+      { displayName: "4me", nameKey: "4me", handle: "4me", avatar: "ribbon", bio: "one entry after dark." },
+      { displayName: "Lan", nameKey: "lan", handle: "lan", avatar: "boathouse", bio: "night shifts, early trams." },
+    ])
+    .returning({ id: users.id });
 
   const inserted = await db
     .insert(entries)
     .values(
       sampleEntries.map((e) => ({
+        authorId: author!.id,
         slug: e.slug,
         title: e.title,
         body: e.body,
@@ -87,6 +97,21 @@ export async function seedIfEmpty(db: DB) {
     )
     .returning({ id: entries.id, slug: entries.slug });
 
+  await db.insert(entries).values({
+    authorId: lan!.id,
+    slug: "the-last-tram",
+    title: "The last tram",
+    mood: "tired, fine",
+    weather: "mist, 7°",
+    writtenAt: hoursAgo(5),
+    songTitle: "Holocene",
+    songArtist: "Bon Iver",
+    photos: [{ url: "/photos/pic-594.jpg", caption: "the depot at one" }],
+    body: `Missed the 00:40 by a breath and walked instead. The river was doing that thing where it looks like it's holding its breath too.
+
+> nobody is awake on this street but the bakery.`,
+  });
+
   const latest = inserted.find((r) => r.slug === "the-lamps-came-on-early")!;
   await db.insert(notes).values([
     {
@@ -97,6 +122,7 @@ export async function seedIfEmpty(db: DB) {
     {
       entryId: latest.id,
       name: "4me",
+      userId: author!.id,
       isAuthor: true,
       body: "thank you. only after writing it did i notice the sky really was like that",
     },
@@ -109,23 +135,29 @@ export async function seedIfEmpty(db: DB) {
     { name: "hanh.", body: "first hit counter since 2007. visitor four thousand something <3" },
     { name: "wren", body: "your cat walked across my screen and i laughed out loud" },
     { name: "m.", body: "leaving the light on for whoever reads this at 3 am" },
+    { ownerId: lan!.id, name: "hanh.", body: "the tram one. yes. exactly that." },
   ]);
 
-  await db.insert(blasts).values([
-    { body: "away. don't buzz. (buzz.)", createdAt: hoursAgo(300) },
-    { body: "found my old mp3 player. it still works.", createdAt: hoursAgo(260) },
-    { body: "the snow beat me to the hill", createdAt: hoursAgo(170) },
-    { body: "mưa rồi. không ai đón.", createdAt: hoursAgo(75) },
-    { body: "rain again. no one's coming. that's fine.", createdAt: hoursAgo(2) },
-  ]);
+  await db.insert(blasts).values(
+    [
+      { body: "away. don't buzz. (buzz.)", createdAt: hoursAgo(300) },
+      { body: "found my old mp3 player. it still works.", createdAt: hoursAgo(260) },
+      { body: "the snow beat me to the hill", createdAt: hoursAgo(170) },
+      { body: "mưa rồi. không ai đón.", createdAt: hoursAgo(75) },
+      { body: "rain again. no one's coming. that's fine.", createdAt: hoursAgo(2) },
+    ].map((b) => ({ ...b, authorId: author!.id })),
+  );
+  await db.insert(blasts).values({ authorId: lan!.id, body: "on the night bus, again", createdAt: hoursAgo(4) });
 
-  await db.insert(almost).values([
-    { body: "i miss who i was in 2006 more than i miss anyone.", deletedAt: hoursAgo(52) },
-    { body: "maybe i should just move somewhere with more snow.", deletedAt: hoursAgo(170) },
-    { body: "you were the only one who knew the song.", deletedAt: hoursAgo(250) },
-    { body: "today i was happy for no reason and it scared me.", deletedAt: hoursAgo(380) },
-    { body: "if you're reading this, hi.", deletedAt: hoursAgo(460) },
-  ]);
+  await db.insert(almost).values(
+    [
+      { body: "i miss who i was in 2006 more than i miss anyone.", deletedAt: hoursAgo(52) },
+      { body: "maybe i should just move somewhere with more snow.", deletedAt: hoursAgo(170) },
+      { body: "you were the only one who knew the song.", deletedAt: hoursAgo(250) },
+      { body: "today i was happy for no reason and it scared me.", deletedAt: hoursAgo(380) },
+      { body: "if you're reading this, hi.", deletedAt: hoursAgo(460) },
+    ].map((a) => ({ ...a, authorId: author!.id })),
+  );
 
   await db.insert(catStats).values({ id: 1, pets: 1204, fish: 318, plays: 77 }).onConflictDoNothing();
   return true;

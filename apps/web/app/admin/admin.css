@@ -17,15 +17,16 @@
   gap: 16px;
   align-items: center;
 }
-.admin-flash {
-  margin: 0 0 16px;
-  padding: 10px 12px;
-  background: var(--chrome-hi);
-  border: 1px solid var(--chrome-edge);
+.admin-note {
+  margin: 0;
+  padding: 10px 12px 0;
+  font-size: 13px;
+  color: var(--chrome-dim);
+  background: var(--panel);
 }
 .admin-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }

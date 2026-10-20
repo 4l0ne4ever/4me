@@ -31,7 +31,7 @@ export async function allow(c: Context<AppEnv>, bucket: string, max: number, win
 }
 
 /** The longest window any limit uses; rows older than this are swept. */
-const MAX_WINDOW_SECONDS = 3600;
+const MAX_WINDOW_SECONDS = 86400;
 
 /** The same limit on any key: a member id, or a hashed email address for sign-in attempts. */
 export async function allowKey(c: Context<AppEnv>, key: string, max: number, windowSeconds: number): Promise<boolean> {
@@ -39,7 +39,7 @@ export async function allowKey(c: Context<AppEnv>, key: string, max: number, win
   const now = Math.floor(Date.now() / 1000);
   // The window is stored as the second it started, so finished windows of every bucket can be swept together.
   const window = now - (now % windowSeconds);
-  // No limit runs longer than an hour; now and then, drop the windows that ended, hashed keys and all.
+  // No limit runs longer than a day; now and then, drop the windows that ended, hashed keys and all.
   if (Math.random() < 0.02) await db.delete(rateHits).where(lt(rateHits.window, now - MAX_WINDOW_SECONDS));
   const [row] = await db
     .insert(rateHits)
@@ -76,13 +76,13 @@ export function looksLikeSpam(text: string): boolean {
   return /https?:\/\/|www\.|\.(ru|xyz|top)\b/i.test(text);
 }
 
-/** Names nobody may take, so no one can pass as the author. */
+/** Names nobody may take, so no one can pass as the site or its moderator. */
 export function isReservedName(name: string): boolean {
   const k = name
     .trim()
     .toLowerCase()
     .replace(/[\s._-]+/g, "");
-  return ["4me", "4meauthor", "author", "admin", "administrator", "ink"].includes(k);
+  return ["4me", "4meauthor", "author", "admin", "administrator", "moderator", "ink"].includes(k);
 }
 
 export async function sameSecret(given: string, expected: string): Promise<boolean> {

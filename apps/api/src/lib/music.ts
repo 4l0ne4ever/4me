@@ -1,73 +1,84 @@
-import type { NowPlaying, Song } from "@4me/shared";
+import type { NowPlaying, Song, SongResult } from "@4me/shared";
 
-type OEmbed = { title?: string; author_name?: string; thumbnail_url?: string; html?: string };
+// Music comes from the iTunes Search API: free, no key, and every song has a 30-second preview that can play on
+// the page, the way a song sticker does on Instagram. https://performance-partners.apple.com/search-api
 
-async function oembed(endpoint: string): Promise<OEmbed | null> {
+type ITunesTrack = {
+  kind?: string;
+  trackId?: number;
+  trackName?: string;
+  artistName?: string;
+  collectionName?: string;
+  artworkUrl100?: string;
+  previewUrl?: string;
+  trackViewUrl?: string;
+};
+
+/** Only Apple's own hosts are stored, so a page can never be made to load audio or images from anywhere else. */
+function appleUrl(raw: string | undefined): string | null {
+  if (!raw) return null;
   try {
-    const res = await fetch(endpoint, { signal: AbortSignal.timeout(4000), headers: { accept: "application/json" } });
-    if (!res.ok) return null;
-    return (await res.json()) as OEmbed;
+    const u = new URL(raw);
+    const ok = u.protocol === "https:" && (u.hostname.endsWith(".apple.com") || u.hostname.endsWith(".mzstatic.com"));
+    return ok ? u.toString() : null;
   } catch {
     return null;
   }
 }
 
-function iframeSrc(html: string | undefined): string | null {
-  const m = html?.match(/src="([^"]+)"/);
-  return m?.[1] ?? null;
-}
-
-/**
- * Turns a Spotify, YouTube or SoundCloud link into song details and an embeddable player URL.
- * Anything the author typed by hand wins over what the provider reports.
- */
-export async function resolveSong(url: string, title?: string, artist?: string): Promise<Song> {
-  let u: URL;
-  try {
-    u = new URL(url);
-  } catch {
-    return { title: title || url, artist: artist || "", url, embedUrl: null, coverUrl: null };
-  }
-  const host = u.hostname.replace(/^www\./, "");
-  let found: OEmbed | null = null;
-  let embedUrl: string | null = null;
-
-  if (host === "open.spotify.com") {
-    found = await oembed(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
-    const m = u.pathname.match(/^\/(?:intl-[a-z]+\/)?(track|album|playlist|episode)\/([A-Za-z0-9]+)/);
-    if (m) embedUrl = `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
-  } else if (
-    host === "youtube.com" ||
-    host === "youtu.be" ||
-    host === "music.youtube.com" ||
-    host === "m.youtube.com"
-  ) {
-    found = await oembed(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`);
-    const id = host === "youtu.be" ? u.pathname.slice(1) : u.searchParams.get("v");
-    if (id && /^[\w-]{6,20}$/.test(id)) embedUrl = `https://www.youtube-nocookie.com/embed/${id}`;
-  } else if (host === "soundcloud.com") {
-    found = await oembed(`https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(url)}`);
-    embedUrl = iframeSrc(found?.html);
-  }
-
+function toResult(t: ITunesTrack): SongResult | null {
+  if (t.kind !== "song" || !t.trackId || !t.trackName) return null;
   return {
-    title: title || found?.title || url,
-    artist: artist || found?.author_name || "",
-    url,
-    embedUrl,
-    coverUrl: found?.thumbnail_url ?? null,
+    id: t.trackId,
+    title: t.trackName.slice(0, 120),
+    artist: (t.artistName ?? "").slice(0, 120),
+    album: (t.collectionName ?? "").slice(0, 120),
+    coverUrl: appleUrl(t.artworkUrl100?.replace(/\/100x100bb\./, "/600x600bb.")),
+    previewUrl: appleUrl(t.previewUrl),
+    url: appleUrl(t.trackViewUrl) ?? "",
   };
 }
 
-let nowPlayingCache: { at: number; key: string; value: NowPlaying | null } | null = null;
+async function itunes(path: string): Promise<SongResult[]> {
+  const res = await fetch(`https://itunes.apple.com/${path}`, { signal: AbortSignal.timeout(5000) });
+  if (!res.ok) throw new Error(`music search ${res.status}`);
+  const data = (await res.json()) as { results?: ITunesTrack[] };
+  return (data.results ?? []).map(toResult).filter((r): r is SongResult => r !== null);
+}
 
-/** What the author is listening to right now, from Last.fm, cached for 30 seconds per isolate. */
+/** Songs matching what the writer typed. The Vietnamese store first, which also carries most of the world's music. */
+export async function searchSongs(term: string, country = "VN"): Promise<SongResult[]> {
+  const q = `term=${encodeURIComponent(term)}&media=music&entity=song&limit=15`;
+  const found = await itunes(`search?${q}&country=${country}`);
+  return found.length > 0 || country === "US" ? found : itunes(`search?${q}&country=US`);
+}
+
+/** The song a writer picked, looked up again by its id so nothing the browser sent is stored as is. */
+export async function lookupSong(id: number): Promise<(Song & { id: number }) | null> {
+  for (const country of ["VN", "US"]) {
+    const [hit] = await itunes(`lookup?id=${id}&entity=song&country=${country}`);
+    if (hit?.id === id) {
+      return {
+        id,
+        title: hit.title,
+        artist: hit.artist,
+        url: hit.url,
+        embedUrl: null,
+        coverUrl: hit.coverUrl,
+        previewUrl: hit.previewUrl,
+      };
+    }
+  }
+  return null;
+}
+
+const nowPlayingCache = new Map<string, { at: number; value: NowPlaying | null }>();
+
+/** What a member is listening to right now, from Last.fm, cached for 30 seconds per isolate. */
 export async function nowPlaying(apiKey: string | undefined, user: string | undefined): Promise<NowPlaying | null> {
   if (!apiKey || !user) return null;
-  const key = `${user}`;
-  if (nowPlayingCache && nowPlayingCache.key === key && Date.now() - nowPlayingCache.at < 30_000) {
-    return nowPlayingCache.value;
-  }
+  const hit = nowPlayingCache.get(user);
+  if (hit && Date.now() - hit.at < 30_000) return hit.value;
   let value: NowPlaying | null = null;
   try {
     const res = await fetch(
@@ -99,8 +110,9 @@ export async function nowPlaying(apiKey: string | undefined, user: string | unde
       }
     }
   } catch {
-    value = nowPlayingCache?.value ?? null;
+    value = hit?.value ?? null;
   }
-  nowPlayingCache = { at: Date.now(), key, value };
+  if (nowPlayingCache.size > 500) nowPlayingCache.clear();
+  nowPlayingCache.set(user, { at: Date.now(), value });
   return value;
 }

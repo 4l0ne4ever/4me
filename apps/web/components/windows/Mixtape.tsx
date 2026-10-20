@@ -1,10 +1,10 @@
 "use client";
 
 import type { EntrySummary, NowPlaying, Song } from "@4me/shared";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { IconNext, IconPause, IconPlay, IconPrev } from "../Icons";
 
-type Track = Song & { night: string };
+type Track = Song & { night: number };
 
 function fmt(s: number) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -30,14 +30,17 @@ function Live({ live }: { live: NowPlaying | null }) {
   );
 }
 
-/** Every song pinned to a night, as one playlist. Real playback comes from the provider's embed. */
+/**
+ * Every song pinned to a night, as one playlist. Songs picked from the music search play their 30-second preview
+ * right here; older ones with a Spotify, YouTube or SoundCloud link play in that provider's embed.
+ */
 export function Mixtape({
   entries,
-  currentSlug,
+  currentId,
   live,
 }: {
   entries: EntrySummary[];
-  currentSlug?: string;
+  currentId?: number;
   live: NowPlaying | null;
 }) {
   const tracks = useMemo<Track[]>(() => {
@@ -47,23 +50,36 @@ export function Mixtape({
       const key = `${e.song.artist}|${e.song.title}`;
       if (seen.has(key)) return [];
       seen.add(key);
-      return [{ ...e.song, night: e.slug }];
+      return [{ ...e.song, night: e.id }];
     });
   }, [entries]);
   const startAt = Math.max(
     0,
-    tracks.findIndex((t) => t.night === currentSlug),
+    tracks.findIndex((t) => t.night === currentId),
   );
   const [i, setI] = useState(startAt);
   const [playing, setPlaying] = useState(false);
   const [sec, setSec] = useState(0);
+  const audio = useRef<HTMLAudioElement>(null);
   const track = tracks[i];
+  const clip = track?.previewUrl ?? null;
 
+  // The preview plays in the page; its own clock drives the display.
   useEffect(() => {
-    if (!playing) return;
+    const a = audio.current;
+    if (!a) return;
+    if (playing && clip) {
+      if (a.src !== clip) a.src = clip;
+      void a.play().catch(() => setPlaying(false));
+    } else a.pause();
+  }, [playing, clip]);
+
+  // Embedded players keep their own time; the display just counts along.
+  useEffect(() => {
+    if (!playing || clip) return;
     const t = window.setInterval(() => setSec((s) => s + 1), 1000);
     return () => window.clearInterval(t);
-  }, [playing]);
+  }, [playing, clip]);
 
   const go = (n: number) => {
     setI((n + tracks.length) % tracks.length);
@@ -91,7 +107,8 @@ export function Mixtape({
         <span className="time">{fmt(sec)}</span>
         <span className="scroll">
           <span>
-            *** {i + 1}. {track.artist} – {track.title} ***
+            *** {i + 1}. {track.artist} – {track.title}
+            {clip ? " (30 sec)" : ""} ***
           </span>
         </span>
         <span className="eq" aria-hidden="true">
@@ -117,7 +134,15 @@ export function Mixtape({
           <IconNext />
         </button>
       </div>
+      {/* biome-ignore lint/a11y/useMediaCaption: 30-second music previews have no words to caption */}
+      <audio
+        ref={audio}
+        preload="none"
+        onTimeUpdate={(e) => setSec(Math.floor(e.currentTarget.currentTime))}
+        onEnded={() => (tracks.length > 1 ? go(i + 1) : setPlaying(false))}
+      />
       {playing &&
+        !clip &&
         (track.embedUrl ? (
           <iframe
             key={track.embedUrl}
@@ -136,6 +161,24 @@ export function Mixtape({
             </a>
           </p>
         ))}
+      {clip && (
+        <p className="live">
+          <span>
+            A 30-second preview.{" "}
+            <a href={searchUrl(track)} target="_blank" rel="noreferrer">
+              The whole song on Spotify
+            </a>
+            {track.url && (
+              <>
+                {" · "}
+                <a href={track.url} target="_blank" rel="noreferrer">
+                  Apple Music
+                </a>
+              </>
+            )}
+          </span>
+        </p>
+      )}
       <ul className="plist">
         {tracks.map((t, n) => (
           <li key={`${t.artist}-${t.title}`}>

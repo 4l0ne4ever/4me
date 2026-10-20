@@ -1,10 +1,12 @@
 # 4me
 
-A night diary on a 2006 desktop. One entry after dark, with the mood, the weather and the song that was playing.
-Readers leave notes in a Messenger window, BUZZ the author, sign a shoutbox guestbook, flip through the photos, peek
-at the lines that were *almost* posted, and look after **Ink**, the black cat who lives on the taskbar. They can stay
-anonymous or log on at an XP-style Welcome screen (email and password, or Google) to keep their name, a picture and
-their own Ink on every device.
+Night diaries on a 2006 desktop. Anyone with an account keeps one: a page after dark, with the mood, the weather,
+a song picked from the music search (it plays a 30-second preview, like a song sticker) and photos from their phone.
+Each writer has a desktop of their own at `/u/<handle>`; the front desktop shows everyone's newest pages in a
+*Tonight* window. Readers leave notes in a Messenger window, BUZZ the writer, sign guestbooks, flip through the
+photos, peek at the lines that were *almost* posted, and look after **Ink**, the black cat who lives on the taskbar.
+Guests can read and leave notes; logging on at the XP-style Welcome screen (email and password, or Google) keeps a
+name, a picture and Ink on every device, and opens the Notepad to write.
 
 ```
 apps/web      Next.js 16 (App Router) · the desktop, the author's /admin, RSS      → Vercel
@@ -16,7 +18,8 @@ design/       the prototypes and research that led here (not deployed)
 ## Run it locally
 
 Needs Node 22+ and pnpm (`corepack enable`). No cloud account is needed: locally the API runs on Node with
-[PGlite](https://pglite.dev) (Postgres in WASM, stored in `apps/api/.pglite`) and seeds a few sample nights.
+[PGlite](https://pglite.dev) (Postgres in WASM, stored in `apps/api/.pglite`) and seeds two sample writers and a
+few nights. Photos stay in memory unless `apps/api/.env` names a bucket (the same `S3_*` settings as production).
 
 ```bash
 pnpm install
@@ -24,7 +27,8 @@ cp apps/web/.env.example apps/web/.env.local     # set ADMIN_PASSWORD and ADMIN_
 pnpm dev                                          # api on :8787, web on :3000
 ```
 
-Open http://localhost:3000. Write at http://localhost:3000/admin with the password from `.env.local`.
+Open http://localhost:3000, create an account at `/welcome` and open **Write**. Moderate at
+http://localhost:3000/admin with the password from `.env.local`.
 
 | Command | What it does |
 | --- | --- |
@@ -34,13 +38,28 @@ Open http://localhost:3000. Write at http://localhost:3000/admin with the passwo
 | `pnpm build` | Next.js production build and a dry-run bundle of the Worker |
 | `pnpm db:generate` | Write a new SQL migration after editing `apps/api/src/db/schema.ts` |
 | `pnpm db:migrate` | Apply migrations to `DATABASE_URL` |
-| `pnpm --filter @4me/api db:seed` | Put the sample nights into an empty `DATABASE_URL` |
+| `pnpm --filter @4me/api db:seed` | Put the sample writers and nights into an empty `DATABASE_URL` |
 
 ## Writing
 
-The author logs in at `/admin`. A page has a title, the night itself, mood, weather, the time it was written,
-a song link (Spotify, YouTube or SoundCloud; the API resolves title, cover and an embeddable player), photos
-(`url | caption`, one per line) and who can read it (everyone, only me, draft).
+Any member opens **Write** (desktop icon or Start menu). The Notepad has four tabs:
+
+- **New page / Editing**: title, the night itself, mood, weather, the time it was written, a song, up to 12 photos,
+  who can read it (everyone, only me, draft) and an optional address (`/u/<handle>/<slug>`).
+- **My pages**: every page of theirs, private ones and drafts included, to open, edit or delete.
+- **Blast & bin**: the one-line status on their Messenger, and lines for their Almost posted bin.
+- **Notes**: notes other people left on their pages. Anything with a link waits here until they show it.
+
+The Diary shows *Edit this page* to its writer and *report* to everyone else.
+
+**Songs** come from the iTunes Search API (free, no key). The search box asks the API (`/music/search`), which asks
+Apple; a picked song is looked up again by its id before it is stored, and only Apple's own audio and image hosts are
+ever saved. Songs play their 30-second preview on the page; the Mixtape links to the whole song on Spotify.
+
+**Photos** are shrunk in the browser to 2048 px JPEG (which also applies their rotation and drops EXIF and GPS),
+then sent straight to the API with a ten-minute upload ticket signed by the web server. The API checks it is a JPEG,
+strips every metadata segment again, and stores it in the photo bucket. Limits: 4 MB a photo, 60 a day, 300 MB per
+member. Deleting a page, or an account, deletes its photos.
 
 The body uses a small markup that never produces raw HTML:
 
@@ -52,16 +71,22 @@ The body uses a small markup that never produces raw HTML:
 | `> it will rain again tomorrow.` | a handwritten note in amber |
 | `[photo 2]` | the second photo, inline |
 
-Blasts (the Yahoo 360-style status line) and "Almost posted" lines are managed from the same page, along with
-notes held for review (anything with a link waits for approval).
+## Moderation
+
+The site's moderator logs in at `/admin` with `ADMIN_PASSWORD`. Members write their own pages; the moderator sees
+pages readers reported (with the reasons), hides or keeps them up, suspends or restores accounts, and approves held
+notes and shouts. A page reported by three different readers (one per account, or per hashed IP for guests) is
+hidden until the moderator looks; *Keep up* clears its reports. A suspended member can still sign in, read and delete
+their own pages, but can't write, and their desktop is closed.
 
 ## Accounts
 
 `/welcome` is the log-on screen: Guest, *I have an account*, *Create a new account*, and *Continue with Google*
-when it is configured. Signed-in readers write under their own name with their picture, and nobody else (signed in or
-not) can use that name or the author's. *Start → My account* changes the picture and name, lists the reader's notes,
-changes or sets a password, logs off on every device, or deletes the account (their notes stay, signed
-"a former reader").
+when it is configured. Every account gets a desktop address made from its name (`Đêm mưa` → `/u/dem_mua`).
+Signed-in readers write under their own name with their picture, and nobody else (signed in or not) can use that
+name. *Start → My account* changes the picture, name, desktop address, the line about them and their Last.fm
+username, lists their notes, changes or sets a password, logs off on every device, or deletes the account (with
+their pages and photos; notes on other people's pages stay, signed "a former reader").
 
 How it is built: the **web server** does the authentication (scrypt hashing, Google's code flow with PKCE, the session
 cookie on its own domain) and the **API** stores accounts behind `/internal/*`, which only accepts the server token.
@@ -90,13 +115,23 @@ CI only; preview the web app locally with `pnpm dev`.
 1. **Neon**: create a project and copy its connection string (`DATABASE_URL`). Optionally seed it:
    `DATABASE_URL=... pnpm db:migrate && DATABASE_URL=... pnpm --filter @4me/api db:seed`.
 2. **Cloudflare**: create an API token with the *Edit Cloudflare Workers* template; note your account ID.
-   Optional secrets are set once by hand:
-   `pnpm --filter @4me/api exec wrangler secret put TURNSTILE_SECRET` and `... LASTFM_API_KEY`.
-3. **Vercel**: import the repository, set **Root Directory** to `apps/web`, and add the web environment
+   Optional secrets are set once by hand, in the dashboard (Workers & Pages → 4me-api → Settings → Variables and
+   Secrets) or with `pnpm --filter @4me/api exec wrangler secret put <NAME>`: `TURNSTILE_SECRET`, `LASTFM_API_KEY`.
+3. **Photo bucket** (any S3-compatible store; without it, photo uploads are switched off). Set four Worker secrets
+   the same way:
+
+   | Secret | Cloudflare R2 | Amazon S3 |
+   | --- | --- | --- |
+   | `S3_ENDPOINT` | `https://<account id>.r2.cloudflarestorage.com/<bucket>` | `https://<bucket>.s3.<region>.amazonaws.com` |
+   | `S3_REGION` | `auto` | the bucket's region, e.g. `ap-southeast-1` |
+   | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | an R2 API token with *Object Read & Write* on that bucket | an IAM user allowed only `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on that bucket |
+
+   Keep the bucket private (no public access): photos are served through the API at `/media/…`.
+4. **Vercel**: import the repository, set **Root Directory** to `apps/web`, and add the web environment
    variables below. If you deploy from GitHub Actions (as configured), turn off Vercel's own Git deployments
    to avoid building twice. Run `pnpm dlx vercel link` once locally to get the org and project IDs from
    `.vercel/project.json`.
-4. **GitHub** → Settings → Environments → `production`:
+5. **GitHub** → Settings → Environments → `production`:
 
 | Kind | Name | Value |
 | --- | --- | --- |
@@ -116,9 +151,9 @@ CI only; preview the web app locally with `pnpm dev`.
 | `NEXT_PUBLIC_API_URL` | the Worker address |
 | `NEXT_PUBLIC_SITE_URL` | the web address |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | optional; when set (with the API's `TURNSTILE_SECRET`) public writes need Turnstile |
-| `ADMIN_PASSWORD` | the author's password |
+| `ADMIN_PASSWORD` | the moderator's password for `/admin` |
 | `ADMIN_SESSION_SECRET` | 16+ random characters for signing the session cookie |
-| `ADMIN_TOKEN` | same as the API's; also authorises the account calls to `/internal/*` |
+| `ADMIN_TOKEN` | same as the API's; authorises the account and writing calls to `/internal/*` and signs upload tickets |
 | `SESSION_SECRET` | 32+ random characters (`openssl rand -base64 48`) for signing readers' sessions |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | optional, for *Continue with Google* |
 | `RESEND_API_KEY`, `MAIL_FROM` | optional, for password-reset emails; without them the "forgot" link is hidden |
@@ -148,7 +183,13 @@ application). Authorised JavaScript origin: your `SITE_URL`. Authorised redirect
   query parameters.
 - **Headers.** A Content-Security-Policy pinned to the hosts the site uses, `frame-ancestors 'none'` and
   `X-Frame-Options: DENY`, `nosniff`, a strict referrer policy, COOP, and a locked-down Permissions-Policy.
-- **Privacy.** Raw IPs are never stored (salted hashes only); emails are never shown; deleting an account deletes it.
+- **Members' content.** A member can only read back, edit or delete their own pages, blasts, bin and notes inbox;
+  every member route takes the id from the signed session, never from the browser. Photos on a page must be that
+  member's own uploads; upload tickets are HMAC-signed, last ten minutes and name one member.
+- **Photos.** JPEG only, metadata stripped twice (browser and API), stored in a private bucket, served with
+  `nosniff` and a `default-src 'none'` CSP.
+- **Privacy.** Raw IPs are never stored (salted hashes only); emails are never shown; deleting an account deletes it,
+  with its pages and photos.
 
 ## How it holds up
 
@@ -157,10 +198,13 @@ application). Authorised JavaScript origin: your `SITE_URL`. Authorised redirect
   connection pools to exhaust. The list query uses an index on `(visibility, written_at)`.
 - Public writes are validated with zod, rate limited per hashed IP in Postgres (so limits hold across Worker
   isolates), optionally gated by Turnstile, and anything with a link is held for review. Raw IPs are never stored.
-- The author's token never reaches a browser: `/admin` runs on the web server and calls the API with it.
+- The server token never reaches a browser: `/admin` and every member action run on the web server and call the
+  API with it; photo uploads carry a short-lived ticket instead.
+- The photo bucket is reached over S3's API, so moving between Cloudflare R2 and Amazon S3 is a change of secrets.
 
 ## Next
 
-- Photo uploads to Cloudflare R2 instead of pasting URLs.
+- Friends lists and a "my friends' nights" view, like LiveJournal.
+- Song stickers on notes and guestbook shouts.
 - Live BUZZ and "reading now" between readers (Durable Objects or a small WebSocket service).
 - More of Ink: a name tag, seasonal outfits, a ball of wool that stays where you left it.
