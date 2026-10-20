@@ -10,7 +10,8 @@
       "!**/.turbo",
       "!design",
       "!apps/api/drizzle",
-      "!**/next-env.d.ts"
+      "!**/next-env.d.ts",
+      "!.impeccable"
     ]
   },
   "formatter": {

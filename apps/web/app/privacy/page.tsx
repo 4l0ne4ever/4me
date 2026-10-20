@@ -17,8 +17,8 @@ export default function Privacy() {
       <p className="privacy-updated">Last changed {UPDATED}</p>
 
       <p>
-        4me is one person&apos;s night diary. You can read it without an account. Nothing here sells, shares or
-        studies what you do: there are no ads, no analytics and no tracking pixels.
+        4me is one person&apos;s night diary. You can read it without an account. Nothing here sells, shares or studies
+        what you do: there are no ads, no analytics and no tracking pixels.
       </p>
 
       <h2>If you only read</h2>
@@ -52,8 +52,8 @@ export default function Privacy() {
           <code>openid email profile</code>). We never see your Google password and can&apos;t post anything for you.
         </li>
         <li>
-          One cookie keeps you signed in. It is signed, readable only by this site&apos;s server, and lasts until you log
-          off or it expires.
+          One cookie keeps you signed in. It is signed, readable only by this site&apos;s server, and lasts until you
+          log off or it expires.
         </li>
         <li>Your email address is never shown on the site.</li>
       </ul>

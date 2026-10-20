@@ -1,7 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import * as schema from "../src/db/schema";
