@@ -3,10 +3,13 @@ import type { NextConfig } from "next";
 const dev = process.env.NODE_ENV !== "production";
 
 // Both addresses are baked into the build, so a typo fails here with its name instead of "Invalid URL" later.
+// They are public (they end up in the browser bundle), so the bad value is printed to make it easy to spot.
 for (const name of ["NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_API_URL"]) {
   const value = process.env[name];
   if (value && !(URL.canParse(value) && /^https?:\/\//.test(value))) {
-    throw new Error(`${name} must be a full address such as https://4me-night.vercel.app, without spaces or quotes`);
+    throw new Error(
+      `${name} must be a full address such as https://4me-night.vercel.app, got ${JSON.stringify(value)}`,
+    );
   }
 }
 
