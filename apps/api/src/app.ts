@@ -25,7 +25,7 @@ export function createApp(resolveDb: (env: Bindings) => DB) {
     "*",
     cors({
       origin: (origin, c) => {
-        const allowed = (c.env.WEB_ORIGIN ?? "").split(",").map((o: string) => o.trim());
+        const allowed = (c.env.WEB_ORIGIN ?? "").split(",").map((o: string) => o.trim().replace(/\/+$/, ""));
         // Only HTTPS origins, apart from localhost while developing.
         const secure = origin.startsWith("https://") || /^http:\/\/localhost(:\d+)?$/.test(origin);
         return secure && allowed.includes(origin) ? origin : null;

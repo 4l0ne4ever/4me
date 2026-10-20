@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const dev = process.env.NODE_ENV !== "production";
+
+// Both addresses are baked into the build, so a typo fails here with its name instead of "Invalid URL" later.
+for (const name of ["NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_API_URL"]) {
+  const value = process.env[name];
+  if (value && !(URL.canParse(value) && /^https?:\/\//.test(value))) {
+    throw new Error(`${name} must be a full address such as https://4me-night.vercel.app, without spaces or quotes`);
+  }
+}
+
 const apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787").origin;
 const https = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
 
