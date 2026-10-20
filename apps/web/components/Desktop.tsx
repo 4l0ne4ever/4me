@@ -465,7 +465,7 @@ export function Desktop({ data }: { data: DesktopData }) {
       />
     ),
     guest: <Guestbook initial={data.shouts} me={me} owner={owner} />,
-    amp: <Mixtape entries={entries} currentId={entry?.id} live={live} />,
+    amp: <Mixtape entries={entries} currentId={entry?.id} live={live} persona={persona} />,
     photos: <Photos pictures={pictures} view={photoView} onView={setPhotoView} />,
     almost: <Almost items={data.almost} persona={persona} />,
     write: me ? (

@@ -133,4 +133,5 @@ export const socialRoutes = new Hono<AppEnv>()
     c.header("Cache-Control", "public, max-age=30, s-maxage=30");
     return c.json(value);
   })
-  .get("/health", (c) => c.json({ ok: true }));
+  /** `photos` says whether the photo bucket is configured (S3_* secrets), without saying anything about them. */
+  .get("/health", (c) => c.json({ ok: true, photos: Boolean(c.get("media")) }));

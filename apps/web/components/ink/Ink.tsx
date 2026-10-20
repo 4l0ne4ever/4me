@@ -14,6 +14,7 @@ import { apiSend } from "@/lib/api";
 import { saveInk } from "@/lib/member-actions";
 import { IconHeart } from "../Icons";
 import * as N from "./needs";
+import * as Sound from "./sounds";
 import { BOWL, FISH, FRAMES, type FrameName, H, paint, W, YARN } from "./sprites";
 import "./ink.css";
 
@@ -22,7 +23,7 @@ const CAT_W = W * SCALE;
 /** In the eating frame the bowl starts 15 pixels into the sprite. */
 const BOWL_OFFSET = 15 * SCALE;
 
-type Mode = "walk" | "run" | "sit" | "groom" | "happy" | "sleep" | "eat" | "crouch" | "jump";
+type Mode = "walk" | "run" | "sit" | "groom" | "happy" | "sleep" | "eat" | "crouch" | "jump" | "held" | "fall";
 type Task =
   | { kind: "feed"; bowlX: number }
   | { kind: "play"; kicks: number }
@@ -30,7 +31,22 @@ type Task =
   | { kind: "beg" }
   | null;
 type Pop = { id: number; kind: "heart" | "fish"; dx: number };
-type Press = { lx: number; ly: number; dist: number; strokes: number; stroking: boolean; held: boolean; timer: number };
+type Press = {
+  sx: number;
+  sy: number;
+  lx: number;
+  ly: number;
+  dist: number;
+  strokes: number;
+  stroking: boolean;
+  held: boolean;
+  timer: number;
+  /** Lifted off the taskbar: where the pointer holds her, and where the ground is on screen. */
+  carry: { dx: number; dy: number; ground: number } | null;
+};
+
+/** Pixels per second squared when she drops. */
+const GRAVITY = 2600;
 
 export type InkEvent = "buzz" | "note" | "call" | "feed" | "play";
 
@@ -63,6 +79,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   const [fishAt, setFishAt] = useState<number | null>(null);
   const [yarnX, setYarnX] = useState<number | null>(null);
   const [needs, setNeeds] = useState<N.Needs>(() => N.fresh(0));
+  const [sound, setSound] = useState(true);
 
   const needsRef = useRef(needs);
   const firstItem = useRef<HTMLButtonElement>(null);
@@ -72,6 +89,9 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   const popId = useRef(0);
   const st = useRef({
     x: 200,
+    /** Height above the taskbar while carried or falling, and the falling speed. */
+    y: 0,
+    vy: 0,
     dir: 1,
     mode: "sit" as Mode,
     target: 200,
@@ -87,6 +107,8 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   useEffect(() => {
     awakeRef.current = awake;
   }, [awake]);
+
+  useEffect(() => setSound(Sound.soundOn()), []);
 
   /* ---------- small helpers ---------- */
   const say = useCallback((text: string, ms = 2600) => {
@@ -163,21 +185,27 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   const petOnce = useCallback(() => {
     pop("heart", 3);
     if (!awakeRef.current) {
+      Sound.mew();
       say("zzz… come back after dark.");
       return;
     }
     const next = N.pet(needsRef.current);
     saveNeeds(next);
+    (Math.random() < 0.6 ? Sound.meow : Sound.mrrp)();
     setMode("happy", 1400);
     say(N.lineFor(N.moodOf(next), Math.random()));
     void report("pet");
   }, [pop, say, saveNeeds, setMode, report]);
 
-  const stroke = useCallback(() => {
-    saveNeeds(N.pet(needsRef.current, 2));
-    pop("heart");
-    if (awakeRef.current && !st.current.task) setMode("happy", 700);
-  }, [pop, saveNeeds, setMode]);
+  const stroke = useCallback(
+    (strokes: number) => {
+      saveNeeds(N.pet(needsRef.current, 2));
+      pop("heart");
+      if (strokes >= 3) Sound.purr();
+      if (awakeRef.current && !st.current.task) setMode("happy", 700);
+    },
+    [pop, saveNeeds, setMode],
+  );
 
   const feedNow = useCallback(() => {
     setMenuLeft(null);
@@ -190,6 +218,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     setFishAt(x);
     window.setTimeout(() => setFishAt(null), 700);
     s.task = { kind: "feed", bowlX: x };
+    Sound.mrrp();
     say("!! fish !!", 1200);
     walkTo(x - BOWL_OFFSET, 120, "run");
   }, [say, walkTo]);
@@ -218,6 +247,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     if (!awakeRef.current) return say("zzz… (smells fish)");
     saveNeeds(N.feed(needsRef.current, 10));
     pop("fish");
+    Sound.crunch(3);
     say("nom. thank you for the note.");
     if (!st.current.task) setMode("happy", 1200);
     void report("feed");
@@ -225,6 +255,8 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
 
   const startle = useCallback(() => {
     if (!awakeRef.current || st.current.task) return;
+    if (st.current.mode === "held" || st.current.mode === "fall") return;
+    Sound.yowl();
     setMode("jump", 900);
     say("!!", 1200);
   }, [say, setMode]);
@@ -245,12 +277,14 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
         s.x = task.bowlX - BOWL_OFFSET;
         setBowl({ x: task.bowlX, visible: false });
         setMode("eat", 2600);
+        Sound.crunch(9);
         return;
       }
       if (task?.kind === "play") return setMode("crouch", 450);
       if (task?.kind === "call") {
         s.task = null;
         setMode("sit", 3000);
+        Sound.mrrp();
         return say("mrrp?");
       }
       if (task?.kind === "beg") {
@@ -291,6 +325,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
           setYarnX(nx);
         }
         task.kicks++;
+        if (task.kicks > 1) Sound.mrrp();
         return walkTo(approach(yarnRef.current ?? yarn), 140, "run");
       }
       if (s.mode !== "sit") return setMode("sit", 1500 + Math.random() * 2500);
@@ -326,14 +361,28 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     const tick = (t: number) => {
       const dt = Math.min(0.05, (t - last) / 1000);
       last = t;
+      const carried = s.mode === "held" || s.mode === "fall";
       if (!awakeRef.current) {
-        if (s.mode !== "sleep" && !s.task) setMode("sleep");
+        if (s.mode !== "sleep" && !s.task && !carried && t > s.until) setMode("sleep");
       } else if (s.mode === "sleep") {
         setMode("sit", 1500);
         say("*yawn*");
       }
 
-      if (s.mode === "walk" || s.mode === "run") {
+      if (s.mode === "fall") {
+        s.vy += GRAVITY * dt;
+        s.y -= s.vy * dt;
+        if (s.y <= 0 || reduce.matches) {
+          const hard = s.vy > 900;
+          s.y = 0;
+          s.vy = 0;
+          Sound.thud();
+          setMode("crouch", hard ? 700 : 400);
+          if (hard) say(awakeRef.current ? "!!" : "…mrr. zzz", 1200);
+        }
+      } else if (s.mode === "held") {
+        // follows the pointer; nothing else to do
+      } else if (s.mode === "walk" || s.mode === "run") {
         const d = s.target - s.x;
         s.dir = d >= 0 ? 1 : -1;
         const step = reduce.matches ? Math.abs(d) : s.speed * dt;
@@ -344,7 +393,9 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
       } else if (s.mode !== "sleep" && t > s.until) idleDone();
 
       let frame: FrameName;
-      if (s.mode === "walk" || s.mode === "run") {
+      if (s.mode === "held") frame = "happy";
+      else if (s.mode === "fall") frame = "crouch";
+      else if (s.mode === "walk" || s.mode === "run") {
         frame = Math.floor(t / (s.mode === "run" ? 90 : 190)) % 2 ? "walkB" : "walkA";
       } else if (s.mode === "sit" || s.mode === "jump") {
         if (t > s.nextBlink) {
@@ -356,7 +407,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
       draw(frame);
 
       if (root.current) {
-        root.current.style.transform = `translateX(${s.x.toFixed(1)}px)`;
+        root.current.style.transform = `translate(${s.x.toFixed(1)}px, ${(-s.y).toFixed(1)}px)`;
         root.current.classList.toggle("flip", s.dir < 0);
       }
       raf = requestAnimationFrame(tick);
@@ -399,9 +450,36 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   /* ---------- hands on Ink ---------- */
   const openMenu = () => setMenuLeft(Math.max(8, Math.min(window.innerWidth - 248, st.current.x - 88)));
 
+  /** Lifts her off the taskbar: whatever she was doing stops, and she hangs from the pointer. */
+  const pickUp = (e: PointerEvent<HTMLButtonElement>, p: Press) => {
+    const s = st.current;
+    const box = e.currentTarget.getBoundingClientRect();
+    window.clearTimeout(p.timer);
+    p.carry = { dx: e.clientX - s.x, dy: box.bottom - e.clientY, ground: box.bottom + s.y };
+    s.task = null;
+    setBowl(null);
+    yarnRef.current = null;
+    setYarnX(null);
+    setMenuLeft(null);
+    setMode("held");
+    Sound.mrrp();
+    say(awakeRef.current ? "mrrow?!" : "…mrr?", 1400);
+  };
+
   const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
-    const press: Press = { lx: e.clientX, ly: e.clientY, dist: 0, strokes: 0, stroking: false, held: false, timer: 0 };
+    const press: Press = {
+      sx: e.clientX,
+      sy: e.clientY,
+      lx: e.clientX,
+      ly: e.clientY,
+      dist: 0,
+      strokes: 0,
+      stroking: false,
+      held: false,
+      timer: 0,
+      carry: null,
+    };
     press.timer = window.setTimeout(() => {
       if (!press.stroking) {
         press.held = true;
@@ -412,17 +490,28 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   };
   const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
     const p = st.current.press;
-    if (!p) return;
+    if (!p || p.held) return;
+    if (p.carry) {
+      const s = st.current;
+      s.x = Math.max(0, Math.min(window.innerWidth - CAT_W, e.clientX - p.carry.dx));
+      s.y = Math.max(0, p.carry.ground - (e.clientY + p.carry.dy));
+      s.dir = e.clientX >= p.lx ? 1 : -1;
+      p.lx = e.clientX;
+      p.ly = e.clientY;
+      return;
+    }
     p.dist += Math.hypot(e.clientX - p.lx, e.clientY - p.ly);
     p.lx = e.clientX;
     p.ly = e.clientY;
+    // The first real movement decides: up lifts her, sideways strokes her.
     if (p.dist > 14 && !p.stroking) {
+      if (p.sy - e.clientY > Math.abs(e.clientX - p.sx)) return pickUp(e, p);
       p.stroking = true;
       window.clearTimeout(p.timer);
     }
     if (p.stroking && p.dist > (p.strokes + 1) * 60) {
       p.strokes++;
-      stroke();
+      stroke(p.strokes);
     }
   };
   const onPointerUp = (e: PointerEvent<HTMLButtonElement>) => {
@@ -430,6 +519,12 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     st.current.press = null;
     if (!p || e.button === 2) return;
     window.clearTimeout(p.timer);
+    if (p.carry) {
+      // Let go: she drops to the taskbar where she was let go.
+      st.current.vy = 0;
+      setMode("fall");
+      return;
+    }
     if (p.held) return;
     if (p.stroking) {
       if (p.strokes >= 3) {
@@ -456,14 +551,16 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
         <button
           type="button"
           className="ink-btn"
-          aria-label={`Ink the cat, ${moodText}. Click to pet, drag to stroke, right-click or Shift+F10 for more.`}
+          aria-label={`Ink the cat, ${moodText}. Click to pet, drag sideways to stroke, drag up to pick her up, right-click or Shift+F10 for more.`}
           aria-haspopup="menu"
           aria-expanded={menuLeft !== null}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={() => {
+            const carried = st.current.press?.carry;
             st.current.press = null;
+            if (carried) setMode("fall");
           }}
           onContextMenu={(e) => {
             e.preventDefault();
@@ -556,7 +653,21 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
             </li>
             <li>
               <button type="button" role="menuitem" onClick={callNow}>
-                Call her over
+                Call her over <small>or drag her up and drop her</small>
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                role="menuitemcheckbox"
+                aria-checked={sound}
+                onClick={() => {
+                  Sound.setSoundOn(!sound);
+                  setSound(!sound);
+                  if (!sound) Sound.mrrp();
+                }}
+              >
+                Sounds <small>{sound ? "on" : "off"}</small>
               </button>
             </li>
           </ul>

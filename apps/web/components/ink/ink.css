@@ -42,6 +42,24 @@
     transform: translateY(-24px);
   }
 }
+/* carried: she dangles and swings a little */
+.ink[data-mode="held"] .ink-btn {
+  cursor: grabbing;
+  transform-origin: 50% 0;
+  animation: ink-dangle 0.9s ease-in-out infinite alternate;
+}
+@keyframes ink-dangle {
+  from {
+    transform: rotate(-7deg);
+  }
+  to {
+    transform: rotate(7deg);
+  }
+}
+.ink[data-mode="held"],
+.ink[data-mode="fall"] {
+  z-index: 140;
+}
 .ink[data-mode="eat"] .ink-btn {
   animation: ink-munch 0.32s ease-in-out infinite alternate;
 }
@@ -259,4 +277,9 @@
 .ink-world b {
   color: var(--chrome-ink);
   font-weight: 400;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ink[data-mode="held"] .ink-btn {
+    animation: none;
+  }
 }
