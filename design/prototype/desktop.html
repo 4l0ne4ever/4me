@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4me Night Desktop</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Reenie+Beanie&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* Layout: the diary as a computer desktop at midnight in 2006. Windows drag, close and reopen from icons, the Start menu and the taskbar. Ink the cat lives on the taskbar. */
+:root {
+  color-scheme: dark;
+  --desk: #070a0e;
+  --chrome: #161e2a;
+  --chrome-hi: #22304a;
+  --chrome-edge: #31415a;
+  --chrome-ink: #dfe6ef;
+  --chrome-dim: #a2afc1;
+  --panel: #111824;
+  --field: #0b1018;
+  --task: #0b1018;
+  --start: #1f5e3a;
+  --start-edge: #2f8152;
+  --name: #9cc2ff;
+  --paper: #17130f;
+  --paper-ink: #efe6d6;
+  --paper-dim: #ab9f8b;
+  --amber: #f0ac5c;
+  --ticket: #9e392f;
+  --link: #9cc2ff;
+  --visited: #bba6e6;
+  --ui: Tahoma, Verdana, "Segoe UI", sans-serif;
+  --serif: "Newsreader", Georgia, serif;
+  --hand: "Reenie Beanie", "Comic Sans MS", cursive;
+  --lcd: "VT323", "Courier New", monospace;
+  --task-h: calc(48px + env(safe-area-inset-bottom, 0px));
+}
+/* skins: chrome colours and wallpaper change together */
+body[data-skin="bluehour"] { --chrome: #14233b; --chrome-hi: #1f3a63; --chrome-edge: #2e4c7a; --panel: #0f1b2e; --field: #08111f; --task: #0a1424; --start: #2b5ea8; --start-edge: #4a7fd0; }
+body[data-skin="candle"] { --chrome: #241a14; --chrome-hi: #3a281c; --chrome-edge: #5a3f2b; --chrome-ink: #f1e4d2; --chrome-dim: #c4af94; --panel: #1b130e; --field: #120c08; --task: #140e0a; --start: #8e4a22; --start-edge: #b86434; --name: #f0ac5c; }
+body[data-skin="snow"] { color-scheme: light; --chrome: #e9ecf0; --chrome-hi: #cdd7e3; --chrome-edge: #a6b3c3; --chrome-ink: #17202d; --chrome-dim: #4a5768; --panel: #f6f7f9; --field: #ffffff; --task: #dde3ea; --start: #3c6e9e; --start-edge: #2c5680; --name: #1f5aa6; --link: #1f5aa6; --visited: #6a4aa8; }
+body[data-skin="luna"] { --chrome: #12306e; --chrome-hi: #1d5ad6; --chrome-edge: #3a72e0; --chrome-ink: #ffffff; --chrome-dim: #c9d8f5; --panel: #0e2558; --field: #081a40; --task: #173f9c; --start: #3c9a3c; --start-edge: #5fbe5f; --name: #ffd36b; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--desk); color: var(--chrome-ink); font-family: var(--ui); font-size: 14px; line-height: 1.45; overflow: hidden; }
+img { max-width: 100%; height: auto; display: block; }
+button { font: inherit; color: inherit; }
+a { color: var(--link); }
+a:visited { color: var(--visited); }
+p, h1, h2, h3 { margin: 0; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.sr { position: absolute; left: -9999px; }
+
+/* desk + wallpaper */
+.desk { position: fixed; inset: 0; bottom: var(--task-h); overflow: hidden; }
+.wall { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.wall img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.55) contrast(1.15) saturate(0.7); transition: filter 1.2s ease; animation: breathe 40s ease-in-out infinite alternate; }
+body.daytime .wall img { filter: grayscale(0.7) brightness(0.78) contrast(1.05); }
+body[data-skin="snow"] .wall img { filter: brightness(0.92) contrast(1.02) saturate(0.8); }
+@keyframes breathe { from { transform: scale(1.02); } to { transform: scale(1.1) translate(-1%, -1%); } }
+.desk::after { content: ""; position: absolute; inset: -50%; z-index: 1; pointer-events: none; background-image: var(--grain, none); opacity: 0.08; animation: grain 0.9s steps(4) infinite; }
+@keyframes grain { 25% { transform: translate(-3%, 2%); } 50% { transform: translate(2%, -3%); } 75% { transform: translate(-2%, -1%); } }
+.shake { animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shake { 10%, 90% { transform: translate(-2px, 1px); } 20%, 80% { transform: translate(5px, -2px); } 30%, 50%, 70% { transform: translate(-9px, 3px); } 40%, 60% { transform: translate(9px, -3px); } }
+
+/* desktop icons */
+.icons { position: absolute; z-index: 2; left: max(14px, env(safe-area-inset-left, 0px)); top: 16px; display: flex; flex-direction: column; gap: 2px; }
+.icon { width: 96px; padding: 7px 4px; background: none; border: 1px solid transparent; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; text-align: center; font-size: 13px; color: #fff; text-shadow: 0 1px 2px #000, 0 0 6px #000; }
+.icon:hover { background: rgba(156, 194, 255, 0.16); border-color: rgba(156, 194, 255, 0.4); }
+.icon svg { width: 38px; height: 38px; }
+
+/* windows */
+.win { position: absolute; z-index: 10; display: flex; flex-direction: column; background: var(--chrome); border: 1px solid var(--chrome-edge); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); min-width: 260px; animation: pop 320ms cubic-bezier(.22,1,.36,1) both; }
+.win[hidden] { display: none; }
+@keyframes pop { from { opacity: 0; transform: scale(0.94) translateY(10px); } to { opacity: 1; transform: none; } }
+.bar { display: flex; align-items: center; gap: 8px; padding: 0 4px 0 10px; height: 34px; background: var(--chrome); border-bottom: 1px solid var(--chrome-edge); cursor: grab; user-select: none; touch-action: none; flex-shrink: 0; }
+.win.focus .bar { background: var(--chrome-hi); }
+.bar:active { cursor: grabbing; }
+.bar > svg { width: 16px; height: 16px; flex-shrink: 0; }
+.bar b { font-weight: 700; font-size: 13px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar .ctl { width: 32px; height: 28px; border: 0; background: transparent; color: var(--chrome-dim); cursor: pointer; display: grid; place-items: center; transition: background 150ms ease, color 150ms ease; }
+.bar .ctl:hover { background: var(--chrome-edge); color: var(--chrome-ink); }
+.bar .ctl.x:hover { background: #c4423a; color: #fff; }
+.body { overflow: auto; flex: 1; min-height: 0; }
+
+/* diary window: the scrapbook page */
+#w-diary { left: 132px; top: 18px; width: min(700px, calc(100vw - 560px)); height: calc(100% - 36px); }
+#w-diary .body { background: var(--paper); color: var(--paper-ink); padding: 36px 40px 48px; position: relative; }
+.d-date { font-family: var(--hand); color: var(--amber); font-size: 38px; line-height: 0.9; transform: rotate(-2deg); transform-origin: left; display: inline-block; }
+.d-title { font-family: var(--serif); font-weight: 400; font-size: clamp(34px, 3.4vw, 52px); line-height: 1; letter-spacing: -0.02em; margin: 14px 0 22px; max-width: 18ch; }
+.d-cur { display: flex; flex-wrap: wrap; gap: 4px 22px; font-size: 13px; color: var(--paper-dim); margin-bottom: 22px; }
+.d-cur b { color: var(--paper-ink); font-weight: 400; }
+.d-grid { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 28px; align-items: start; }
+.d-text { font-family: var(--serif); font-size: 19px; line-height: 1.62; display: flex; flex-direction: column; gap: 1em; }
+.d-text p:first-child::first-letter { float: left; font-size: 3.1em; line-height: 0.85; padding: 6px 10px 0 0; font-style: italic; color: var(--amber); }
+.d-text s { color: var(--paper-dim); text-decoration-color: #c4544a; text-decoration-thickness: 2px; }
+.d-note { font-family: var(--hand); color: var(--amber); font-size: 26px; line-height: 1; transform: rotate(-1.5deg); }
+.d-side { position: relative; display: flex; flex-direction: column; gap: 26px; padding-top: 6px; }
+.pol { display: block; width: 100%; background: #ece5d8; padding: 10px 10px 40px; border: 0; cursor: zoom-in; text-align: left; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55); position: relative; transition: transform 400ms cubic-bezier(.22,1,.36,1); }
+.pol img { aspect-ratio: 1; object-fit: cover; width: 100%; filter: contrast(1.08) saturate(0.85) sepia(0.12); }
+.pol span { position: absolute; left: 12px; bottom: 8px; font-family: var(--hand); font-size: 23px; color: #2a2420; }
+.pol::before { content: ""; position: absolute; top: -11px; left: 50%; width: 76px; height: 22px; margin-left: -38px; background: rgba(233, 220, 190, 0.55); transform: rotate(-4deg); }
+.d-side .pol:nth-child(1) { transform: rotate(-4deg); }
+.d-side .pol:nth-child(2) { transform: rotate(5deg); margin-left: 18px; width: calc(100% - 18px); }
+.d-side .pol:hover { transform: rotate(0) scale(1.04); z-index: 2; }
+.ticket { background: var(--ticket); color: #f6e9dc; padding: 12px 14px; transform: rotate(-2deg); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5); display: flex; gap: 10px; align-items: center; border: 0; cursor: pointer; text-align: left; width: 100%; transition: transform 300ms cubic-bezier(.22,1,.36,1); }
+.ticket:hover { transform: rotate(0); }
+.ticket small { display: block; font-size: 12px; letter-spacing: 0.08em; opacity: 0.9; }
+.ticket b { font-family: var(--serif); font-weight: 500; font-size: 16px; line-height: 1.2; }
+.d-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 32px; font-size: 13px; }
+.asleep { display: none; }
+body.daytime .awake { display: none; }
+body.daytime .asleep { display: block; }
+body.daytime span.asleep { display: inline; }
+.asleep-box { border: 1px dashed #5a4c3c; padding: 18px 20px; margin-bottom: 24px; font-family: var(--serif); font-size: 18px; line-height: 1.5; }
+.asleep-box .d-note { display: block; margin-bottom: 6px; }
+
+.eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 16px; width: 18px; flex-shrink: 0; }
+.eq i { width: 3px; background: currentColor; height: 30%; animation: eq 900ms ease-in-out infinite alternate; }
+.eq i:nth-child(2) { animation-delay: -300ms; animation-duration: 700ms; }
+.eq i:nth-child(3) { animation-delay: -600ms; animation-duration: 1100ms; }
+.eq i:nth-child(4) { animation-delay: -150ms; animation-duration: 800ms; }
+.paused .eq i { animation-play-state: paused; }
+@keyframes eq { from { height: 20%; } to { height: 100%; } }
+
+/* messenger window, with the Yahoo 360-style blast */
+#w-msn { right: 18px; top: 18px; width: 340px; height: min(560px, calc(100% - 300px)); }
+.me { display: flex; gap: 12px; padding: 12px; background: var(--panel); border-bottom: 1px solid var(--chrome-edge); }
+.me img { width: 56px; height: 56px; object-fit: cover; border: 2px solid var(--chrome-edge); flex-shrink: 0; }
+.me b { display: block; font-size: 14px; }
+.on-dot { color: #6fd27a; font-weight: 400; }
+.off-dot { color: #e0b44a; font-weight: 400; }
+body[data-skin="snow"] .on-dot { color: #1f7a33; }
+body[data-skin="snow"] .off-dot { color: #8a5a00; }
+.blast { position: relative; margin-top: 6px; background: var(--field); border: 1px solid var(--chrome-edge); padding: 6px 9px; font-size: 13px; }
+.blast::before { content: ""; position: absolute; left: -7px; top: 9px; border: 6px solid transparent; border-right-color: var(--chrome-edge); border-left: 0; }
+.blast q { font-style: italic; }
+.blast small { display: block; color: var(--chrome-dim); font-size: 13px; }
+.np { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--amber); margin-top: 6px; }
+body[data-skin="snow"] .np { color: #8a4f0e; }
+.older, .buddies { padding: 6px 12px 8px; border-bottom: 1px solid var(--chrome-edge); font-size: 13px; }
+.older summary, .buddies summary { cursor: pointer; color: var(--chrome-dim); padding: 4px 0; }
+.older ul { list-style: none; margin: 0; padding: 0; }
+.older li { padding: 3px 0; }
+.older li span { color: var(--chrome-dim); }
+.buddy { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #4fbf5f; flex-shrink: 0; }
+.dot.away { background: #d6a43a; }
+.buddy em { color: var(--chrome-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.chat .ln { line-height: 1.45; animation: pop 300ms ease both; }
+.chat .t { color: var(--chrome-dim); }
+.chat .n { font-weight: 700; color: var(--name); }
+.chat .n.me2 { color: var(--amber); }
+body[data-skin="snow"] .chat .n.me2 { color: #8a4f0e; }
+.chat .buzz { color: #ff6b5e; font-weight: 700; }
+body[data-skin="snow"] .chat .buzz { color: #b3261e; }
+.chat-hd { font-size: 13px; color: var(--chrome-dim); padding: 8px 12px 0; }
+.compose { display: flex; gap: 6px; padding: 8px; border-top: 1px solid var(--chrome-edge); background: var(--panel); flex-shrink: 0; }
+.compose input, .field { flex: 1; min-width: 0; background: var(--field); border: 1px solid var(--chrome-edge); color: var(--chrome-ink); padding: 8px 10px; font: inherit; min-height: 40px; }
+.btn { border: 1px solid var(--chrome-edge); background: var(--chrome-hi); color: var(--chrome-ink); padding: 0 12px; min-height: 40px; cursor: pointer; font-weight: 700; font-size: 13px; transition: transform 120ms ease, filter 150ms ease; }
+.btn:hover { filter: brightness(1.18); }
+.btn:active { transform: scale(0.96); }
+.btn.buzz { background: #8e2f28; border-color: #b8463a; color: #fff; letter-spacing: 0.04em; }
+
+/* mixtape player */
+#w-amp { right: 18px; bottom: 14px; width: 340px; }
+.amp { padding: 12px; display: flex; flex-direction: column; gap: 10px; background: var(--panel); }
+.lcd { background: #050806; border: 1px solid #23302a; padding: 8px 10px; font-family: var(--lcd); color: #8cf2a8; font-size: 22px; line-height: 1; display: flex; gap: 12px; align-items: center; overflow: hidden; }
+.lcd .time { flex-shrink: 0; font-size: 30px; }
+.lcd .scroll { white-space: nowrap; overflow: hidden; flex: 1; }
+.lcd .scroll span { display: inline-block; padding-left: 100%; animation: marq 14s linear infinite; }
+.paused .lcd .scroll span { animation-play-state: paused; }
+@keyframes marq { to { transform: translateX(-100%); } }
+.ctrls { display: flex; gap: 4px; }
+.ctrls .btn { flex: 1; display: grid; place-items: center; padding: 0; }
+.ctrls svg { width: 16px; height: 16px; }
+.plist { list-style: none; margin: 0; padding: 0; font-size: 13px; max-height: 118px; overflow: auto; }
+.plist button { width: 100%; text-align: left; background: none; border: 0; padding: 6px 4px; cursor: pointer; color: var(--chrome-dim); display: flex; justify-content: space-between; gap: 8px; }
+.plist button:hover { color: var(--chrome-ink); background: rgba(156, 194, 255, 0.08); }
+.plist button.on { color: var(--chrome-ink); font-weight: 700; }
+
+/* almost posted */
+#w-bin { left: 230px; top: 70px; width: 420px; height: 430px; }
+#w-bin .body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; background: var(--paper); color: var(--paper-ink); }
+.draft { border-bottom: 1px dashed #4a3f33; padding-bottom: 12px; }
+.draft s { font-family: var(--serif); font-size: 18px; text-decoration-color: #c4544a; text-decoration-thickness: 2px; }
+.draft small { display: block; color: var(--paper-dim); font-size: 13px; margin-top: 4px; }
+
+/* photos: grid and viewer with slideshow */
+#w-photos { left: 290px; top: 70px; width: 580px; height: 500px; }
+#w-photos .body { background: var(--panel); display: flex; flex-direction: column; }
+.ph-grid { padding: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-content: start; }
+.ph-grid button { border: 1px solid transparent; background: none; padding: 4px; cursor: zoom-in; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--chrome-dim); text-align: left; transition: background 150ms ease, border-color 150ms ease; }
+.ph-grid button:hover { background: rgba(156, 194, 255, 0.1); border-color: var(--chrome-edge); }
+.ph-grid img { aspect-ratio: 1; object-fit: cover; width: 100%; }
+.viewer { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.viewing .ph-grid { display: none; }
+.viewing .viewer { display: flex; }
+.stage { position: relative; flex: 1; min-height: 260px; background: #050709; overflow: hidden; }
+.stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 600ms ease; }
+.stage img.on { opacity: 1; animation: kb 6s ease-out both; }
+@keyframes kb { from { transform: scale(1.06); } to { transform: scale(1); } }
+.vbar { display: flex; align-items: center; gap: 6px; padding: 8px; border-top: 1px solid var(--chrome-edge); flex-wrap: wrap; }
+.vbar .cap { flex: 1; font-size: 13px; color: var(--chrome-dim); min-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* guestbook shoutbox */
+#w-guest { left: 360px; top: 40px; width: 390px; height: 480px; }
+#w-guest .body { background: var(--panel); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.shout { padding: 8px 10px; background: var(--field); border: 1px solid var(--chrome-edge); font-size: 13px; animation: pop 300ms ease both; }
+.shout b { color: var(--name); }
+.shout span { color: var(--chrome-dim); }
+.shout p { margin-top: 3px; }
+.gform { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-top: 1px solid var(--chrome-edge); background: var(--panel); flex-shrink: 0; }
+.grow { display: flex; gap: 6px; }
+.emos { display: flex; gap: 4px; flex-wrap: wrap; }
+.emos button { background: var(--field); border: 1px solid var(--chrome-edge); min-height: 34px; min-width: 42px; cursor: pointer; font-size: 13px; color: var(--chrome-ink); transition: background 150ms ease; }
+.emos button:hover { background: var(--chrome-hi); }
+
+/* start menu */
+.startmenu { position: fixed; z-index: 140; left: max(6px, env(safe-area-inset-left, 0px)); bottom: calc(var(--task-h) + 4px); width: 310px; background: var(--chrome); border: 1px solid var(--chrome-edge); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); animation: rise 220ms cubic-bezier(.22,1,.36,1) both; }
+.startmenu[hidden] { display: none; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.sm-head { display: flex; gap: 10px; align-items: center; padding: 12px; background: var(--chrome-hi); }
+.sm-head img { width: 44px; height: 44px; object-fit: cover; border: 2px solid var(--chrome-edge); }
+.sm-head b { display: block; }
+.sm-head span { font-size: 13px; color: var(--chrome-dim); }
+.sm-list { list-style: none; margin: 0; padding: 6px; }
+.sm-list button { width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 7px 8px; cursor: pointer; text-align: left; min-height: 40px; transition: background 120ms ease; }
+.sm-list button:hover, .sm-list button:focus-visible { background: var(--chrome-hi); }
+.sm-list svg { width: 24px; height: 24px; flex-shrink: 0; }
+.sm-sep { height: 1px; background: var(--chrome-edge); margin: 6px 4px; }
+.sm-label { font-size: 13px; color: var(--chrome-dim); padding: 4px 14px; }
+.skins { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 2px 10px 12px; }
+.skin { border: 2px solid transparent; background: none; padding: 2px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.2; color: var(--chrome-dim); align-items: center; text-align: center; }
+.skin i { display: block; width: 100%; aspect-ratio: 1; border: 1px solid var(--chrome-edge); }
+.skin.on { border-color: var(--amber); color: var(--chrome-ink); }
+
+/* taskbar */
+.task { position: fixed; left: 0; right: 0; bottom: 0; height: var(--task-h); padding: 0 max(8px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(8px, env(safe-area-inset-left, 0px)); background: var(--task); border-top: 1px solid var(--chrome-edge); display: flex; align-items: center; gap: 6px; z-index: 100; }
+.start { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; background: var(--start); border: 1px solid var(--start-edge); color: #fff; font-weight: 700; font-style: italic; cursor: pointer; transition: filter 150ms ease; }
+.start:hover, .start[aria-expanded="true"] { filter: brightness(1.2); }
+.tasks { display: flex; gap: 4px; flex: 1; min-width: 0; overflow: hidden; }
+.tbtn { height: 38px; padding: 0 12px; max-width: 170px; background: var(--chrome); border: 1px solid var(--chrome-edge); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: var(--chrome-dim); transition: background 150ms ease; }
+.tbtn.on { background: var(--chrome-hi); color: var(--chrome-ink); }
+.tray { display: flex; align-items: center; gap: 10px; padding: 0 10px; height: 38px; border-left: 1px solid var(--chrome-edge); font-size: 13px; color: var(--chrome-dim); flex-shrink: 0; }
+.tray .awake-dot { width: 8px; height: 8px; border-radius: 50%; background: #4fbf5f; }
+body.daytime .tray .awake-dot { background: #d6a43a; }
+.tray button { background: none; border: 1px solid var(--chrome-edge); padding: 0 8px; min-height: 30px; cursor: pointer; color: var(--chrome-ink); }
+.tray .hearts { display: flex; align-items: center; gap: 4px; }
+.tray .hearts svg { width: 12px; height: 12px; }
+.clock { font-variant-numeric: tabular-nums; color: var(--chrome-ink); }
+
+/* Ink, the taskbar cat */
+.pet { position: fixed; z-index: 110; left: 0; bottom: calc(var(--task-h) - 8px); width: 60px; height: 45px; pointer-events: none; will-change: transform; }
+.pet-btn { pointer-events: auto; width: 60px; height: 45px; padding: 0; border: 0; background: none; cursor: pointer; display: block; }
+.pet svg { width: 60px; height: 45px; shape-rendering: crispEdges; filter: drop-shadow(0 0 1px rgba(170, 186, 210, 0.95)); overflow: visible; }
+.pet.flip svg { transform: scaleX(-1); }
+.pet .fr { display: none; }
+.pet[data-mode="walk"] .walkA, .pet[data-mode="run"] .walkA { display: inline; animation: frA 0.38s steps(1, end) infinite; }
+.pet[data-mode="walk"] .walkB, .pet[data-mode="run"] .walkB { display: inline; animation: frB 0.38s steps(1, end) infinite; }
+.pet[data-mode="run"] .walkA, .pet[data-mode="run"] .walkB { animation-duration: 0.18s; }
+.pet[data-mode="sit"] .sit, .pet[data-mode="eat"] .sit, .pet[data-mode="jump"] .sit { display: inline; }
+.pet[data-mode="sleep"] .sleep { display: inline; }
+@keyframes frA { 0% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes frB { 0% { opacity: 0; } 50% { opacity: 1; } }
+.pet[data-mode="sit"] .tail { animation: tail 2.4s ease-in-out infinite; transform-origin: 6px 10px; }
+@keyframes tail { 50% { transform: rotate(-12deg); } }
+.pet[data-mode="jump"] .pet-btn { animation: hop 0.5s cubic-bezier(.3,1.6,.6,1) 2; }
+@keyframes hop { 50% { transform: translateY(-22px); } }
+.pet[data-mode="eat"] .pet-btn { animation: munch 0.3s ease-in-out infinite alternate; }
+@keyframes munch { to { transform: translateY(2px); } }
+.pet[data-mode="sleep"] .pet-btn { animation: snooze 3s ease-in-out infinite; transform-origin: bottom; }
+@keyframes snooze { 50% { transform: scaleY(0.94); } }
+.bubble { position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%); background: #f4efe4; color: #1a1612; font-size: 13px; padding: 6px 10px; white-space: nowrap; border: 2px solid #1a1612; animation: rise 200ms ease both; pointer-events: none; }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -6px; border: 6px solid transparent; border-top-color: #1a1612; border-bottom: 0; }
+.zz { position: absolute; left: 44px; top: -12px; font-family: var(--lcd); font-size: 18px; color: #c9d4e4; animation: zz 2.6s ease-in-out infinite; pointer-events: none; }
+@keyframes zz { 0% { opacity: 0; transform: translate(0, 6px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(10px, -14px); } }
+.heart, .fish { position: fixed; z-index: 130; width: 16px; height: 16px; pointer-events: none; animation: float 1.2s ease-out both; }
+@keyframes float { from { opacity: 1; transform: translate(0, 0) scale(0.8); } to { opacity: 0; transform: translate(var(--dx, 0px), -60px) scale(1.2); } }
+
+/* toast */
+.toast { position: fixed; z-index: 120; right: 18px; bottom: calc(var(--task-h) + 12px); width: 290px; background: var(--chrome-hi); border: 1px solid var(--chrome-edge); padding: 12px 14px; display: flex; gap: 10px; align-items: center; box-shadow: 0 16px 40px rgba(0,0,0,.55); animation: toast 5s cubic-bezier(.22,1,.36,1) both; font-size: 13px; }
+.toast b { color: #ff8a7e; }
+body[data-skin="snow"] .toast b { color: #b3261e; }
+@keyframes toast { 0% { opacity: 0; transform: translateY(20px); } 8%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(10px); } }
+
+@media (max-width: 899px) {
+  body { overflow: auto; }
+  .desk { position: relative; inset: auto; bottom: auto; min-height: 100svh; padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(var(--task-h) + 56px) max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; }
+  .wall { position: fixed; }
+  .icons { position: relative; left: auto; top: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; z-index: 2; }
+  .icon { width: auto; padding: 6px 2px; }
+  .icon svg { width: 32px; height: 32px; }
+  .win { position: relative !important; left: auto !important; right: auto !important; top: auto !important; bottom: auto !important; width: 100% !important; height: auto !important; z-index: 3 !important; }
+  .bar { cursor: default; }
+  #w-diary .body { padding: 24px 18px 32px; }
+  .d-grid { grid-template-columns: 1fr; }
+  .d-side { flex-direction: row; flex-wrap: wrap; gap: 16px; }
+  .d-side .pol { width: calc(50% - 8px) !important; margin-left: 0 !important; }
+  .chat { max-height: 280px; overflow: auto; }
+  #w-guest .body { max-height: 320px; }
+  .stage { min-height: 320px; }
+  .tasks { display: none; }
+  .task { justify-content: space-between; }
+  .tray #daynight { display: none; }
+  .startmenu { width: calc(100vw - 12px); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; } }
+</style>
+</head>
+<body data-skin="midnight">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-diary" viewBox="0 0 40 40"><rect x="7" y="4" width="26" height="32" fill="#7a3b2e"/><rect x="10" y="4" width="23" height="32" fill="#9b4a39"/><rect x="14" y="10" width="15" height="2" fill="#f0d8b0"/><rect x="14" y="15" width="12" height="2" fill="#f0d8b0"/><rect x="7" y="4" width="3" height="32" fill="#5c2a20"/></symbol>
+  <symbol id="i-msn" viewBox="0 0 40 40"><circle cx="15" cy="14" r="6" fill="#6fd27a"/><path d="M5 32c0-6 4.5-10 10-10s10 4 10 10z" fill="#6fd27a"/><circle cx="27" cy="16" r="5" fill="#f0ac5c"/><path d="M19 33c0-5 3.6-8.5 8-8.5S35 28 35 33z" fill="#f0ac5c"/></symbol>
+  <symbol id="i-amp" viewBox="0 0 40 40"><rect x="4" y="9" width="32" height="22" rx="2" fill="#1d2a22"/><rect x="7" y="12" width="26" height="8" fill="#8cf2a8"/><circle cx="13" cy="25" r="3" fill="#9aa8bb"/><circle cx="27" cy="25" r="3" fill="#9aa8bb"/></symbol>
+  <symbol id="i-photos" viewBox="0 0 40 40"><rect x="6" y="9" width="24" height="24" fill="#ece5d8" transform="rotate(-8 18 21)"/><rect x="11" y="7" width="24" height="24" fill="#f6f1e6"/><rect x="13" y="9" width="20" height="15" fill="#3b5560"/><path d="M13 24l6-7 5 5 3-3 6 5z" fill="#1f2f36"/></symbol>
+  <symbol id="i-guest" viewBox="0 0 40 40"><rect x="6" y="6" width="28" height="22" fill="#e0b44a"/><path d="M12 28l-2 7 9-7z" fill="#e0b44a"/><rect x="11" y="12" width="18" height="2" fill="#6b4d12"/><rect x="11" y="17" width="12" height="2" fill="#6b4d12"/></symbol>
+  <symbol id="i-bin" viewBox="0 0 40 40"><path d="M10 12h20l-2 23H12z" fill="#8a97a8"/><rect x="8" y="9" width="24" height="3" fill="#b9c3d1"/><rect x="16" y="5" width="8" height="4" fill="#b9c3d1"/><path d="M14 15h2l1 16h-2zM19 15h2v16h-2zM24 15h2l-1 16h-2z" fill="#5c6878"/></symbol>
+  <symbol id="i-cat" viewBox="0 0 16 12"><rect x="5" y="5" width="6" height="6" fill="#1b1e24"/><rect x="9" y="1" width="5" height="5" fill="#1b1e24"/><rect x="9" y="0" width="1" height="1" fill="#1b1e24"/><rect x="13" y="0" width="1" height="1" fill="#1b1e24"/><rect x="10" y="3" width="1" height="1" fill="#f4b55f"/><rect x="12" y="3" width="1" height="1" fill="#f4b55f"/><rect x="2" y="10" width="4" height="1" fill="#1b1e24"/></symbol>
+  <symbol id="i-min" viewBox="0 0 12 12"><rect x="2" y="8" width="8" height="2" fill="currentColor"/></symbol>
+  <symbol id="i-x" viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 16 16"><path d="M4 2l10 6-10 6z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 16 16"><rect x="3" y="2" width="4" height="12" fill="currentColor"/><rect x="9" y="2" width="4" height="12" fill="currentColor"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 16 16"><path d="M13 2L5 8l8 6zM3 2h2v12H3z" fill="currentColor"/></symbol>
+  <symbol id="i-next" viewBox="0 0 16 16"><path d="M3 2l8 6-8 6zM11 2h2v12h-2z" fill="currentColor"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 8 7"><path d="M1 0h2v1h2V0h2v1h1v2H7v1H6v1H5v1H3V5H2V4H1V3H0V1h1z" fill="#ff6b8a"/></symbol>
+  <symbol id="i-fish" viewBox="0 0 10 6"><path d="M2 1h4v1h1v1h1V1h2v4H8V3H7v1H6v1H2V4H1V2h1z" fill="#8fc7ff"/><rect x="2" y="2" width="1" height="1" fill="#0b1018"/></symbol>
+</svg>
+
+<div class="desk" id="desk">
+  <div class="wall" aria-hidden="true"><img id="wallImg" src="assets/pic-229.jpg" alt="" width="1000" height="1250"></div>
+
+  <nav class="icons" aria-label="Desktop">
+    <button class="icon" type="button" data-open="w-diary"><svg aria-hidden="true"><use href="#i-diary"/></svg>Diary</button>
+    <button class="icon" type="button" data-open="w-msn"><svg aria-hidden="true"><use href="#i-msn"/></svg>Messenger</button>
+    <button class="icon" type="button" data-open="w-guest"><svg aria-hidden="true"><use href="#i-guest"/></svg>Guestbook</button>
+    <button class="icon" type="button" data-open="w-amp"><svg aria-hidden="true"><use href="#i-amp"/></svg>Mixtape</button>
+    <button class="icon" type="button" data-open="w-photos"><svg aria-hidden="true"><use href="#i-photos"/></svg>Photos</button>
+    <button class="icon" type="button" data-open="w-bin"><svg aria-hidden="true"><use href="#i-bin"/></svg>Almost posted</button>
+  </nav>
+
+  <section class="win focus" id="w-diary" aria-label="Diary">
+    <div class="bar"><svg aria-hidden="true"><use href="#i-diary"/></svg><b>diary — 19 October 2026.doc</b><button class="ctl" type="button" data-min aria-label="Minimise diary"><svg width="12" height="12"><use href="#i-min"/></svg></button><button class="ctl x" type="button" data-close aria-label="Close diary"><svg width="12" height="12"><use href="#i-x"/></svg></button></div>
+    <div class="body">
+      <div class="asleep"><div class="asleep-box"><span class="d-note">shh. 4me is asleep.</span>The diary wakes up after 5 pm. Until then, here is last night's page. The guestbook is always open, and so is Ink.</div></div>
+      <span class="d-date">Sunday, 19 October — 18:42</span>
+      <h1 class="d-title">The lamps came on before I got home</h1>
+      <div class="d-cur"><span>Current mood: <b>drifting</b></span><span>Weather: <b>drizzle, 9°</b></span><span>Read <b>318</b> times</span></div>
+      <div class="d-grid">
+        <div class="d-text">
+          <p>I left work a little later than usual. By the time I got out, every streetlamp was on, that orange light spilling over a road still wet from the afternoon. The sky wasn't dark yet, but it wasn't light either. Blue, like someone had stirred ink into water.</p>
+          <p>I stood at the bus stop for ten minutes without remembering which line I was waiting for. <s>I thought about calling you.</s> The chorus came round just as a bus went past without stopping.</p>
+          <p class="d-note">it will probably rain again tomorrow.</p>
+          <p>Some days nothing is sad, exactly. You just can't find where you are. Today was one of those. Ink was waiting on the windowsill when I got in, which helped.</p>
+        </div>
+        <div class="d-side">
+          <button class="pol" type="button" data-photo="0" aria-label="Open photo: after, writing"><img src="assets/pic-832.jpg" alt="A young woman reading in low window light" width="1000" height="1250"><span>after, writing</span></button>
+          <button class="pol" type="button" data-photo="1" aria-label="Open photo: the shortcut"><img src="assets/pic-600.jpg" alt="A hooded figure alone in a pine forest" width="1000" height="1250"><span>the shortcut</span></button>
+          <button class="ticket" type="button" data-open="w-amp"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span><small>ON REPEAT</small><b>How to Disappear Completely</b></span></button>
+        </div>
+      </div>
+      <div class="d-foot"><a href="#">« Thirteen minutes to three</a><span><a href="#" data-open-link="w-msn">4 notes</a> · <a href="#" data-open-link="w-guest">sign the guestbook</a></span></div>
+    </div>
+  </section>
+
+  <section class="win" id="w-msn" aria-label="Messenger">
+    <div class="bar"><svg aria-hidden="true"><use href="#i-msn"/></svg><b>4me Messenger — tonight's notes</b><button class="ctl" type="button" data-min aria-label="Minimise Messenger"><svg width="12" height="12"><use href="#i-min"/></svg></button><button class="ctl x" type="button" data-close aria-label="Close Messenger"><svg width="12" height="12"><use href="#i-x"/></svg></button></div>
+    <div class="body">
+      <div class="me">
+        <img src="assets/pic-1014.jpg" alt="4me's display picture: a woman facing the sea, a ribbon across her eyes" width="1000" height="1250">
+        <div style="min-width:0;flex:1">
+          <b>4me <span class="on-dot awake">(online)</span><span class="off-dot asleep">(asleep)</span></b>
+          <div class="blast"><q>rain again. no one's coming. that's fine.</q><small>Blast · 2 hours ago</small></div>
+          <span class="np"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span id="npText">Radiohead – How to Disappear Completely</span></span>
+        </div>
+      </div>
+      <details class="older"><summary>Older blasts</summary>
+        <ul>
+          <li>mưa rồi. không ai đón. <span>· 17 Oct</span></li>
+          <li>the snow beat me to the hill <span>· 12 Oct</span></li>
+          <li>found my old mp3 player. it still works. <span>· 9 Oct</span></li>
+          <li>away. don't buzz. (buzz.) <span>· 6 Oct</span></li>
+        </ul>
+      </details>
+      <details class="buddies" open><summary>Reading now (3)</summary>
+        <div class="buddy"><span class="dot"></span>grey_cloud_92 <em>can't sleep again</em></div>
+        <div class="buddy"><span class="dot"></span>hanh. <em>listening: Mazzy Star – Fade Into You</em></div>
+        <div class="buddy"><span class="dot away"></span>wren <em>away</em></div>
+      </details>
+      <p class="chat-hd">Notes on tonight's page</p>
+      <div class="chat" id="chat" aria-live="polite">
+        <p class="ln"><span class="t">(21:03)</span> <span class="n">grey_cloud_92:</span> “blue, like someone had stirred ink into water.” sat at the window for a while after that</p>
+        <p class="ln"><span class="t">(21:40)</span> <span class="n me2">4me:</span> thank you. only after writing it did i notice the sky really was like that</p>
+        <p class="ln"><span class="t">(22:17)</span> <span class="n">hanh.:</span> listening to this song at a bus stop is a lost cause</p>
+        <p class="ln"><span class="t">(00:52)</span> <span class="n">a stranger:</span> it is raining tomorrow. bring an umbrella. say hi to Ink</p>
+      </div>
+    </div>
+    <form class="compose" id="compose">
+      <label for="msg" class="sr">Leave a note on tonight's page</label>
+      <input id="msg" type="text" placeholder="leave a note…" maxlength="160" autocomplete="off">
+      <button class="btn" type="submit">Send</button>
+      <button class="btn buzz" type="button" id="buzz" title="Shake the diary">BUZZ!</button>
+    </form>
+  </section>
+
+  <section class="win" id="w-amp" aria-label="Mixtape">
+    <div class="bar"><svg aria-hidden="true"><use href="#i-amp"/></svg><b>mixtape.m3u — October nights</b><button class="ctl" type="button" data-min aria-label="Minimise mixtape"><svg width="12" height="12"><use href="#i-min"/></svg></button><button class="ctl x" type="button" data-close aria-label="Close mixtape"><svg width="12" height="12"><use href="#i-x"/></svg></button></div>
+    <div class="amp" id="amp">
+      <div class="lcd"><span class="time" id="time">01:23</span><span class="scroll"><span id="song">*** 1. Radiohead – How to Disappear Completely (5:56) ***</span></span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+      <div class="ctrls">
+        <button class="btn" type="button" id="prev" aria-label="Previous song"><svg><use href="#i-prev"/></svg></button>
+        <button class="btn" type="button" id="pp" aria-label="Pause"><svg><use href="#i-pause" id="ppi"/></svg></button>
+        <button class="btn" type="button" id="next" aria-label="Next song"><svg><use href="#i-next"/></svg></button>
+      </div>
+      <ul class="plist" id="plist"></ul>
+    </div>
+  </section>
+
+  <section class="win" id="w-guest" aria-label="Guestbook" hidden>
+    <div class="bar"><svg aria-hidden="true"><use href="#i-guest"/></svg><b>Guestbook — shoutbox</b><button class="ctl" type="button" data-min aria-label="Minimise guestbook"><svg width="12" height="12"><use href="#i-min"/></svg></button><button class="ctl x" type="button" data-close aria-label="Close guestbook"><svg width="12" height="12"><use href="#i-x"/></svg></button></div>
+    <div class="body" id="shouts" aria-live="polite"></div>
+    <form class="gform" id="gform">
+      <div class="emos" role="group" aria-label="Add an emoticon">
+        <button type="button" data-emo=":-)">:-)</button><button type="button" data-emo=":-(">:-(</button><button type="button" data-emo="&lt;3">&lt;3</button><button type="button" data-emo=";-)">;-)</button><button type="button" data-emo="zzz">zzz</button><button type="button" data-emo="^_^">^_^</button>
+      </div>
+      <div class="grow">
+        <label for="gname" class="sr">Your name</label><input class="field" id="gname" type="text" placeholder="name" maxlength="24" style="flex:0 0 96px">
+        <label for="gtext" class="sr">Your shout</label><input class="field" id="gtext" type="text" placeholder="shout something…" maxlength="140">
+        <button class="btn" type="submit">Shout!</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="win" id="w-photos" aria-label="Photos" hidden>
+    <div class="bar"><svg aria-hidden="true"><use href="#i-photos"/></svg><b id="phTitle">My Pictures — October</b><button class="ctl" type="button" data-min aria-label="Minimise photos"><svg width="12" height="12"><use href="#i-min"/></svg></button><button class="ctl x" type="button" data-close aria-label="Close photos"><svg width="12" height="12"><use href="#i-x"/></svg></button></div>
+    <div class="body" id="phBody">
+      <div class="ph-grid" id="phGrid"></div>
+      <div class="viewer">
+        <div class="stage" id="stage"></div>
+        <div class="vbar">
+          <button class="btn" type="button" id="phBack">All photos</button>
+          <span class="cap" id="phCap"></span>
+          <button class="btn" type="button" id="phPrev" aria-label="Previous photo"><svg width="16" height="16"><use href="#i-prev"/></svg></button>
+          <button class="btn" type="button" id="phShow">Slideshow</button>
+          <button class="btn" type="button" id="phNext" aria-label="Next photo"><svg width="16" height="16"><use href="#i-next"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="win" id="w-bin" aria-label="Almost posted" hidden>
+    <div class="bar"><svg aria-hidden="true"><use href="#i-bin"/></svg><b>Almost posted (5 items)</b><button class="ctl" type="button" data-min aria-label="Minimise almost posted"><svg width="12" height="12"><use href="#i-min"/></svg></button><button class="ctl x" type="button" data-close aria-label="Close almost posted"><svg width="12" height="12"><use href="#i-x"/></svg></button></div>
+    <div class="body">
+      <p class="d-note">things i wrote at 3 am and took back.</p>
+      <div class="draft"><s>i miss who i was in 2006 more than i miss anyone.</s><small>deleted 17 Oct, 02:58</small></div>
+      <div class="draft"><s>maybe i should just move somewhere with more snow.</s><small>deleted 12 Oct, 23:40</small></div>
+      <div class="draft"><s>you were the only one who knew the song.</s><small>deleted 9 Oct, 01:12</small></div>
+      <div class="draft"><s>today i was happy for no reason and it scared me.</s><small>deleted 4 Oct, 19:05</small></div>
+      <div class="draft"><s>if you're reading this, hi.</s><small>deleted 1 Oct, 00:01</small></div>
+    </div>
+  </section>
+</div>
+
+<div class="startmenu" id="startmenu" hidden aria-label="Start menu">
+  <div class="sm-head"><img src="assets/pic-1014.jpg" alt="" width="1000" height="1250"><div><b>4me</b><span id="smState">awake since 17:00</span></div></div>
+  <ul class="sm-list">
+    <li><button type="button" data-open="w-diary"><svg aria-hidden="true"><use href="#i-diary"/></svg>Tonight's diary</button></li>
+    <li><button type="button" data-open="w-msn"><svg aria-hidden="true"><use href="#i-msn"/></svg>Messenger</button></li>
+    <li><button type="button" data-open="w-guest"><svg aria-hidden="true"><use href="#i-guest"/></svg>Guestbook</button></li>
+    <li><button type="button" data-open="w-amp"><svg aria-hidden="true"><use href="#i-amp"/></svg>Mixtape</button></li>
+    <li><button type="button" data-open="w-photos"><svg aria-hidden="true"><use href="#i-photos"/></svg>My Pictures</button></li>
+    <li><button type="button" data-open="w-bin"><svg aria-hidden="true"><use href="#i-bin"/></svg>Almost posted</button></li>
+    <li class="sm-sep" aria-hidden="true"></li>
+    <li><button type="button" id="callInk"><svg aria-hidden="true" style="shape-rendering:crispEdges;background:#c9d4e4;padding:2px"><use href="#i-cat"/></svg>Call Ink</button></li>
+  </ul>
+  <p class="sm-label" id="skinLabel">Skin</p>
+  <div class="skins" id="skins" role="group" aria-labelledby="skinLabel">
+    <button class="skin on" type="button" data-skin="midnight" aria-pressed="true"><i style="background:#22304a"></i>Midnight</button>
+    <button class="skin" type="button" data-skin="bluehour" aria-pressed="false"><i style="background:#1f3a63"></i>Blue hour</button>
+    <button class="skin" type="button" data-skin="candle" aria-pressed="false"><i style="background:#8e4a22"></i>Candle</button>
+    <button class="skin" type="button" data-skin="snow" aria-pressed="false"><i style="background:#e9ecf0"></i>Snow</button>
+    <button class="skin" type="button" data-skin="luna" aria-pressed="false"><i style="background:#1d5ad6"></i>Luna ’06</button>
+  </div>
+</div>
+
+<div class="pet" id="pet" data-mode="sit">
+  <button class="pet-btn" type="button" id="petBtn" aria-label="Ink the cat. Pet her.">
+    <svg viewBox="0 0 16 12" aria-hidden="true">
+      <g class="fr walkA" fill="#1b1e24"><rect x="3" y="5" width="9" height="4"/><rect x="11" y="3" width="4" height="4"/><rect x="11" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="1" y="2" width="1" height="3"/><rect x="2" y="4" width="1" height="2"/><rect x="4" y="9" width="1" height="2"/><rect x="10" y="9" width="1" height="2"/><rect x="12" y="4" width="1" height="1" fill="#f4b55f"/><rect x="14" y="4" width="1" height="1" fill="#f4b55f"/></g>
+      <g class="fr walkB" fill="#1b1e24"><rect x="3" y="5" width="9" height="4"/><rect x="11" y="3" width="4" height="4"/><rect x="11" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="3"/><rect x="2" y="5" width="1" height="1"/><rect x="5" y="9" width="1" height="2"/><rect x="9" y="9" width="1" height="2"/><rect x="12" y="4" width="1" height="1" fill="#f4b55f"/><rect x="14" y="4" width="1" height="1" fill="#f4b55f"/></g>
+      <g class="fr sit" fill="#1b1e24"><rect x="5" y="5" width="6" height="6"/><rect x="9" y="1" width="5" height="5"/><rect x="9" y="0" width="1" height="1"/><rect x="13" y="0" width="1" height="1"/><rect x="10" y="3" width="1" height="1" fill="#f4b55f"/><rect x="12" y="3" width="1" height="1" fill="#f4b55f"/><g class="tail"><rect x="2" y="10" width="4" height="1"/><rect x="2" y="8" width="1" height="2"/></g></g>
+      <g class="fr sleep" fill="#1b1e24"><rect x="3" y="7" width="10" height="4"/><rect x="10" y="5" width="4" height="4"/><rect x="10" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="11" y="7" width="2" height="1" fill="#3a3f48"/><rect x="1" y="10" width="3" height="1"/></g>
+    </svg>
+  </button>
+</div>
+
+<footer class="task">
+  <button class="start" type="button" id="startBtn" aria-haspopup="true" aria-expanded="false" aria-controls="startmenu">4me</button>
+  <div class="tasks" id="tasks"></div>
+  <div class="tray">
+    <span class="hearts" title="Times Ink has been petted"><svg aria-hidden="true" viewBox="0 0 8 7"><use href="#i-heart"/></svg><span id="petCount">12</span></span>
+    <span class="awake-dot" aria-hidden="true"></span>
+    <span class="awake">awake</span><span class="asleep">asleep</span>
+    <button type="button" id="daynight" aria-pressed="false">Preview daytime</button>
+    <span class="clock" id="clock">18:42</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var mobile = function () { return innerWidth < 900; };
+  var store = { get: function (k, d) { try { var v = localStorage.getItem('4me-' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set: function (k, v) { try { localStorage.setItem('4me-' + k, JSON.stringify(v)); } catch (e) {} } };
+  function now() { var t = new Date(); return String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); }
+  function $(id) { return document.getElementById(id); }
+  try {
+    var c = document.createElement('canvas'); c.width = c.height = 140;
+    var g = c.getContext('2d'), d = g.createImageData(140, 140);
+    for (var i = 0; i < d.data.length; i += 4) { var v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+    g.putImageData(d, 0, 0);
+    document.documentElement.style.setProperty('--grain', 'url(' + c.toDataURL() + ')');
+  } catch (e) {}
+
+  /* windows */
+  var wins = Array.prototype.slice.call(document.querySelectorAll('.win'));
+  var z = 20, tasks = $('tasks');
+  var names = { 'w-diary': 'diary — 19 Oct', 'w-msn': 'Messenger', 'w-amp': 'mixtape.m3u', 'w-bin': 'Almost posted', 'w-photos': 'My Pictures', 'w-guest': 'Guestbook' };
+  function focus(w) { wins.forEach(function (x) { x.classList.remove('focus'); }); w.classList.add('focus'); w.style.zIndex = ++z; renderTasks(); }
+  function open(id) { var w = $(id); w.hidden = false; w.dataset.min = ''; focus(w); closeStart(); if (mobile()) w.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
+  function renderTasks() {
+    tasks.innerHTML = '';
+    wins.forEach(function (w) {
+      if (w.hidden && !w.dataset.min) return;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'tbtn' + (w.classList.contains('focus') && !w.hidden ? ' on' : '');
+      b.textContent = names[w.id];
+      b.addEventListener('click', function () { if (w.hidden) { w.hidden = false; w.dataset.min = ''; focus(w); } else if (w.classList.contains('focus')) { w.hidden = true; w.dataset.min = '1'; renderTasks(); } else focus(w); });
+      tasks.appendChild(b);
+    });
+  }
+  wins.forEach(function (w) {
+    w.addEventListener('pointerdown', function () { if (!w.classList.contains('focus')) focus(w); });
+    w.querySelector('[data-close]').addEventListener('click', function (e) { e.stopPropagation(); w.hidden = true; w.dataset.min = ''; renderTasks(); });
+    w.querySelector('[data-min]').addEventListener('click', function (e) { e.stopPropagation(); w.hidden = true; w.dataset.min = '1'; renderTasks(); });
+    var bar = w.querySelector('.bar'), sx, sy, ox, oy, dragging = false;
+    bar.addEventListener('pointerdown', function (e) {
+      if (mobile() || e.target.closest('button')) return;
+      dragging = true; bar.setPointerCapture(e.pointerId);
+      var r = w.getBoundingClientRect(), dr = $('desk').getBoundingClientRect();
+      w.style.left = (r.left - dr.left) + 'px'; w.style.top = (r.top - dr.top) + 'px'; w.style.right = 'auto'; w.style.bottom = 'auto';
+      sx = e.clientX; sy = e.clientY; ox = r.left - dr.left; oy = r.top - dr.top;
+    });
+    bar.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      w.style.left = Math.max(-w.offsetWidth + 120, Math.min(innerWidth - 120, ox + e.clientX - sx)) + 'px';
+      w.style.top = Math.max(0, Math.min(innerHeight - 120, oy + e.clientY - sy)) + 'px';
+    });
+    bar.addEventListener('pointerup', function () { dragging = false; });
+  });
+  document.querySelectorAll('[data-open]').forEach(function (b) { b.addEventListener('click', function () { open(b.dataset.open); }); });
+  document.querySelectorAll('[data-open-link]').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); open(a.dataset.openLink); }); });
+  renderTasks();
+
+  /* start menu + skins */
+  var sm = $('startmenu'), sb = $('startBtn');
+  function closeStart() { sm.hidden = true; sb.setAttribute('aria-expanded', 'false'); }
+  sb.addEventListener('click', function (e) { e.stopPropagation(); var opening = sm.hidden; sm.hidden = !opening; sb.setAttribute('aria-expanded', opening ? 'true' : 'false'); if (opening) sm.querySelector('button').focus(); });
+  document.addEventListener('click', function (e) { if (!sm.hidden && !sm.contains(e.target) && e.target !== sb) closeStart(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sm.hidden) { closeStart(); sb.focus(); } });
+  var walls = { midnight: 'assets/pic-229.jpg', bluehour: 'assets/pic-594.jpg', candle: 'assets/pic-660.jpg', snow: 'assets/pic-726.jpg', luna: 'assets/pic-878.jpg' };
+  var dayWall = 'assets/pic-877.jpg', skin = store.get('skin', 'midnight'), day = false;
+  function applyWall() { var src = day && skin !== 'snow' ? dayWall : walls[skin]; var im = $('wallImg'); if (im.getAttribute('src') !== src) im.src = src; }
+  function setSkin(s) { skin = walls[s] ? s : 'midnight'; document.body.dataset.skin = skin; document.querySelectorAll('.skin').forEach(function (b) { var on = b.dataset.skin === skin; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }); store.set('skin', skin); applyWall(); }
+  document.querySelectorAll('.skin').forEach(function (b) { b.addEventListener('click', function () { setSkin(b.dataset.skin); }); });
+
+  /* Ink the cat */
+  var pet = $('pet'), petBtn = $('petBtn');
+  var px = Math.max(140, innerWidth * 0.42), dir = 1, mode = 'sit', target = px, until = performance.now() + 2500, speed = 38, bubbleT = null;
+  var petCount = store.get('pets', 12); $('petCount').textContent = petCount;
+  function setMode(m) { mode = m; pet.dataset.mode = m; var zz = pet.querySelector('.zz'); if (m === 'sleep' && !zz) { var s = document.createElement('span'); s.className = 'zz'; s.textContent = 'z'; s.setAttribute('aria-hidden', 'true'); pet.appendChild(s); } else if (m !== 'sleep' && zz) zz.remove(); }
+  function say(text, ms) { var old = pet.querySelector('.bubble'); if (old) old.remove(); var b = document.createElement('span'); b.className = 'bubble'; b.setAttribute('role', 'status'); b.textContent = text; pet.appendChild(b); clearTimeout(bubbleT); bubbleT = setTimeout(function () { b.remove(); }, ms || 2600); }
+  function pop(sym, n) {
+    var r = petBtn.getBoundingClientRect();
+    for (var k = 0; k < (n || 1); k++) {
+      var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      s.setAttribute('class', sym === 'i-fish' ? 'fish' : 'heart'); s.setAttribute('viewBox', sym === 'i-fish' ? '0 0 10 6' : '0 0 8 7'); s.setAttribute('aria-hidden', 'true');
+      s.innerHTML = '<use href="#' + sym + '"/>';
+      s.style.left = (r.left + 16 + (k - 1) * 10) + 'px'; s.style.top = (r.top - 4) + 'px'; s.style.setProperty('--dx', ((k - 1) * 14) + 'px'); s.style.animationDelay = (k * 90) + 'ms';
+      document.body.appendChild(s); setTimeout(function (el) { el.remove(); }.bind(null, s), 1500);
+    }
+  }
+  var petLines = ['mrrp.', 'she wrote about the rain again.', 'leave a note, i get a fish.', 'purrrr', 'the bus never stops for her.', 'try the bin icon. shh.', 'start menu. skins. trust me.'];
+  petBtn.addEventListener('click', function () {
+    petCount++; store.set('pets', petCount); $('petCount').textContent = petCount; pop('i-heart', 3);
+    if (day) { say('zzz… come back after dark.'); return; }
+    setMode('sit'); until = performance.now() + 3500; say(petLines[Math.floor(Math.random() * petLines.length)]);
+  });
+  function feed() { if (day) { say('zzz… (smells fish)'); return; } setMode('eat'); until = performance.now() + 2200; pop('i-fish', 1); say('nom. thank you for the note.'); }
+  function startle() { if (day) return; setMode('jump'); until = performance.now() + 1100; say('!!'); }
+  $('callInk').addEventListener('click', function () { closeStart(); if (day) { say('zzz… not now.'); return; } target = innerWidth / 2 - 24; speed = 120; setMode(reduce ? 'sit' : 'run'); if (reduce) { px = target; say('mrrp?'); } });
+  var last = performance.now();
+  function petLoop(t) {
+    var dt = Math.min(0.05, (t - last) / 1000); last = t;
+    if (day) { if (mode !== 'sleep') setMode('sleep'); }
+    else if (reduce) { if (mode === 'walk' || mode === 'run' || mode === 'sleep') setMode('sit'); }
+    else if (mode === 'walk' || mode === 'run') {
+      dir = target > px ? 1 : -1; var step = speed * dt * dir;
+      if (Math.abs(target - px) <= Math.abs(step)) { px = target; if (speed > 60) say('mrrp?'); speed = 38; setMode('sit'); until = t + 2500 + Math.random() * 4000; }
+      else px += step;
+    } else if (t > until) {
+      if (mode !== 'sit') setMode('sit');
+      var maxX = innerWidth - 60; target = 12 + Math.random() * (maxX - 12);
+      if (Math.abs(target - px) < 80) target = px > maxX / 2 ? px - 160 : px + 160;
+      target = Math.max(12, Math.min(maxX, target)); setMode('walk');
+    }
+    pet.classList.toggle('flip', dir < 0);
+    pet.style.transform = 'translateX(' + px.toFixed(1) + 'px)';
+    requestAnimationFrame(petLoop);
+  }
+  requestAnimationFrame(petLoop);
+
+  /* messenger + BUZZ */
+  var desk = $('desk'), chat = $('chat');
+  function line(html) { var p = document.createElement('p'); p.className = 'ln'; p.innerHTML = html; chat.appendChild(p); chat.parentElement.scrollTop = 1e6; chat.scrollTop = 1e6; }
+  function shake() { if (reduce) return; desk.classList.remove('shake'); void desk.offsetWidth; desk.classList.add('shake'); }
+  var actx;
+  function buzzSound() {
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = actx.createOscillator(), gn = actx.createGain(); o.type = 'square'; o.frequency.value = 95;
+      gn.gain.setValueAtTime(0.0001, actx.currentTime);
+      for (var k = 0; k < 4; k++) { gn.gain.setValueAtTime(0.05, actx.currentTime + k * 0.12); gn.gain.setValueAtTime(0.0001, actx.currentTime + k * 0.12 + 0.07); }
+      o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.5);
+    } catch (e) {}
+  }
+  $('buzz').addEventListener('click', function () { line('<span class="t">(' + now() + ')</span> <span class="buzz">You have just sent a BUZZ!!!</span>'); shake(); buzzSound(); startle(); });
+  $('compose').addEventListener('submit', function (e) {
+    e.preventDefault(); var m = $('msg'); var t = m.value.trim(); if (!t) return;
+    var p = document.createElement('p'); p.className = 'ln'; p.innerHTML = '<span class="t">(' + now() + ')</span> <span class="n">you:</span> ';
+    p.appendChild(document.createTextNode(t)); chat.appendChild(p); m.value = ''; chat.parentElement.scrollTop = 1e6; feed();
+  });
+  setTimeout(function () {
+    line('<span class="t">(' + now() + ')</span> <span class="buzz">grey_cloud_92 has just sent you a BUZZ!!!</span>');
+    shake(); startle();
+    var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status');
+    t.innerHTML = '<svg width="28" height="28" aria-hidden="true"><use href="#i-msn"/></svg><span><b>BUZZ!!!</b> grey_cloud_92 is reading your diary</span>';
+    document.body.appendChild(t); setTimeout(function () { t.remove(); }, 5200);
+  }, 4500);
+
+  /* guestbook */
+  var shoutsEl = $('shouts');
+  var seed = [['grey_cloud_92', '23:04', 'read the bus 18 one on a night shift. felt like someone was sitting with me :-)'], ['hanh.', '01:12', 'first hit counter since 2007. visitor four thousand something <3'], ['wren', '22:41', 'your cat walked across my screen and i laughed out loud'], ['m.', '02:58', 'leaving the light on for whoever reads this at 3 am']];
+  var shouts = store.get('shouts', seed);
+  function renderShouts() {
+    shoutsEl.innerHTML = '';
+    shouts.forEach(function (s) { var dv = document.createElement('div'); dv.className = 'shout'; var h = document.createElement('div'); var b = document.createElement('b'); b.textContent = s[0]; var sp = document.createElement('span'); sp.textContent = ' · ' + s[1]; h.appendChild(b); h.appendChild(sp); var p = document.createElement('p'); p.textContent = s[2]; dv.appendChild(h); dv.appendChild(p); shoutsEl.appendChild(dv); });
+    shoutsEl.scrollTop = 1e6;
+  }
+  renderShouts();
+  document.querySelectorAll('[data-emo]').forEach(function (b) { b.addEventListener('click', function () { var i = $('gtext'); i.value = (i.value ? i.value + ' ' : '') + b.dataset.emo; i.focus(); }); });
+  $('gform').addEventListener('submit', function (e) {
+    e.preventDefault(); var t = $('gtext').value.trim(); if (!t) return;
+    shouts.push([$('gname').value.trim() || 'a stranger', now(), t]); shouts = shouts.slice(-40); store.set('shouts', shouts);
+    $('gtext').value = ''; renderShouts(); feed();
+  });
+
+  /* photos */
+  var photos = [['assets/pic-832.jpg', 'after, writing', 'IMG_1021.jpg'], ['assets/pic-600.jpg', 'the shortcut through the pines', 'IMG_1019.jpg'], ['assets/pic-726.jpg', 'the hill, the first snow', 'IMG_1012.jpg'], ['assets/pic-878.jpg', 'trees with their arms up', 'IMG_1017.jpg'], ['assets/pic-338.jpg', 'the shore, last week', 'IMG_1015.jpg'], ['assets/pic-923.jpg', 'the only colour left', 'IMG_1002.jpg'], ['assets/pic-594.jpg', 'boathouse, nobody home', 'IMG_1006.jpg'], ['assets/pic-660.jpg', 'a light you can hold', 'IMG_1023.jpg'], ['assets/pic-375.jpg', 'the field behind the flats', 'IMG_1009.jpg']];
+  var grid = $('phGrid'), stage = $('stage'), phBody = $('phBody'), cur = 0, showT = null;
+  photos.forEach(function (p, i) {
+    var b = document.createElement('button'); b.type = 'button';
+    var im = document.createElement('img'); im.src = p[0]; im.alt = p[1]; im.width = 1000; im.height = 1250; im.loading = 'lazy';
+    var sp = document.createElement('span'); sp.textContent = p[2]; b.appendChild(im); b.appendChild(sp);
+    b.addEventListener('click', function () { view(i); }); grid.appendChild(b);
+    var big = document.createElement('img'); big.src = p[0]; big.alt = p[1]; big.width = 1000; big.height = 1250; big.loading = 'lazy'; stage.appendChild(big);
+  });
+  var stageImgs = stage.querySelectorAll('img');
+  function show(i) { stageImgs[cur].classList.remove('on'); cur = (i + photos.length) % photos.length; stageImgs[cur].classList.add('on'); $('phCap').textContent = photos[cur][2] + ' — ' + photos[cur][1]; $('phTitle').textContent = photos[cur][2] + ' — My Pictures'; }
+  function view(i) { phBody.classList.add('viewing'); show(i); }
+  function stopShow() { clearInterval(showT); showT = null; $('phShow').textContent = 'Slideshow'; }
+  $('phBack').addEventListener('click', function () { phBody.classList.remove('viewing'); stopShow(); $('phTitle').textContent = 'My Pictures — October'; });
+  $('phPrev').addEventListener('click', function () { show(cur - 1); });
+  $('phNext').addEventListener('click', function () { show(cur + 1); });
+  $('phShow').addEventListener('click', function () { if (showT) { stopShow(); return; } this.textContent = 'Stop'; showT = setInterval(function () { show(cur + 1); }, reduce ? 4000 : 3200); });
+  $('w-photos').addEventListener('keydown', function (e) { if (!phBody.classList.contains('viewing')) return; if (e.key === 'ArrowLeft') show(cur - 1); if (e.key === 'ArrowRight') show(cur + 1); });
+  document.querySelectorAll('[data-photo]').forEach(function (b) { b.addEventListener('click', function () { open('w-photos'); view(+b.dataset.photo); }); });
+
+  /* mixtape */
+  var songs = [['Radiohead', 'How to Disappear Completely', 356], ['Mazzy Star', 'Fade Into You', 295], ['Elliott Smith', 'Between the Bars', 141], ['Death Cab for Cutie', 'Transatlanticism', 475], ['Cocteau Twins', 'Heaven or Las Vegas', 298]];
+  var sIdx = 0, sec = 83, playing = true, amp = $('amp'), plist = $('plist');
+  function fmt(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+  function renderSong() {
+    $('song').textContent = '*** ' + (sIdx + 1) + '. ' + songs[sIdx][0] + ' – ' + songs[sIdx][1] + ' (' + fmt(songs[sIdx][2]) + ') ***';
+    $('npText').textContent = songs[sIdx][0] + ' – ' + songs[sIdx][1];
+    $('time').textContent = fmt(sec);
+    plist.innerHTML = '';
+    songs.forEach(function (s, i) {
+      var li = document.createElement('li'), b = document.createElement('button'); b.type = 'button'; if (i === sIdx) { b.className = 'on'; b.setAttribute('aria-current', 'true'); }
+      var a = document.createElement('span'); a.textContent = (i + 1) + '. ' + s[0] + ' – ' + s[1]; var t = document.createElement('span'); t.textContent = fmt(s[2]); b.appendChild(a); b.appendChild(t);
+      b.addEventListener('click', function () { sIdx = i; sec = 0; setPlay(true); renderSong(); }); li.appendChild(b); plist.appendChild(li);
+    });
+  }
+  function setPlay(p) { playing = p; document.body.classList.toggle('paused', !p); $('ppi').setAttribute('href', p ? '#i-pause' : '#i-play'); $('pp').setAttribute('aria-label', p ? 'Pause' : 'Play'); }
+  $('pp').addEventListener('click', function () { setPlay(!playing); });
+  $('next').addEventListener('click', function () { sIdx = (sIdx + 1) % songs.length; sec = 0; renderSong(); });
+  $('prev').addEventListener('click', function () { sIdx = (sIdx + songs.length - 1) % songs.length; sec = 0; renderSong(); });
+  setInterval(function () { if (!playing) return; sec++; if (sec >= songs[sIdx][2]) { sIdx = (sIdx + 1) % songs.length; sec = 0; renderSong(); } $('time').textContent = fmt(sec); }, 1000);
+  renderSong();
+
+  /* awake after dark */
+  var dn = $('daynight');
+  function hourIsDay() { var h = new Date().getHours(); return h >= 6 && h < 17; }
+  day = hourIsDay();
+  function applyDay() {
+    document.body.classList.toggle('daytime', day); dn.textContent = day ? 'Preview night' : 'Preview daytime'; dn.setAttribute('aria-pressed', day ? 'true' : 'false');
+    $('smState').textContent = day ? 'asleep until 17:00' : 'awake since 17:00';
+    applyWall(); if (!day && mode === 'sleep') { setMode('sit'); until = performance.now() + 1500; say('*yawn*'); }
+  }
+  dn.addEventListener('click', function () { day = !day; applyDay(); });
+  setSkin(skin); applyDay();
+  function tick() { $('clock').textContent = now(); }
+  tick(); setInterval(tick, 15000);
+})();
+</script>
+</body>
+</html>

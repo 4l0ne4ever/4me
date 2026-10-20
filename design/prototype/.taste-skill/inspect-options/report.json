@@ -1,0 +1,2468 @@
+{
+ "url": "options.html",
+ "at": "2026-10-20T02:26:45.370Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 5,
+   "filled": [
+    0.26,
+    1,
+    1,
+    1,
+    1
+   ],
+   "motion": {
+    "elements": 28,
+    "css": 28,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 1,
+    "playingVideos": 1
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 3610,
+     "screens": 4,
+     "words": 413,
+     "img": 16,
+     "video": 1,
+     "canvas": 1,
+     "svg": 0,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 6,
+     "videoCount": 1,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-600.jpg",
+      "pic-832.jpg",
+      "pic-338.jpg",
+      "multicolored-aurora-borealis-pillar-over-brastad",
+      "pic-1014.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "chars": 26,
+     "lines": 2,
+     "size": 144,
+     "vw": 10,
+     "font": "Cormorant",
+     "weight": 300,
+     "tracking": -0.02,
+     "leading": 0.86,
+     "upper": false,
+     "italic": true,
+     "mono": false,
+     "align": "left",
+     "position": "left",
+     "widthRatio": 0.52,
+     "top": 268,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "lines": 2,
+     "size": 144,
+     "font": "Cormorant"
+    },
+    "headings": [
+     {
+      "text": "4me",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 30,
+      "vw": 2.1,
+      "font": "Cormorant",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": true,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.03,
+      "top": 24,
+      "tag": "b",
+      "kind": "heading"
+     },
+     {
+      "text": "Night walks, written down.",
+      "words": 4,
+      "chars": 26,
+      "lines": 2,
+      "size": 144,
+      "vw": 10,
+      "font": "Cormorant",
+      "weight": 300,
+      "tracking": -0.02,
+      "leading": 0.86,
+      "upper": false,
+      "italic": true,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.52,
+      "top": 268,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "“The sky wasn't dark yet, but it wasn't light either. Blue, like someone had stirred ink into water.”",
+      "words": 18,
+      "chars": 101,
+      "lines": 3,
+      "size": 34,
+      "vw": 2.4,
+      "font": "Cormorant",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.38,
+      "top": 684,
+      "tag": "p",
+      "kind": "statement"
+     },
+     {
+      "text": "4me",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 34,
+      "vw": 2.4,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 0.8,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.03,
+      "top": 920,
+      "tag": "b",
+      "kind": "heading"
+     },
+     {
+      "text": "Sunday, 19 October — 18:42",
+      "words": 5,
+      "chars": 26,
+      "lines": 1,
+      "size": 49,
+      "vw": 3.4,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 0.9,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.56,
+      "top": 1058,
+      "tag": "p",
+      "kind": "statement"
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "words": 8,
+      "chars": 35,
+      "lines": 2,
+      "size": 77.8,
+      "vw": 5.4,
+      "font": "Newsreader",
+      "weight": 400,
+      "tracking": -0.025,
+      "leading": 0.98,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.56,
+      "top": 1156,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "I write when the sky lights up",
+      "words": 7,
+      "chars": 30,
+      "lines": 2,
+      "size": 121,
+      "vw": 8.4,
+      "font": "Fraunces",
+      "weight": 300,
+      "tracking": -0.03,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "center",
+      "widthRatio": 0.52,
+      "top": 2017,
+      "mixedFonts": [
+       "Fraunces",
+       "Fraunces italic"
+      ],
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "4me's journal a night diary since October 2026 · you are visitor 004271",
+      "words": 13,
+      "chars": 71,
+      "lines": 1,
+      "size": 66.2,
+      "vw": 4.6,
+      "font": "Newsreader",
+      "weight": 400,
+      "tracking": -0.02,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.28,
+      "top": 2784,
+      "mixedFonts": [
+       "Newsreader",
+       "Verdana",
+       "Courier New"
+      ],
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "words": 8,
+      "chars": 35,
+      "lines": 1,
+      "size": 32,
+      "vw": 2.2,
+      "font": "Newsreader",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.56,
+      "top": 3004,
+      "tag": "h3",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 9,
+     "maxLines": 3,
+     "over2Lines": 0,
+     "statements": 2,
+     "centered": 1,
+     "medianWords": 8,
+     "mixedFontHeadings": 2
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Hanken Grotesk",
+       "share": 0.38,
+       "mono": false
+      },
+      {
+       "family": "Newsreader",
+       "share": 0.28,
+       "mono": false
+      },
+      {
+       "family": "Verdana",
+       "share": 0.23,
+       "mono": false
+      },
+      {
+       "family": "Cormorant",
+       "share": 0.06,
+       "mono": false
+      },
+      {
+       "family": "Reenie Beanie",
+       "share": 0.03,
+       "mono": false
+      },
+      {
+       "family": "Fraunces",
+       "share": 0.01,
+       "mono": false
+      }
+     ],
+     "familyCount": 7,
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      19,
+      22,
+      26,
+      30,
+      32,
+      34,
+      49,
+      66,
+      78,
+      121,
+      144
+     ],
+     "sizeCount": 16,
+     "notLoaded": [],
+     "body": {
+      "font": "Hanken Grotesk",
+      "size": 13,
+      "leading": 1,
+      "weight": 600,
+      "tracking": 0.04,
+      "contrast": 16.2
+     },
+     "measureChars": 64,
+     "max": {
+      "size": 144,
+      "vw": 10,
+      "font": "Cormorant",
+      "text": "Night walks, written down."
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [
+      "Courier New"
+     ],
+     "monoSamples": [
+      "004271"
+     ],
+     "microLabels": 2,
+     "microLabelShare": 0.02,
+     "microSamples": [
+      "TONIGHT · SUNDAY 19 OCTOBER · 18:42",
+      "ON REPEAT"
+     ],
+     "upperShare": 0.02,
+     "centerShare": 0.12,
+     "smallText": 0
+    },
+    "eyebrows": [
+     {
+      "text": "TONIGHT · SUNDAY 19 OCTOBER · 18:42",
+      "above": "“The sky wasn't dark yet, but it wasn't ",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 652
+     },
+     {
+      "text": "Sunday, October 19th, 2026 · 6:42 pm",
+      "above": "The lamps came on before I got home",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 2968
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#08090a",
+     "bodyBgHsl": {
+      "h": 210,
+      "s": 0.11,
+      "l": 0.04
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#16120e",
+       "top": 900,
+       "hsl": {
+        "h": 30,
+        "s": 0.22,
+        "l": 0.07
+       }
+      },
+      {
+       "color": "#ece5d8",
+       "top": 1084,
+       "hsl": {
+        "h": 39,
+        "s": 0.34,
+        "l": 0.89
+       }
+      },
+      {
+       "color": "#04070b",
+       "top": 1800,
+       "hsl": {
+        "h": 214,
+        "s": 0.47,
+        "l": 0.03
+       }
+      },
+      {
+       "color": "#0f1520",
+       "top": 2700,
+       "hsl": {
+        "h": 219,
+        "s": 0.36,
+        "l": 0.09
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#dfe6ef",
+       "share": 0.18
+      },
+      {
+       "color": "#93a2b6",
+       "share": 0.14
+      },
+      {
+       "color": "#111111",
+       "share": 0.14
+      },
+      {
+       "color": "#efe6d6",
+       "share": 0.13
+      },
+      {
+       "color": "#a7bdb7",
+       "share": 0.09
+      }
+     ],
+     "button": {
+      "bg": "#0a1217",
+      "hsl": {
+       "h": 203,
+       "s": 0.39,
+       "l": 0.06
+      },
+      "fg": "#e9f3ef"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 9,
+     "inHero": 1,
+     "radius": 0,
+     "height": 42,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Read the whole night"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 3,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "div.pol.pol1 → rgba(0, 0, 0, 0.55) 0px 18px 40px 0px",
+      "div.pol.pol2 → rgba(0, 0, 0, 0.55) 0px 18px 40px 0px",
+      "div.ticket → rgba(0, 0, 0, 0.5) 0px 12px 30px 0px"
+     ],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.a-glow → radial-gradient(closest-side, rgba(255, 196, 120, 0.42), rgba(255, 196, 120, 0))"
+     ],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 3,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 7,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 1
+     },
+     {
+      "type": "video",
+      "ratio": 1
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 194,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "cormorant",
+     "fraunces",
+     "hanken grotesk",
+     "newsreader",
+     "reenie beanie"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 3610,
+    "margins": {
+     "left": 24,
+     "right": 24
+    },
+    "sections": [
+     {
+      "sel": "section#A.opt.a",
+      "tag": "section",
+      "top": 0,
+      "height": 900,
+      "words": 67,
+      "media": 1,
+      "middle": 296,
+      "heading": {
+       "text": "Night walks, written down.",
+       "size": 144,
+       "tag": "h1"
+      },
+      "left": 24,
+      "right": 24,
+      "textLeft": 24,
+      "textRight": 24,
+      "fullBleed": true,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#B.opt.b",
+      "tag": "section",
+      "top": 900,
+      "height": 900,
+      "words": 102,
+      "media": 0,
+      "middle": 58,
+      "heading": {
+       "text": "The lamps came on before I got home",
+       "size": 78,
+       "tag": "h1"
+      },
+      "left": 23,
+      "right": 24,
+      "textLeft": 23,
+      "textRight": 24,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#C.opt.c",
+      "tag": "section",
+      "top": 1800,
+      "height": 900,
+      "words": 81,
+      "media": 1,
+      "middle": 103,
+      "heading": {
+       "text": "I write when the sky",
+       "size": 121,
+       "tag": "h1"
+      },
+      "left": 24,
+      "right": 24,
+      "textLeft": 24,
+      "textRight": 24,
+      "fullBleed": true,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#D.opt.d",
+      "tag": "section",
+      "top": 2700,
+      "height": 910,
+      "words": 148,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "4me's journal",
+       "size": 66,
+       "tag": "h1"
+      },
+      "left": 130,
+      "right": 0,
+      "textLeft": 130,
+      "textRight": -469,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Night walks, written down.",
+      "size": 144,
+      "top": 268,
+      "firstScreen": true
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "size": 78,
+      "top": 1156,
+      "firstScreen": false
+     },
+     {
+      "text": "I write when the sky lights up",
+      "size": 121,
+      "top": 2017,
+      "firstScreen": false
+     },
+     {
+      "text": "4me's journal a night diary since October 2026 · you are visitor 004271",
+      "size": 66,
+      "top": 2784,
+      "firstScreen": false
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 24,
+      "n": 5
+     },
+     {
+      "x": 474,
+      "n": 2
+     },
+     {
+      "x": 130,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 8,
+    "bodySize": 13,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 5,
+   "filled": [
+    0.21,
+    0.99,
+    0.99,
+    0.99,
+    0.99
+   ],
+   "motion": {
+    "elements": 28,
+    "css": 28,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 1,
+    "playingVideos": 1
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 5054,
+     "screens": 4.9,
+     "words": 402,
+     "img": 16,
+     "video": 1,
+     "canvas": 1,
+     "svg": 0,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 14,
+     "videoCount": 1,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-600.jpg",
+      "pic-832.jpg",
+      "pic-338.jpg",
+      "multicolored-aurora-borealis-pillar-over-brastad",
+      "pic-1014.jpg",
+      "pic-600.jpg",
+      "pic-878.jpg",
+      "pic-338.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "chars": 26,
+     "lines": 2,
+     "size": 76.8,
+     "vw": 10,
+     "font": "Cormorant",
+     "weight": 300,
+     "tracking": -0.02,
+     "leading": 0.86,
+     "upper": false,
+     "italic": true,
+     "mono": false,
+     "align": "left",
+     "position": "left",
+     "widthRatio": 0.52,
+     "top": 394,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "lines": 2,
+     "size": 76.8,
+     "font": "Cormorant"
+    },
+    "headings": [
+     {
+      "text": "4me",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 30,
+      "vw": 3.9,
+      "font": "Cormorant",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": true,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.06,
+      "top": 24,
+      "tag": "b",
+      "kind": "heading"
+     },
+     {
+      "text": "Night walks, written down.",
+      "words": 4,
+      "chars": 26,
+      "lines": 2,
+      "size": 76.8,
+      "vw": 10,
+      "font": "Cormorant",
+      "weight": 300,
+      "tracking": -0.02,
+      "leading": 0.86,
+      "upper": false,
+      "italic": true,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.52,
+      "top": 394,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "4me",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 34,
+      "vw": 4.4,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 0.8,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.06,
+      "top": 1044,
+      "tag": "b",
+      "kind": "heading"
+     },
+     {
+      "text": "Sunday, 19 October — 18:42",
+      "words": 5,
+      "chars": 26,
+      "lines": 1,
+      "size": 34,
+      "vw": 4.4,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 0.9,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.94,
+      "top": 1128,
+      "tag": "p",
+      "kind": "statement"
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "words": 8,
+      "chars": 35,
+      "lines": 1,
+      "size": 44,
+      "vw": 5.7,
+      "font": "Newsreader",
+      "weight": 400,
+      "tracking": -0.025,
+      "leading": 0.98,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.94,
+      "top": 1209,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "after, writing it down",
+      "words": 4,
+      "chars": 22,
+      "lines": 1,
+      "size": 26,
+      "vw": 3.4,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.73,
+      "top": 1464,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "the shore, last week",
+      "words": 4,
+      "chars": 20,
+      "lines": 1,
+      "size": 26,
+      "vw": 3.4,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.64,
+      "top": 1619,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "4me",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 26,
+      "vw": 3.4,
+      "font": "Fraunces",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "left",
+      "widthRatio": 0.07,
+      "top": 2068,
+      "tag": "b",
+      "kind": "heading"
+     },
+     {
+      "text": "I write when the sky lights up",
+      "words": 7,
+      "chars": 30,
+      "lines": 2,
+      "size": 64.5,
+      "vw": 8.4,
+      "font": "Fraunces",
+      "weight": 300,
+      "tracking": -0.03,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "center",
+      "widthRatio": 0.52,
+      "top": 2361,
+      "mixedFonts": [
+       "Fraunces",
+       "Fraunces italic"
+      ],
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "4me's journal a night diary since October 2026 · you are visitor 004271",
+      "words": 13,
+      "chars": 71,
+      "lines": 2,
+      "size": 40,
+      "vw": 5.2,
+      "font": "Newsreader",
+      "weight": 400,
+      "tracking": -0.02,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.52,
+      "top": 3156,
+      "mixedFonts": [
+       "Newsreader",
+       "Verdana",
+       "Courier New"
+      ],
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "words": 8,
+      "chars": 35,
+      "lines": 1,
+      "size": 32,
+      "vw": 4.2,
+      "font": "Newsreader",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.87,
+      "top": 4705,
+      "tag": "h3",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 11,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 1,
+     "centered": 2,
+     "medianWords": 5,
+     "mixedFontHeadings": 2
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Hanken Grotesk",
+       "share": 0.37,
+       "mono": false
+      },
+      {
+       "family": "Newsreader",
+       "share": 0.28,
+       "mono": false
+      },
+      {
+       "family": "Verdana",
+       "share": 0.24,
+       "mono": false
+      },
+      {
+       "family": "Cormorant",
+       "share": 0.06,
+       "mono": false
+      },
+      {
+       "family": "Reenie Beanie",
+       "share": 0.03,
+       "mono": false
+      },
+      {
+       "family": "Fraunces",
+       "share": 0.01,
+       "mono": false
+      }
+     ],
+     "familyCount": 7,
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      19,
+      24,
+      26,
+      30,
+      32,
+      34,
+      40,
+      44,
+      65,
+      77
+     ],
+     "sizeCount": 16,
+     "notLoaded": [],
+     "body": {
+      "font": "Newsreader",
+      "size": 19,
+      "leading": 1.6,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 15
+     },
+     "measureChars": 64,
+     "max": {
+      "size": 76.8,
+      "vw": 10,
+      "font": "Cormorant",
+      "text": "Night walks, written down."
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [
+      "Courier New"
+     ],
+     "monoSamples": [
+      "004271"
+     ],
+     "microLabels": 2,
+     "microLabelShare": 0.02,
+     "microSamples": [
+      "TONIGHT · SUNDAY 19 OCTOBER · 18:42",
+      "ON REPEAT"
+     ],
+     "upperShare": 0.02,
+     "centerShare": 0.12,
+     "smallText": 0
+    },
+    "eyebrows": [
+     {
+      "text": "Radiohead, on repeat tonight",
+      "above": "4me",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 956
+     },
+     {
+      "text": "all nights",
+      "above": "Sunday, 19 October — 18:42",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 15,
+      "top": 1044
+     },
+     {
+      "text": "Sunday, October 19th, 2026 · 6:42 pm",
+      "above": "The lamps came on before I got home",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 4669
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#08090a",
+     "bodyBgHsl": {
+      "h": 210,
+      "s": 0.11,
+      "l": 0.04
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#16120e",
+       "top": 1024,
+       "hsl": {
+        "h": 30,
+        "s": 0.22,
+        "l": 0.07
+       }
+      },
+      {
+       "color": "#ece5d8",
+       "top": 1464,
+       "hsl": {
+        "h": 39,
+        "s": 0.34,
+        "l": 0.89
+       }
+      },
+      {
+       "color": "#04070b",
+       "top": 2048,
+       "hsl": {
+        "h": 214,
+        "s": 0.47,
+        "l": 0.03
+       }
+      },
+      {
+       "color": "#0f1520",
+       "top": 3072,
+       "hsl": {
+        "h": 219,
+        "s": 0.36,
+        "l": 0.09
+       }
+      },
+      {
+       "color": "#172030",
+       "top": 3294,
+       "hsl": {
+        "h": 218,
+        "s": 0.35,
+        "l": 0.14
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#dfe6ef",
+       "share": 0.18
+      },
+      {
+       "color": "#93a2b6",
+       "share": 0.15
+      },
+      {
+       "color": "#111111",
+       "share": 0.14
+      },
+      {
+       "color": "#efe6d6",
+       "share": 0.13
+      },
+      {
+       "color": "#a7bdb7",
+       "share": 0.08
+      }
+     ],
+     "button": {
+      "bg": "#172030",
+      "hsl": {
+       "h": 218,
+       "s": 0.35,
+       "l": 0.14
+      },
+      "fg": "#93a2b6"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 8,
+     "inHero": 1,
+     "radius": 0,
+     "height": 42,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Read the whole night"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 3,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "div.pol.pol1 → rgba(0, 0, 0, 0.55) 0px 18px 40px 0px",
+      "div.pol.pol2 → rgba(0, 0, 0, 0.55) 0px 18px 40px 0px",
+      "div.ticket → rgba(0, 0, 0, 0.5) 0px 12px 30px 0px"
+     ],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.a-glow → radial-gradient(closest-side, rgba(255, 196, 120, 0.42), rgba(255, 196, 120, 0))"
+     ],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 2,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 7,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 1
+     },
+     {
+      "type": "video",
+      "ratio": 1
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 194,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "cormorant",
+     "fraunces",
+     "hanken grotesk",
+     "newsreader",
+     "reenie beanie"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 5054,
+    "margins": {
+     "left": 24,
+     "right": 24
+    },
+    "sections": [
+     {
+      "sel": "section#A.opt.a",
+      "tag": "section",
+      "top": 0,
+      "height": 1024,
+      "words": 67,
+      "media": 1,
+      "middle": 28,
+      "heading": {
+       "text": "Night walks, written down.",
+       "size": 77,
+       "tag": "h1"
+      },
+      "left": 24,
+      "right": 24,
+      "textLeft": 24,
+      "textRight": 24,
+      "fullBleed": true,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#B.opt.b",
+      "tag": "section",
+      "top": 1024,
+      "height": 1024,
+      "words": 102,
+      "media": 0,
+      "middle": 19,
+      "heading": {
+       "text": "The lamps came on before I got home",
+       "size": 44,
+       "tag": "h1"
+      },
+      "left": 23,
+      "right": 24,
+      "textLeft": 23,
+      "textRight": 24,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#C.opt.c",
+      "tag": "section",
+      "top": 2048,
+      "height": 1024,
+      "words": 70,
+      "media": 1,
+      "middle": 24,
+      "heading": {
+       "text": "I write when the sky",
+       "size": 65,
+       "tag": "h1"
+      },
+      "left": 24,
+      "right": 24,
+      "textLeft": 24,
+      "textRight": 24,
+      "fullBleed": true,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#D.opt.d",
+      "tag": "section",
+      "top": 3072,
+      "height": 1982,
+      "words": 148,
+      "media": 9,
+      "middle": 0,
+      "heading": {
+       "text": "4me's journal",
+       "size": 40,
+       "tag": "h1"
+      },
+      "left": 24,
+      "right": 40,
+      "textLeft": 24,
+      "textRight": -666,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Night walks, written down.",
+      "size": 77,
+      "top": 394,
+      "firstScreen": true
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "size": 44,
+      "top": 1209,
+      "firstScreen": false
+     },
+     {
+      "text": "I write when the sky lights up",
+      "size": 65,
+      "top": 2361,
+      "firstScreen": false
+     },
+     {
+      "text": "4me's journal a night diary since October 2026 · you are visitor 004271",
+      "size": 40,
+      "top": 3156,
+      "firstScreen": false
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 24,
+      "n": 6
+     },
+     {
+      "x": 50,
+      "n": 2
+     }
+    ],
+    "leftBlocks": 8,
+    "bodySize": 19,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 6,
+   "filled": [
+    0.38,
+    1,
+    0.99,
+    0.99,
+    0.99,
+    0.99
+   ],
+   "motion": {
+    "elements": 28,
+    "css": 28,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 1,
+    "playingVideos": 1
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 4511,
+     "screens": 5.3,
+     "words": 402,
+     "img": 16,
+     "video": 1,
+     "canvas": 1,
+     "svg": 0,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 6,
+     "videoCount": 1,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-600.jpg",
+      "pic-832.jpg",
+      "pic-338.jpg",
+      "multicolored-aurora-borealis-pillar-over-brastad",
+      "pic-1014.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "chars": 26,
+     "lines": 2,
+     "size": 56,
+     "vw": 14.4,
+     "font": "Cormorant",
+     "weight": 300,
+     "tracking": -0.02,
+     "leading": 0.86,
+     "upper": false,
+     "italic": true,
+     "mono": false,
+     "align": "left",
+     "position": "center",
+     "widthRatio": 0.75,
+     "top": 285,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "lines": 2,
+     "size": 56,
+     "font": "Cormorant"
+    },
+    "headings": [
+     {
+      "text": "4me",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 30,
+      "vw": 7.7,
+      "font": "Cormorant",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": true,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.11,
+      "top": 24,
+      "tag": "b",
+      "kind": "heading"
+     },
+     {
+      "text": "Night walks, written down.",
+      "words": 4,
+      "chars": 26,
+      "lines": 2,
+      "size": 56,
+      "vw": 14.4,
+      "font": "Cormorant",
+      "weight": 300,
+      "tracking": -0.02,
+      "leading": 0.86,
+      "upper": false,
+      "italic": true,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.75,
+      "top": 285,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "“The sky wasn't dark yet, but it wasn't light either. Blue, like someone had stirred ink into water.”",
+      "words": 18,
+      "chars": 101,
+      "lines": 3,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Cormorant",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.88,
+      "top": 570,
+      "tag": "p",
+      "kind": "statement"
+     },
+     {
+      "text": "4me",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 34,
+      "vw": 8.7,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 0.8,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.11,
+      "top": 864,
+      "tag": "b",
+      "kind": "heading"
+     },
+     {
+      "text": "Sunday, 19 October — 18:42",
+      "words": 5,
+      "chars": 26,
+      "lines": 1,
+      "size": 34,
+      "vw": 8.7,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 0.9,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.88,
+      "top": 928,
+      "tag": "p",
+      "kind": "statement"
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "words": 8,
+      "chars": 35,
+      "lines": 3,
+      "size": 44,
+      "vw": 11.3,
+      "font": "Newsreader",
+      "weight": 400,
+      "tracking": -0.025,
+      "leading": 0.98,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.88,
+      "top": 997,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "after, writing it down",
+      "words": 4,
+      "chars": 22,
+      "lines": 1,
+      "size": 26,
+      "vw": 6.7,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.83,
+      "top": 1466,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "the shore, last week",
+      "words": 4,
+      "chars": 20,
+      "lines": 2,
+      "size": 26,
+      "vw": 6.7,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.79,
+      "top": 1621,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "4me",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 26,
+      "vw": 6.7,
+      "font": "Fraunces",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "left",
+      "widthRatio": 0.14,
+      "top": 2028,
+      "tag": "b",
+      "kind": "heading"
+     },
+     {
+      "text": "I write when the sky lights up",
+      "words": 7,
+      "chars": 30,
+      "lines": 2,
+      "size": 52,
+      "vw": 13.3,
+      "font": "Fraunces",
+      "weight": 300,
+      "tracking": -0.03,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "center",
+      "widthRatio": 0.83,
+      "top": 2230,
+      "mixedFonts": [
+       "Fraunces",
+       "Fraunces italic"
+      ],
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "4me's journal a night diary since October 2026 · you are visitor 004271",
+      "words": 13,
+      "chars": 71,
+      "lines": 2,
+      "size": 40,
+      "vw": 10.3,
+      "font": "Newsreader",
+      "weight": 400,
+      "tracking": -0.02,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.88,
+      "top": 2936,
+      "mixedFonts": [
+       "Newsreader",
+       "Verdana",
+       "Courier New"
+      ],
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "words": 8,
+      "chars": 35,
+      "lines": 2,
+      "size": 32,
+      "vw": 8.2,
+      "font": "Newsreader",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.74,
+      "top": 3974,
+      "tag": "h3",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 12,
+     "maxLines": 3,
+     "over2Lines": 1,
+     "statements": 2,
+     "centered": 2,
+     "medianWords": 5,
+     "mixedFontHeadings": 2
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Hanken Grotesk",
+       "share": 0.37,
+       "mono": false
+      },
+      {
+       "family": "Newsreader",
+       "share": 0.28,
+       "mono": false
+      },
+      {
+       "family": "Verdana",
+       "share": 0.24,
+       "mono": false
+      },
+      {
+       "family": "Cormorant",
+       "share": 0.06,
+       "mono": false
+      },
+      {
+       "family": "Reenie Beanie",
+       "share": 0.03,
+       "mono": false
+      },
+      {
+       "family": "Fraunces",
+       "share": 0.01,
+       "mono": false
+      }
+     ],
+     "familyCount": 7,
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      19,
+      24,
+      26,
+      30,
+      32,
+      34,
+      40,
+      44,
+      52,
+      56
+     ],
+     "sizeCount": 16,
+     "notLoaded": [],
+     "body": {
+      "font": "Newsreader",
+      "size": 19,
+      "leading": 1.6,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 15
+     },
+     "measureChars": 36,
+     "max": {
+      "size": 56,
+      "vw": 14.4,
+      "font": "Cormorant",
+      "text": "Night walks, written down."
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [
+      "Courier New"
+     ],
+     "monoSamples": [
+      "004271"
+     ],
+     "microLabels": 2,
+     "microLabelShare": 0.02,
+     "microSamples": [
+      "TONIGHT · SUNDAY 19 OCTOBER · 18:42",
+      "ON REPEAT"
+     ],
+     "upperShare": 0.02,
+     "centerShare": 0.12,
+     "smallText": 0
+    },
+    "eyebrows": [
+     {
+      "text": "Radiohead, on repeat tonight",
+      "above": "4me",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 776
+     },
+     {
+      "text": "all nights",
+      "above": "Sunday, 19 October — 18:42",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 15,
+      "top": 864
+     },
+     {
+      "text": "Sunday, October 19th, 2026 · 6:42 pm",
+      "above": "The lamps came on before I got home",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 3938
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#08090a",
+     "bodyBgHsl": {
+      "h": 210,
+      "s": 0.11,
+      "l": 0.04
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#16120e",
+       "top": 844,
+       "hsl": {
+        "h": 30,
+        "s": 0.22,
+        "l": 0.07
+       }
+      },
+      {
+       "color": "#ece5d8",
+       "top": 1466,
+       "hsl": {
+        "h": 39,
+        "s": 0.34,
+        "l": 0.89
+       }
+      },
+      {
+       "color": "#04070b",
+       "top": 2008,
+       "hsl": {
+        "h": 214,
+        "s": 0.47,
+        "l": 0.03
+       }
+      },
+      {
+       "color": "#0f1520",
+       "top": 2852,
+       "hsl": {
+        "h": 219,
+        "s": 0.36,
+        "l": 0.09
+       }
+      },
+      {
+       "color": "#172030",
+       "top": 3108,
+       "hsl": {
+        "h": 218,
+        "s": 0.35,
+        "l": 0.14
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#dfe6ef",
+       "share": 0.18
+      },
+      {
+       "color": "#93a2b6",
+       "share": 0.15
+      },
+      {
+       "color": "#111111",
+       "share": 0.14
+      },
+      {
+       "color": "#efe6d6",
+       "share": 0.13
+      },
+      {
+       "color": "#a7bdb7",
+       "share": 0.08
+      }
+     ],
+     "button": {
+      "bg": "#172030",
+      "hsl": {
+       "h": 218,
+       "s": 0.35,
+       "l": 0.14
+      },
+      "fg": "#93a2b6"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 8,
+     "inHero": 1,
+     "radius": 0,
+     "height": 63,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Read the whole night"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 3,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "div.pol.pol1 → rgba(0, 0, 0, 0.55) 0px 18px 40px 0px",
+      "div.pol.pol2 → rgba(0, 0, 0, 0.55) 0px 18px 40px 0px",
+      "div.ticket → rgba(0, 0, 0, 0.5) 0px 12px 30px 0px"
+     ],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.a-glow → radial-gradient(closest-side, rgba(255, 196, 120, 0.42), rgba(255, 196, 120, 0))"
+     ],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 2,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 7,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 1
+     },
+     {
+      "type": "video",
+      "ratio": 1
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 194,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "cormorant",
+     "fraunces",
+     "hanken grotesk",
+     "newsreader",
+     "reenie beanie"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 4511,
+    "margins": {
+     "left": 24,
+     "right": 24
+    },
+    "sections": [
+     {
+      "sel": "section#A.opt.a",
+      "tag": "section",
+      "top": 0,
+      "height": 844,
+      "words": 67,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "Night walks, written down.",
+       "size": 56,
+       "tag": "h1"
+      },
+      "left": 24,
+      "right": 24,
+      "textLeft": -16,
+      "textRight": -16,
+      "fullBleed": true,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#B.opt.b",
+      "tag": "section",
+      "top": 844,
+      "height": 1164,
+      "words": 102,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "The lamps came on before I got home",
+       "size": 44,
+       "tag": "h1"
+      },
+      "left": 23,
+      "right": 24,
+      "textLeft": -46,
+      "textRight": -46,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#C.opt.c",
+      "tag": "section",
+      "top": 2008,
+      "height": 844,
+      "words": 70,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "I write when the sky",
+       "size": 52,
+       "tag": "h1"
+      },
+      "left": 24,
+      "right": 24,
+      "textLeft": -18,
+      "textRight": -18,
+      "fullBleed": true,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.d-head",
+      "tag": "div",
+      "top": 2936,
+      "height": 154,
+      "words": 18,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "4me's journal",
+       "size": 40,
+       "tag": "h1"
+      },
+      "left": 24,
+      "right": 37,
+      "textLeft": 24,
+      "textRight": 37,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "aside.d-side",
+      "tag": "aside",
+      "top": 3108,
+      "height": 735,
+      "words": 16,
+      "media": 1,
+      "middle": 0,
+      "heading": null,
+      "left": 40,
+      "right": 40,
+      "textLeft": 40,
+      "textRight": 93,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div",
+      "tag": "div",
+      "top": 3861,
+      "height": 602,
+      "words": 99,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "The lamps came on before I got home",
+       "size": 32,
+       "tag": "h3"
+      },
+      "left": 50,
+      "right": 55,
+      "textLeft": -2,
+      "textRight": -712,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Night walks, written down.",
+      "size": 56,
+      "top": 285,
+      "firstScreen": true
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "size": 44,
+      "top": 997,
+      "firstScreen": false
+     },
+     {
+      "text": "I write when the sky lights up",
+      "size": 52,
+      "top": 2230,
+      "firstScreen": false
+     },
+     {
+      "text": "4me's journal a night diary since October 2026 · you are visitor 004271",
+      "size": 40,
+      "top": 2936,
+      "firstScreen": false
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 24,
+      "n": 6
+     },
+     {
+      "x": 50,
+      "n": 2
+     }
+    ],
+    "leftBlocks": 8,
+    "bodySize": 19,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "WARN",
+   "id": "mixed-font-headline",
+   "width": 1440,
+   "message": "2 headline(s) switch typeface or to italic mid-line (the \"one italic serif word\" move).",
+   "fix": "Set the whole headline in one face. Emphasis comes from the words.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "eyebrow",
+   "width": 1440,
+   "message": "2 eyebrow/kicker label(s) above headings: \"TONIGHT · SUNDAY 19 OCTOBER · 18:42\" above \"“The sky wasn't dark yet, but it wasn't \"; \"Sunday, October 19th, 2026 · 6:42 pm\" above \"The lamps came on before I got home\"",
+   "fix": "Delete them. If the label carried real information, fold it into the headline or the supporting sentence.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "micro-label",
+   "width": 1440,
+   "message": "2 tiny uppercase letter-spaced label(s): \"TONIGHT · SUNDAY 19 OCTOBER · 18:42\", \"ON REPEAT\"",
+   "fix": "Prefer sentence case at body size.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "gradient",
+   "width": 1440,
+   "message": "1 gradient fill(s): div.a-glow → radial-gradient(closest-side, rgba(255, 196, 120, 0.42), rgba(255, 196, 120, 0))",
+   "fix": "Use a flat colour or a real image. The only gradient allowed by default is a neutral scrim over a photo for legibility.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "shadow",
+   "width": 1440,
+   "message": "3 box-shadow(s) on elements at rest: div.pol.pol1 → rgba(0, 0, 0, 0.55) 0px 18px 40px 0px | div.pol.pol2 → rgba(0, 0, 0, 0.55) 0px 18px 40px 0px | div.ticket → rgba(0, 0, 0, 0.5) 0px 12px 30px 0px",
+   "fix": "Remove. Separate surfaces with a tone step or space. Shadows are for things that really float (menus, dialogs, sticky bars).",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "glass",
+   "width": 1440,
+   "message": "3 backdrop-blur surfaces.",
+   "fix": "One blurred sticky bar at most; glass cards are a tell.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "palette-cream",
+   "width": 1440,
+   "message": "Yellow-cream background (section #ece5d8, text #efe6d6).",
+   "fix": "Use the drawn palette. If you want warmth, take a low-chroma stone or bone, not a yellow cream.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "font-count",
+   "width": 1440,
+   "message": "5 typefaces in use (Hanken Grotesk, Newsreader, Verdana, Cormorant, Reenie Beanie).",
+   "fix": "Two at most: one display, one text. Often one is enough.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "size-count",
+   "width": 1440,
+   "message": "16 different font sizes (12, 13, 14, 15, 16, 19, 22, 26, 30, 32, 34, 49, 66, 78, 121, 144).",
+   "fix": "A page needs about five: display, heading, lead, body, small.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "body-size",
+   "width": 1440,
+   "message": "Body text is 13px (the size most of the running text is set in).",
+   "fix": "Body copy 16–20px. Map small sizes from blueprints onto your body step."
+  },
+  {
+   "level": "WARN",
+   "id": "font-not-dealt",
+   "width": 1440,
+   "message": "The sheet dealt Schibsted Grotesk and Schibsted Grotesk, but the page renders Hanken Grotesk, Newsreader.",
+   "fix": "Load the dealt face (the link on the sheet) and put it first in font-family. A build that falls back to a default face lands on the default look."
+  },
+  {
+   "level": "WARN",
+   "id": "many-h1",
+   "width": 1440,
+   "message": "4 h1 elements.",
+   "fix": "One h1 per page; section titles are h2.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "covered-text",
+   "width": 1440,
+   "message": "Large text lies under another element at some scroll position: \"after, writing it down\" (screen 3, 100% hidden); \"the shore, last week\" (screen 3, 100% hidden)",
+   "fix": "Nothing may sit on top of a headline or statement. Move the picture, shorten the pinned run, or raise the text above it (z-index) and give it a ground.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "headline-lines",
+   "width": 390,
+   "message": "1 headline(s) wrap past two lines at 390px: \"The lamps came on before I got home\" → 3 lines (8 words, 44px)",
+   "fix": "Cut words first (a headline is a title, not a sentence). Then give it a wider measure. Lower the size only as a last resort and never below the scale you chose. A real statement paragraph belongs in a <p> or <blockquote> at 24px or less."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-options/desktop-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-options/desktop-page-01.jpg",
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-options/desktop-page-02.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-options/tablet-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-options/tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-options/mobile-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-options/mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

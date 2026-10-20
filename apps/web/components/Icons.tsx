@@ -1,0 +1,96 @@
+// Small 2006-style icons, drawn flat in SVG.
+type P = { className?: string };
+
+export const IconDiary = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <rect x="7" y="4" width="26" height="32" fill="#7a3b2e" />
+    <rect x="10" y="4" width="23" height="32" fill="#9b4a39" />
+    <rect x="14" y="10" width="15" height="2" fill="#f0d8b0" />
+    <rect x="14" y="15" width="12" height="2" fill="#f0d8b0" />
+    <rect x="7" y="4" width="3" height="32" fill="#5c2a20" />
+  </svg>
+);
+export const IconMessenger = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <circle cx="15" cy="14" r="6" fill="#6fd27a" />
+    <path d="M5 32c0-6 4.5-10 10-10s10 4 10 10z" fill="#6fd27a" />
+    <circle cx="27" cy="16" r="5" fill="#f0ac5c" />
+    <path d="M19 33c0-5 3.6-8.5 8-8.5S35 28 35 33z" fill="#f0ac5c" />
+  </svg>
+);
+export const IconMixtape = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <rect x="4" y="9" width="32" height="22" rx="2" fill="#1d2a22" />
+    <rect x="7" y="12" width="26" height="8" fill="#8cf2a8" />
+    <circle cx="13" cy="25" r="3" fill="#9aa8bb" />
+    <circle cx="27" cy="25" r="3" fill="#9aa8bb" />
+  </svg>
+);
+export const IconPhotos = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <rect x="6" y="9" width="24" height="24" fill="#ece5d8" transform="rotate(-8 18 21)" />
+    <rect x="11" y="7" width="24" height="24" fill="#f6f1e6" />
+    <rect x="13" y="9" width="20" height="15" fill="#3b5560" />
+    <path d="M13 24l6-7 5 5 3-3 6 5z" fill="#1f2f36" />
+  </svg>
+);
+export const IconGuestbook = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <rect x="6" y="6" width="28" height="22" fill="#e0b44a" />
+    <path d="M12 28l-2 7 9-7z" fill="#e0b44a" />
+    <rect x="11" y="12" width="18" height="2" fill="#6b4d12" />
+    <rect x="11" y="17" width="12" height="2" fill="#6b4d12" />
+  </svg>
+);
+export const IconBin = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <path d="M10 12h20l-2 23H12z" fill="#8a97a8" />
+    <rect x="8" y="9" width="24" height="3" fill="#b9c3d1" />
+    <rect x="16" y="5" width="8" height="4" fill="#b9c3d1" />
+    <path d="M14 15h2l1 16h-2zM19 15h2v16h-2zM24 15h2l-1 16h-2z" fill="#5c6878" />
+  </svg>
+);
+export const IconMin = () => (
+  <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+    <rect x="2" y="8" width="8" height="2" fill="currentColor" />
+  </svg>
+);
+export const IconClose = () => (
+  <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+    <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" strokeWidth="1.6" />
+  </svg>
+);
+export const IconPlay = () => (
+  <svg viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M4 2l10 6-10 6z" fill="currentColor" />
+  </svg>
+);
+export const IconPause = () => (
+  <svg viewBox="0 0 16 16" aria-hidden="true">
+    <rect x="3" y="2" width="4" height="12" fill="currentColor" />
+    <rect x="9" y="2" width="4" height="12" fill="currentColor" />
+  </svg>
+);
+export const IconPrev = () => (
+  <svg viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M13 2L5 8l8 6zM3 2h2v12H3z" fill="currentColor" />
+  </svg>
+);
+export const IconNext = () => (
+  <svg viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M3 2l8 6-8 6zM11 2h2v12h-2z" fill="currentColor" />
+  </svg>
+);
+export const IconHeart = ({ className }: P) => (
+  <svg viewBox="0 0 8 7" className={className} aria-hidden="true" shapeRendering="crispEdges">
+    <path d="M1 0h2v1h2V0h2v1h1v2H7v1H6v1H5v1H3V5H2V4H1V3H0V1h1z" fill="#ff6b8a" />
+  </svg>
+);
+export const Eq = () => (
+  <span className="eq" aria-hidden="true">
+    <i />
+    <i />
+    <i />
+    <i />
+  </span>
+);

@@ -1,0 +1,431 @@
+"use client";
+
+import {
+  type Almost as AlmostItem,
+  type Blast,
+  type CatStats,
+  type Entry,
+  type EntrySummary,
+  isAwakeHour,
+  type Note,
+  type NowPlaying,
+  type Shout,
+} from "@4me/shared";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { API_URL, apiSend, hhmm } from "@/lib/api";
+import { IconBin, IconDiary, IconGuestbook, IconHeart, IconMessenger, IconMixtape, IconPhotos } from "./Icons";
+import { Ink, nudgeInk } from "./ink/Ink";
+import { type Pos, Window } from "./Window";
+import { Almost } from "./windows/Almost";
+import { Diary } from "./windows/Diary";
+import { Guestbook } from "./windows/Guestbook";
+import { Messenger } from "./windows/Messenger";
+import { Mixtape } from "./windows/Mixtape";
+import { Photos, type Picture } from "./windows/Photos";
+
+export type DesktopData = {
+  entry: Entry | null;
+  entries: EntrySummary[];
+  notes: Note[];
+  shouts: Shout[];
+  blasts: Blast[];
+  almost: AlmostItem[];
+  cat: CatStats;
+};
+
+type WinId = "diary" | "msn" | "guest" | "amp" | "photos" | "almost";
+type WinState = { open: boolean; min: boolean; z: number; pos?: Pos };
+
+const WINDOWS: Record<WinId, { title: string; task: string; icon: (c?: string) => ReactNode; className: string }> = {
+  diary: { title: "diary.doc", task: "diary", icon: (c) => <IconDiary className={c} />, className: "w-diary" },
+  msn: {
+    title: "4me Messenger — tonight's notes",
+    task: "Messenger",
+    icon: (c) => <IconMessenger className={c} />,
+    className: "w-msn",
+  },
+  guest: {
+    title: "Guestbook — shoutbox",
+    task: "Guestbook",
+    icon: (c) => <IconGuestbook className={c} />,
+    className: "w-guest",
+  },
+  amp: {
+    title: "mixtape.m3u — every night's song",
+    task: "mixtape.m3u",
+    icon: (c) => <IconMixtape className={c} />,
+    className: "w-amp",
+  },
+  photos: {
+    title: "My Pictures",
+    task: "My Pictures",
+    icon: (c) => <IconPhotos className={c} />,
+    className: "w-photos",
+  },
+  almost: {
+    title: "Almost posted",
+    task: "Almost posted",
+    icon: (c) => <IconBin className={c} />,
+    className: "w-almost",
+  },
+};
+const ICON_ORDER: Array<[WinId, string]> = [
+  ["diary", "Diary"],
+  ["msn", "Messenger"],
+  ["guest", "Guestbook"],
+  ["amp", "Mixtape"],
+  ["photos", "Photos"],
+  ["almost", "Almost posted"],
+];
+
+export const SKINS = [
+  { id: "midnight", name: "Midnight", swatch: "#22304a", wall: "/photos/pic-229.jpg" },
+  { id: "bluehour", name: "Blue hour", swatch: "#1f3a63", wall: "/photos/pic-594.jpg" },
+  { id: "candle", name: "Candle", swatch: "#8e4a22", wall: "/photos/pic-660.jpg" },
+  { id: "snow", name: "Snow", swatch: "#e9ecf0", wall: "/photos/pic-726.jpg" },
+  { id: "luna", name: "Luna ’06", swatch: "#1d5ad6", wall: "/photos/pic-878.jpg" },
+] as const;
+type SkinId = (typeof SKINS)[number]["id"];
+const DAY_WALL = "/photos/pic-877.jpg";
+
+function useLocal<T extends string>(key: string, fallback: T, valid: readonly string[]): [T, (v: T) => void] {
+  const [value, setValue] = useState<T>(fallback);
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(key);
+      if (v && valid.includes(v)) setValue(v as T);
+    } catch {
+      // storage off; keep the default
+    }
+  }, [key, valid]);
+  const set = useCallback(
+    (v: T) => {
+      setValue(v);
+      try {
+        localStorage.setItem(key, v);
+      } catch {
+        // not remembered, still applied
+      }
+    },
+    [key],
+  );
+  return [value, set];
+}
+
+export function Desktop({ data }: { data: DesktopData }) {
+  const { entry, entries } = data;
+  const [wins, setWins] = useState<Record<WinId, WinState>>({
+    diary: { open: true, min: false, z: 13 },
+    msn: { open: true, min: false, z: 12 },
+    amp: { open: true, min: false, z: 11 },
+    guest: { open: false, min: false, z: 10 },
+    photos: { open: false, min: false, z: 10 },
+    almost: { open: false, min: false, z: 10 },
+  });
+  const [focus, setFocus] = useState<WinId>("diary");
+  const zTop = useRef(20);
+  const [startOpen, setStartOpen] = useState(false);
+  const [skin, setSkin] = useLocal<SkinId>(
+    "4me-skin",
+    "midnight",
+    SKINS.map((s) => s.id),
+  );
+  const [preview, setPreview] = useState<boolean | null>(null);
+  const [hour, setHour] = useState<number | null>(null);
+  const [clock, setClock] = useState("");
+  const [shaking, setShaking] = useState(false);
+  const [cat, setCat] = useState(data.cat);
+  const [live, setLive] = useState<NowPlaying | null>(null);
+  const [photoView, setPhotoView] = useState<number | null>(null);
+  const startBtn = useRef<HTMLButtonElement>(null);
+  const startMenu = useRef<HTMLDivElement>(null);
+
+  const awake = preview ?? (hour === null ? true : isAwakeHour(hour));
+  const wall = !awake && skin !== "snow" ? DAY_WALL : (SKINS.find((s) => s.id === skin)?.wall ?? SKINS[0].wall);
+
+  const pictures = useMemo<Picture[]>(() => {
+    const seen = new Set<string>();
+    const list: Picture[] = [];
+    for (const p of entry?.photos ?? [])
+      if (!seen.has(p.url) && seen.add(p.url)) list.push({ ...p, night: entry!.slug });
+    for (const e of entries)
+      if (e.cover && !seen.has(e.cover.url) && seen.add(e.cover.url)) list.push({ ...e.cover, night: e.slug });
+    return list;
+  }, [entry, entries]);
+
+  /* clock, the reader's hour, film grain, live listening */
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      setHour(d.getHours());
+      setClock(hhmm(d));
+    };
+    tick();
+    const t = window.setInterval(tick, 15_000);
+    try {
+      const c = document.createElement("canvas");
+      c.width = c.height = 140;
+      const g = c.getContext("2d");
+      if (g) {
+        const img = g.createImageData(140, 140);
+        for (let i = 0; i < img.data.length; i += 4) {
+          const v = Math.random() * 255;
+          img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+          img.data[i + 3] = 255;
+        }
+        g.putImageData(img, 0, 0);
+        document.documentElement.style.setProperty("--grain", `url(${c.toDataURL()})`);
+      }
+    } catch {
+      // no grain, still fine
+    }
+    const loadLive = () =>
+      fetch(`${API_URL}/now-playing`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((v: NowPlaying | null) => setLive(v))
+        .catch(() => undefined);
+    void loadLive();
+    const l = window.setInterval(loadLive, 60_000);
+    return () => {
+      window.clearInterval(t);
+      window.clearInterval(l);
+    };
+  }, []);
+
+  useEffect(() => {
+    document.body.dataset.skin = skin;
+    document.body.classList.toggle("daytime", !awake);
+  }, [skin, awake]);
+
+  useEffect(() => {
+    if (entry) void apiSend(`/entries/${entry.slug}/read`);
+  }, [entry]);
+
+  useEffect(() => {
+    if (!startOpen) return;
+    startMenu.current?.querySelector<HTMLElement>("button, a")?.focus();
+    const close = (e: KeyboardEvent | MouseEvent) => {
+      if (e instanceof KeyboardEvent) {
+        if (e.key === "Escape") {
+          setStartOpen(false);
+          startBtn.current?.focus();
+        }
+        return;
+      }
+      const t = e.target as Node;
+      if (!startMenu.current?.contains(t) && !startBtn.current?.contains(t)) setStartOpen(false);
+    };
+    window.addEventListener("keydown", close);
+    window.addEventListener("pointerdown", close);
+    return () => {
+      window.removeEventListener("keydown", close);
+      window.removeEventListener("pointerdown", close);
+    };
+  }, [startOpen]);
+
+  /* window manager */
+  const raise = useCallback((id: WinId) => {
+    zTop.current += 1;
+    const z = zTop.current;
+    setWins((w) => ({ ...w, [id]: { ...w[id], z } }));
+    setFocus(id);
+  }, []);
+  const open = useCallback((id: WinId) => {
+    zTop.current += 1;
+    const z = zTop.current;
+    setWins((w) => ({ ...w, [id]: { ...w[id], open: true, min: false, z } }));
+    setFocus(id);
+    setStartOpen(false);
+    if (window.innerWidth < 900) {
+      window.setTimeout(
+        () => document.getElementById(`win-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        50,
+      );
+    }
+  }, []);
+  const patch = (id: WinId, p: Partial<WinState>) => setWins((w) => ({ ...w, [id]: { ...w[id], ...p } }));
+  const taskClick = (id: WinId) => {
+    const w = wins[id];
+    if (w.min) open(id);
+    else if (focus === id) patch(id, { min: true });
+    else raise(id);
+  };
+
+  const buzz = () => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setShaking(false);
+    window.requestAnimationFrame(() => setShaking(true));
+    window.setTimeout(() => setShaking(false), 650);
+  };
+
+  const showPhoto = (url: string) => {
+    const i = pictures.findIndex((p) => p.url === url);
+    setPhotoView(i >= 0 ? i : 0);
+    open("photos");
+  };
+
+  const content: Record<WinId, ReactNode> = {
+    diary: (
+      <Diary
+        entry={entry}
+        entries={entries}
+        awake={awake}
+        onPhoto={showPhoto}
+        onSong={() => open("amp")}
+        onNotes={() => open("msn")}
+        onGuestbook={() => open("guest")}
+      />
+    ),
+    msn: <Messenger entry={entry} notes={data.notes} blasts={data.blasts} awake={awake} live={live} onBuzz={buzz} />,
+    guest: <Guestbook initial={data.shouts} />,
+    amp: <Mixtape entries={entries} currentSlug={entry?.slug} live={live} />,
+    photos: <Photos pictures={pictures} view={photoView} onView={setPhotoView} />,
+    almost: <Almost items={data.almost} />,
+  };
+
+  const visible = (Object.keys(WINDOWS) as WinId[]).filter((id) => wins[id].open);
+
+  return (
+    <>
+      <div className={`desk${shaking ? " shake" : ""}`}>
+        <div className="wall" aria-hidden="true">
+          <img src={wall} alt="" width={1000} height={1250} />
+        </div>
+        <nav className="icons" aria-label="Desktop">
+          {ICON_ORDER.map(([id, label]) => (
+            <button key={id} type="button" className="icon" onClick={() => open(id)}>
+              {WINDOWS[id].icon()}
+              {label}
+            </button>
+          ))}
+        </nav>
+        {visible.map((id) =>
+          wins[id].min ? null : (
+            <Window
+              key={id}
+              id={`win-${id}`}
+              title={id === "diary" && entry ? `diary — ${entry.title}.doc` : WINDOWS[id].title}
+              icon={WINDOWS[id].icon()}
+              className={WINDOWS[id].className}
+              focused={focus === id}
+              z={wins[id].z}
+              pos={wins[id].pos}
+              onFocus={() => focus !== id && raise(id)}
+              onMinimise={() => patch(id, { min: true })}
+              onClose={() => patch(id, { open: false, min: false })}
+              onMove={(pos) => patch(id, { pos })}
+            >
+              {content[id]}
+            </Window>
+          ),
+        )}
+      </div>
+
+      {startOpen && (
+        <div className="startmenu" ref={startMenu} id="startmenu" role="menu" aria-label="Start">
+          <div className="sm-head">
+            <img src="/photos/pic-1014.jpg" alt="" width={44} height={44} />
+            <div>
+              <b>4me</b>
+              <span>{awake ? "awake since 17:00" : "asleep until 17:00"}</span>
+            </div>
+          </div>
+          <ul className="sm-list">
+            {ICON_ORDER.map(([id, label]) => (
+              <li key={id}>
+                <button type="button" role="menuitem" onClick={() => open(id)}>
+                  {WINDOWS[id].icon()}
+                  {id === "diary" ? "Tonight's diary" : label}
+                </button>
+              </li>
+            ))}
+            <li className="sm-sep" aria-hidden="true" />
+            {(["feed", "play", "call"] as const).map((a) => (
+              <li key={a}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setStartOpen(false);
+                    nudgeInk(a);
+                  }}
+                >
+                  <IconHeart />
+                  {a === "feed" ? "Give Ink a fish" : a === "play" ? "Play with Ink" : "Call Ink over"}
+                </button>
+              </li>
+            ))}
+            <li className="sm-sep" aria-hidden="true" />
+            <li>
+              <a href="/rss.xml" role="menuitem">
+                RSS feed
+              </a>
+            </li>
+            <li>
+              <a href="/admin" role="menuitem">
+                Write (author)
+              </a>
+            </li>
+          </ul>
+
+          <fieldset className="skins">
+            <legend className="sm-label">Skin</legend>
+            {SKINS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="skin"
+                aria-pressed={skin === s.id}
+                onClick={() => setSkin(s.id)}
+              >
+                <i style={{ background: s.swatch }} />
+                {s.name}
+              </button>
+            ))}
+          </fieldset>
+        </div>
+      )}
+
+      <Ink awake={awake} stats={cat} onStats={setCat} />
+
+      <footer className="task">
+        <button
+          ref={startBtn}
+          type="button"
+          className="start"
+          aria-haspopup="menu"
+          aria-expanded={startOpen}
+          aria-controls="startmenu"
+          onClick={() => setStartOpen((o) => !o)}
+        >
+          4me
+        </button>
+        <div className="tasks">
+          {visible.map((id) => (
+            <button
+              key={id}
+              type="button"
+              className="tbtn"
+              aria-pressed={focus === id && !wins[id].min}
+              onClick={() => taskClick(id)}
+            >
+              {WINDOWS[id].task}
+            </button>
+          ))}
+        </div>
+        <div className="tray">
+          <span className="hearts" title="Times readers have petted Ink">
+            <IconHeart />
+            {cat.pets.toLocaleString("en")}
+          </span>
+          <span className="state-dot" aria-hidden="true" />
+          <span>{awake ? "awake" : "asleep"}</span>
+          <button type="button" className="preview" aria-pressed={preview !== null} onClick={() => setPreview(!awake)}>
+            {awake ? "Preview daytime" : "Preview night"}
+          </button>
+          <span className="clock">{clock}</span>
+        </div>
+      </footer>
+    </>
+  );
+}

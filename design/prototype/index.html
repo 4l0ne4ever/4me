@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4me Night Walks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: a pinned title over a passing reel of night photographs; the reader carries a lantern that lights every picture. */
+:root {
+  color-scheme: dark;
+  --bg: #0d110f;
+  --surface: #161b18;
+  --raised: #1f2621;
+  --ink: #d5d9d3;
+  --muted: #949c94;
+  --fog: #c9cec6;
+  --fog-ink: #0d110f;
+  --fog-muted: #3c443e;
+  --font: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --step-small: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem);
+  --step-body: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --step-lead: clamp(1.25rem, 1.1rem + 0.7vw, 1.625rem);
+  --step-head: clamp(2rem, 1.3rem + 3.2vw, 4rem);
+  --step-display: clamp(2.75rem, 1rem + 4.4vw, 4.75rem);
+  --gutter: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-soft: cubic-bezier(0.33, 1, 0.68, 1);
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: var(--step-body); line-height: 1.45; letter-spacing: -0.01em; overflow-x: hidden; }
+img, video { max-width: 100%; display: block; }
+a { color: inherit; }
+h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -0.05em; line-height: 0.92; text-wrap: balance; }
+p { margin: 0; }
+:focus-visible { outline: 2px solid var(--fog); outline-offset: 3px; }
+.wrap { padding-left: var(--gutter); padding-right: var(--gutter-r); }
+@media (min-width: 900px) { .wrap { padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); } }
+
+/* film grain: a canvas tile set from script, jittered in steps */
+body::after { content: ""; position: fixed; inset: -50%; pointer-events: none; z-index: 60; background-image: var(--grain, none); opacity: 0.07; animation: grain 0.9s steps(4) infinite; }
+@keyframes grain { 0% { transform: translate(0, 0); } 25% { transform: translate(-3%, 2%); } 50% { transform: translate(2%, -3%); } 75% { transform: translate(-2%, -1%); } 100% { transform: translate(0, 0); } }
+
+/* the lantern: every .lit picture is veiled except under the light */
+.lit { position: relative; overflow: hidden; background: var(--surface); }
+.lit > img, .lit > video { width: 100%; height: 100%; object-fit: cover; }
+.lit > img { filter: contrast(1.06) saturate(0.92); }
+.lit::after { content: ""; position: absolute; inset: 0; pointer-events: none; transition: opacity 400ms ease; /* the lantern is a scrim of light over the photograph: taste-skill-ignore */
+  background: radial-gradient(circle var(--lr, 340px) at var(--x, 50%) var(--y, 40%), rgba(255, 196, 132, 0.10) 0%, rgba(9, 12, 10, 0) 46%, rgba(9, 12, 10, 0.42) 100%); } /* taste-skill-ignore */
+
+/* buttons: one square shape, one fill */
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 20px; border: 0; background: var(--fog); color: var(--fog-ink); font: 600 var(--step-small)/1 var(--font); text-decoration: none; cursor: pointer; transition: transform 140ms var(--ease-out), background 180ms ease; }
+.btn:hover { background: #e2e6df; transform: translateY(-2px); }
+.btn:active { transform: translateY(0) scale(0.98); }
+.link { text-decoration: none; position: relative; }
+.link::after { content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: 2px; background: currentColor; transform: scaleX(0); transform-origin: right; transition: transform 300ms var(--ease-out); }
+.link:hover::after, .link:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+.write-links .link::after { bottom: -2px; }
+.night-desc .k-song { color: var(--muted); }
+
+/* ---------- hero: sentence split by a frame, the reel passes ---------- */
+.hero { position: relative; height: 215svh; }
+.hero-stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.nav { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-top: max(20px, env(safe-area-inset-top, 0px)); }
+.wordmark { font-weight: 800; font-size: var(--step-lead); letter-spacing: -0.06em; text-decoration: none; }
+.nav-links { display: flex; align-items: center; gap: 8px 24px; font-weight: 600; font-size: var(--step-small); }
+.nav-links a:not(.btn) { padding: 12px 0; }
+.hero h1 { position: absolute; left: 0; right: 0; top: 50%; height: 1.1em; transform: translateY(-50%); z-index: 3; font-size: var(--step-display); }
+.half { position: absolute; top: 0; white-space: nowrap; display: block; overflow: hidden; padding-bottom: 0.08em; }
+.half > span { display: block; animation: rise 1s var(--ease-expo) both; }
+.half-l { left: max(32px, env(safe-area-inset-left, 0px)); }
+.half-r { right: max(32px, env(safe-area-inset-right, 0px)); }
+.half-r > span { animation-delay: 110ms; }
+@keyframes rise { from { transform: translateY(105%); } to { transform: translateY(0); } }
+.reel { position: absolute; left: 50%; top: 0; width: min(26vw, 420px); margin-left: calc(min(26vw, 420px) / -2); z-index: 2; display: flex; flex-direction: column; gap: 24px; will-change: transform; }
+.reel figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.reel .lit { aspect-ratio: 3 / 4; animation: open 1.2s var(--ease-expo) both 150ms; }
+@keyframes open { from { clip-path: inset(18% 12% 18% 12%); } to { clip-path: inset(0 0 0 0); } }
+.reel figcaption, .cap { font-size: var(--step-small); color: var(--muted); font-weight: 400; }
+.reel figcaption b, .cap b { color: var(--ink); font-weight: 600; }
+.hero-sub { position: absolute; z-index: 3; left: max(32px, env(safe-area-inset-left, 0px)); bottom: 32px; max-width: 24em; font-size: var(--step-body); animation: fadeUp 0.9s var(--ease-expo) both 380ms; }
+.hero-cue { position: absolute; z-index: 3; right: max(32px, env(safe-area-inset-right, 0px)); bottom: 104px; font-size: var(--step-small); color: var(--muted); animation: fadeUp 0.9s var(--ease-expo) both 480ms; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 899px) {
+  .hero { height: auto; }
+  .hero-stage { position: relative; height: auto; overflow: visible; padding: 88px var(--gutter-r) 48px var(--gutter); display: flex; flex-direction: column; gap: 20px; }
+  .hero h1 { position: static; height: auto; transform: none; font-size: 11vw; display: flex; flex-direction: column; gap: 0; }
+  .half { position: static; transform: none; }
+  .half-r { align-self: flex-end; }
+  .reel { position: relative; left: auto; width: 100%; margin-left: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; transform: none !important; }
+  .reel figure { flex: 0 0 auto; width: 100%; } .reel figure:nth-child(n+3) { display: none; }
+  .hero-sub, .hero-cue { position: static; }
+  .nav-links .hide-s { display: none; }
+}
+
+/* ---------- walk: pinned statement, photographs pass beside it ---------- */
+.walk { position: relative; height: 205svh; }
+.walk-stage { position: sticky; top: 0; height: 100svh; display: grid; place-items: center; z-index: 2; pointer-events: none; }
+.walk-stage p { width: min(44vw, 640px); font-size: clamp(1.5rem, 1rem + 1.6vw, 2.25rem); font-weight: 600; line-height: 1.15; letter-spacing: -0.03em; text-align: left; }
+.walk-pic { position: absolute; z-index: 1; display: flex; flex-direction: column; gap: 10px; }
+.walk-pic .lit { width: 100%; }
+.wp1 { left: max(32px, 3vw); top: 45svh; width: 24vw; }
+.wp1 .lit { aspect-ratio: 4 / 5; }
+.wp2 { right: max(32px, 3vw); top: 85svh; width: 25vw; }
+.wp2 .lit { aspect-ratio: 4 / 5; }
+.wp3 { left: max(32px, 6vw); top: 140svh; width: 19vw; }
+.wp3 .lit { aspect-ratio: 1; }
+@media (max-width: 899px) {
+  .walk { height: auto; display: flex; flex-direction: column; gap: 40px; padding-block: 64px; }
+  .walk-stage { position: static; height: auto; place-items: start; }
+  .walk-stage p { width: 100%; font-size: 1.5rem; }
+  .walk-pic { position: static; width: 64% !important; }
+  .wp2 { align-self: flex-end; width: 78% !important; }
+}
+
+/* ---------- nights: sticky photograph, active list ---------- */
+.nights { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; padding-block: 120px 160px; }
+.nights-photo { grid-column: 1 / span 5; position: sticky; top: 12vh; align-self: start; aspect-ratio: 4 / 5; }
+.nights-photo img { position: absolute; inset: 0; opacity: 0; transition: opacity 300ms ease, transform 6s var(--ease-soft); transform: scale(1.06); }
+.nights-photo img.on { opacity: 1; transform: scale(1); }
+.nights-list { grid-column: 7 / span 6; min-width: 0; }
+.nights-list h2 { font-size: var(--step-head); margin-bottom: 48px; }
+.night { border: 0; }
+.night h3 { font-size: var(--step-lead); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+.night-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; min-height: 58px; padding-block: 14px; color: var(--muted); text-decoration: none; transition: color 240ms ease; }
+.night-row time { font-size: var(--step-small); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.night.on .night-row { color: var(--ink); }
+.night-desc { display: none; max-width: 36ch; padding-bottom: 18px; font-size: var(--step-small); color: var(--muted); }
+.night.on .night-desc { display: flex; flex-direction: column; gap: 8px; animation: fadeUp 450ms var(--ease-out) both; }
+.night-desc .song { color: var(--ink); display: flex; gap: 8px; align-items: center; }
+@media (max-width: 899px) {
+  .nights { display: flex; flex-direction: column; padding-block: 96px; }
+  .nights-list { display: contents; }
+  .nights-list h2 { order: -1; }
+  .nights-photo { position: relative; top: auto; width: 100%; aspect-ratio: 4 / 3; margin-bottom: 32px; }
+  .nights-list h2 { margin-bottom: 24px; }
+}
+
+/* ---------- skies: one frame, contents change ---------- */
+.skies { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; padding-block: 120px 160px; align-items: center; }
+.skies h2 { grid-column: 1 / span 4; font-size: var(--step-head); }
+.skies-intro { grid-column: 1 / span 4; font-size: var(--step-body); color: var(--muted); max-width: 26em; margin-top: 24px; }
+.sky-list { list-style: none; margin: 40px 0 0; padding: 0; display: flex; flex-direction: column; }
+.sky-list button { font: 600 var(--step-lead) var(--font); letter-spacing: -0.03em; background: none; border: 0; color: var(--muted); padding: 6px 0; min-height: 44px; cursor: pointer; text-align: left; transition: color 200ms ease, transform 300ms var(--ease-out); }
+.sky-list button:hover { color: var(--ink); transform: translateX(8px); }
+.sky-list button.on { color: var(--ink); }
+.skies-frame-wrap { grid-column: 6 / span 5; display: flex; flex-direction: column; gap: 16px; }
+.skies-frame { width: 100%; aspect-ratio: 4 / 5; border: 0; padding: 0; cursor: pointer; color: inherit; }
+.skies-frame img { position: absolute; inset: 0; opacity: 0; transition: opacity 600ms ease; }
+.skies-frame img.on { opacity: 1; animation: drift 9s var(--ease-soft) both; }
+@keyframes drift { from { transform: scale(1.08) translate(1.5%, 1%); } to { transform: scale(1) translate(0, 0); } }
+@media (max-width: 899px) {
+  .skies { display: flex; flex-direction: column; align-items: stretch; padding-block: 80px; }
+  .skies-frame-wrap { width: 100%; }
+}
+
+/* ---------- notes: a slow marquee, a nod to 2006 ---------- */
+.notes { padding-block: 40px 160px; }
+.notes h2 { font-size: var(--step-head); margin-bottom: 40px; }
+.marquee { overflow: hidden; margin-left: calc(var(--gutter) * -1); margin-right: calc(var(--gutter-r) * -1); }
+.marquee-track { display: flex; gap: 16px; width: max-content; animation: slide 60s linear infinite; padding-left: 16px; }
+.marquee:hover .marquee-track, .marquee:focus-within .marquee-track { animation-play-state: paused; }
+@keyframes slide { to { transform: translateX(-50%); } }
+.note { width: min(340px, 78vw); background: var(--surface); padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; transition: transform 300ms var(--ease-out), background 200ms ease; }
+.note:hover { transform: translateY(-4px); background: var(--raised); }
+.note p { font-size: var(--step-body); line-height: 1.4; }
+.note span { font-size: var(--step-small); color: var(--muted); }
+.note-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 40px; max-width: 980px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: var(--step-small); color: var(--muted); font-weight: 600; }
+.field input { font: inherit; background: var(--surface); color: var(--ink); border: 0; min-height: 48px; padding: 10px 14px; }
+.field input::placeholder { color: #737b73; }
+.f-name { flex: 1 1 180px; }
+.f-note { flex: 3 1 320px; }
+
+/* ---------- write: the address as display type, inverse field ---------- */
+.write { background: var(--fog); color: var(--fog-ink); display: flex; flex-direction: column; gap: clamp(96px, 16vw, 220px); padding-block: 56px 48px; }
+.write .lead { font-size: var(--step-lead); font-weight: 600; max-width: 22em; letter-spacing: -0.02em; line-height: 1.2; }
+.mail { font-weight: 800; font-size: clamp(2.6rem, 11.6vw, 11.5rem); letter-spacing: -0.06em; line-height: 0.9; text-decoration: none; overflow-wrap: anywhere; display: block; transition: color 200ms ease; }
+.mail:hover { color: #4d5a50; }
+.write-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 32px; font-size: var(--step-small); align-items: center; }
+.write-foot .btn { background: var(--fog-ink); color: var(--fog); }
+.write-foot .btn:hover { background: #26302a; }
+.write-links { display: flex; gap: 24px; flex-wrap: wrap; font-weight: 600; }
+
+/* ---------- footer: photograph half, menu half ---------- */
+.foot { display: grid; grid-template-columns: 1fr 1fr; min-height: 100svh; }
+.foot-pic { min-height: 60svh; }
+.foot-menu { display: flex; flex-direction: column; gap: 56px; padding-block: 80px 32px; }
+.foot-menu ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 22px; }
+.foot-menu li a { font-weight: 800; font-size: clamp(1.75rem, 1rem + 1.6vw, 2.25rem); letter-spacing: -0.05em; line-height: 1; text-decoration: none; display: inline-block; transition: transform 300ms var(--ease-out), color 200ms ease; }
+.foot-menu ul:hover a { color: var(--muted); }
+.foot-menu ul:hover a:hover { color: var(--ink); transform: translateX(12px); }
+.foot-blocks { display: flex; flex-wrap: wrap; gap: 24px 64px; font-size: var(--step-small); }
+.foot-blocks div { display: flex; flex-direction: column; gap: 6px; }
+.foot-blocks .k { color: var(--muted); }
+.credits { margin-top: auto; font-size: var(--step-small); color: var(--muted); line-height: 1.5; max-width: 62ch; }
+@media (max-width: 899px) { .foot { grid-template-columns: 1fr; } .foot-pic { min-height: 50svh; } }
+
+/* ---------- now playing, Winamp-small ---------- */
+.np { position: fixed; z-index: 50; right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 12px; background: var(--surface); padding: 8px 8px 8px 14px; max-width: calc(100vw - 32px); font-size: var(--step-small); }
+.np-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.np-text b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-text span { color: var(--muted); }
+.eq { display: flex; align-items: flex-end; gap: 3px; height: 18px; width: 22px; flex-shrink: 0; }
+.eq i { width: 4px; background: var(--fog); height: 30%; animation: eq 900ms ease-in-out infinite alternate; transform-origin: bottom; }
+.eq i:nth-child(2) { animation-delay: -300ms; animation-duration: 700ms; }
+.eq i:nth-child(3) { animation-delay: -600ms; animation-duration: 1100ms; }
+.eq i:nth-child(4) { animation-delay: -150ms; animation-duration: 800ms; }
+@keyframes eq { from { height: 20%; } to { height: 100%; } }
+.np.paused .eq i { animation-play-state: paused; }
+.np button { font: 600 var(--step-small) var(--font); background: var(--raised); color: var(--ink); border: 0; min-height: 40px; min-width: 64px; cursor: pointer; transition: background 180ms ease; }
+.np button:hover { background: #2a332d; }
+.np-inline { display: none; }
+@media (max-width: 899px) {
+  .np { display: none; }
+  .np-inline { display: flex; position: static; max-width: none; align-self: flex-start; }
+  .hero-cue { display: none; }
+}
+
+/* entrances: CSS scroll timelines where supported; elsewhere everything simply sits still and visible */
+@supports (animation-timeline: view()) {
+  .reveal { animation: fadeUp linear both; animation-timeline: view(); animation-range: entry 5% cover 28%; }
+  .reveal-mask { animation: openUp linear both; animation-timeline: view(); animation-range: entry 0% cover 35%; }
+  @keyframes openUp { from { clip-path: inset(20% 0 0 0); transform: translateY(24px); } to { clip-path: inset(0); transform: none; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; }
+  .marquee { overflow-x: auto; }
+  .lit::after { opacity: 0.6; }
+}
+</style>
+</head>
+<body>
+
+<section class="hero" id="top" aria-label="Introduction">
+  <div class="hero-stage">
+    <nav class="nav wrap" aria-label="Main">
+      <a class="wordmark" href="#top">4me</a>
+      <div class="nav-links">
+        <a class="link hide-s" href="#nights">Nights</a>
+        <a class="link hide-s" href="#notes">Notes</a>
+        <a class="link" href="#write">About</a>
+        <a class="btn" href="entry.html">Read tonight's entry</a>
+      </div>
+    </nav>
+    <h1><span class="half half-l"><span>Night walks,</span></span> <span class="half half-r"><span>written down.</span></span></h1>
+    <div class="reel" id="reel">
+      <figure><div class="lit"><img src="assets/pic-600.jpg" alt="A hooded figure alone in a dark pine forest, light falling through the trees" width="1000" height="1250"></div><figcaption><b>The lamps came on early</b> · 19 Oct</figcaption></figure>
+      <figure><div class="lit"><img src="assets/pic-726.jpg" alt="A small figure in a red coat standing in a snowy, misty field" width="1000" height="1250"></div><figcaption><b>Snow came early on the hill</b> · 12 Oct</figcaption></figure>
+      <figure><div class="lit"><img src="assets/pic-1014.jpg" alt="A woman seen from behind facing a misty sea, a long ribbon tied across her eyes" width="1000" height="1250" loading="lazy"></div><figcaption><b>The ribbon and the sea</b> · 6 Oct</figcaption></figure>
+      <figure><div class="lit"><img src="assets/pic-338.jpg" alt="A person in a hooded wool coat looking out over a grey shoreline" width="1000" height="1250" loading="lazy"></div><figcaption><b>Bus 18 and the fogged-up window</b> · 15 Oct</figcaption></figure>
+      <figure><div class="lit"><img src="assets/pic-473.jpg" alt="A figure in dark clothes on a jetty facing mountains in fog" width="1000" height="1250" loading="lazy"></div><figcaption><b>Thirteen minutes to three</b> · 17 Oct</figcaption></figure>
+    </div>
+    <p class="hero-sub">4me is a diary I keep after dark. One entry a night, with the mood, the weather and the song in my ears.</p>
+    <p class="hero-cue">Move the light over the pictures</p>
+    <div class="np np-inline" role="region" aria-label="Now playing"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="np-text"><b>Fade Into You</b><span>Mazzy Star · via Last.fm</span></span></div>
+  </div>
+</section>
+
+<section class="walk wrap" aria-label="Why I walk">
+  <div class="walk-stage"><p>Some nights nothing is wrong. You just can't find where you are, so you walk until you can.</p></div>
+  <figure class="walk-pic wp1" style="margin:0"><div class="lit"><img src="assets/pic-832.jpg" alt="A young woman in a white blouse reading in low window light" width="1000" height="1250" loading="lazy"></div><figcaption class="cap"><b>Writing it down after</b></figcaption></figure>
+  <figure class="walk-pic wp2" style="margin:0"><div class="lit"><img src="assets/pic-660.jpg" alt="A woman in a grey cardigan holding a lit sparkler in the dark" width="1000" height="1250" loading="lazy"></div><figcaption class="cap"><b>The light you carry</b></figcaption></figure>
+  <figure class="walk-pic wp3" style="margin:0"><div class="lit"><img src="assets/pic-375.jpg" alt="A person in a hood sitting among white daisies at dusk" width="1000" height="1250" loading="lazy"></div><figcaption class="cap"><b>The field behind the flats</b></figcaption></figure>
+</section>
+
+<section class="nights wrap" id="nights" aria-labelledby="h-nights">
+  <div class="nights-photo lit" id="nightsPhoto">
+    <img class="on" src="assets/pic-600.jpg" alt="" width="1000" height="1250" loading="lazy">
+    <img src="assets/pic-878.jpg" alt="" width="1000" height="1250" loading="lazy">
+    <img src="assets/pic-338.jpg" alt="" width="1000" height="1250" loading="lazy">
+    <img src="assets/pic-726.jpg" alt="" width="1000" height="1250" loading="lazy">
+    <img src="assets/pic-832.jpg" alt="" width="1000" height="1250" loading="lazy">
+    <img src="assets/pic-1014.jpg" alt="" width="1000" height="1250" loading="lazy">
+    <img src="assets/pic-923.jpg" alt="" width="1000" height="1250" loading="lazy">
+  </div>
+  <div class="nights-list">
+    <h2 id="h-nights" >Recent nights</h2>
+    <div id="nightList">
+      <article class="night on"><a class="night-row" href="entry.html"><h3>The lamps came on early</h3><time datetime="2026-10-19">19 Oct</time></a>
+        <div class="night-desc"><span>drifting · drizzle, 9°</span><span>“Blue, like someone had stirred ink into water.”</span><span class="song"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Radiohead, How to Disappear Completely</span></div></article>
+      <article class="night"><a class="night-row" href="entry.html"><h3>Thirteen minutes to three</h3><time datetime="2026-10-17">17 Oct</time></a>
+        <div class="night-desc"><span>sleepless · clear, 4°</span><span>“Counted the stones in the ceiling, then the years.”</span><span class="song"><span class="k-song">On repeat:</span> Elliott Smith, Between the Bars</span></div></article>
+      <article class="night"><a class="night-row" href="entry.html"><h3>Bus 18 and the fogged-up window</h3><time datetime="2026-10-15">15 Oct</time></a>
+        <div class="night-desc"><span>calm · overcast, 11°</span><span>“I drew a door on the glass and nobody got off.”</span><span class="song"><span class="k-song">On repeat:</span> Death Cab for Cutie, Transatlanticism</span></div></article>
+      <article class="night"><a class="night-row" href="entry.html"><h3>Snow came early on the hill</h3><time datetime="2026-10-12">12 Oct</time></a>
+        <div class="night-desc"><span>missing someone · snow, 0°</span><span>“Footprints going up, none coming down. Mine.”</span><span class="song"><span class="k-song">On repeat:</span> Mazzy Star, Fade Into You</span></div></article>
+      <article class="night"><a class="night-row" href="entry.html"><h3>A letter to myself in 2006</h3><time datetime="2026-10-09">9 Oct</time></a>
+        <div class="night-desc"><span>nostalgic · showers, 10°</span><span>“You still have the mp3 player. It still works.”</span><span class="song"><span class="k-song">On repeat:</span> Dashboard Confessional, Hands Down</span></div></article>
+      <article class="night"><a class="night-row" href="entry.html"><h3>The ribbon and the sea</h3><time datetime="2026-10-06">6 Oct</time></a>
+        <div class="night-desc"><span>hollow · wind, 8°</span><span>“Some things are easier to hear with your eyes shut.”</span><span class="song"><span class="k-song">On repeat:</span> Cocteau Twins, Heaven or Las Vegas</span></div></article>
+      <article class="night"><a class="night-row" href="entry.html"><h3>Red leaves on the way back</h3><time datetime="2026-10-02">2 Oct</time></a>
+        <div class="night-desc"><span>restless · mist, 12°</span><span>“The only colour left in the whole wood.”</span><span class="song"><span class="k-song">On repeat:</span> Evanescence, My Immortal</span></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="skies wrap" aria-labelledby="h-skies">
+  <div style="grid-column: 1 / span 4">
+    <h2 id="h-skies">Skies I'd walk under</h2>
+    <p class="skies-intro reveal">A wall of weather I keep for the nights I can't go out. Tap the frame for the next one, or pick a sky.</p>
+    <ul class="sky-list" id="skyList">
+      <li><button type="button" class="on">Aurora pillar</button></li>
+      <li><button type="button">Castle in fog</button></li>
+      <li><button type="button">Pines in fog</button></li>
+      <li><button type="button">Bare trees</button></li>
+      <li><button type="button">Blue mist</button></li>
+      <li><button type="button">Boathouse</button></li>
+      <li><button type="button">Red leaves</button></li>
+    </ul>
+  </div>
+  <div class="skies-frame-wrap">
+    <button class="skies-frame lit reveal-mask" id="skies" type="button" aria-label="Show the next sky">
+      <img class="on" src="assets/multicolored-aurora-borealis-pillar-over-brastad.jpg" alt="A pillar of aurora rising over a dark coast at night" width="1280" height="1920" loading="lazy">
+      <img src="assets/ksiaz-castle-in-fog-3324598198.jpg" alt="Książ Castle wrapped in fog" width="1280" height="1707" loading="lazy">
+      <img src="assets/pic-229.jpg" alt="A path through tall pines fading into fog" width="1000" height="1250" loading="lazy">
+      <img src="assets/pic-878.jpg" alt="Bare, twisted trees in fog, black and white" width="1000" height="1250" loading="lazy">
+      <img src="assets/pic-877.jpg" alt="Pale tree trunks in blue-grey mist" width="1000" height="1250" loading="lazy">
+      <img src="assets/pic-594.jpg" alt="A boathouse at the end of a jetty on dark water at night" width="1000" height="1250" loading="lazy">
+      <img src="assets/pic-923.jpg" alt="A misty forest path covered in red fallen leaves" width="1000" height="1250" loading="lazy">
+    </button>
+    <p class="cap" id="skiesCap" aria-live="polite"><b>Aurora pillar over Brastad</b> · Sweden</p>
+  </div>
+</section>
+
+<section class="notes wrap" id="notes" aria-labelledby="h-notes">
+  <h2 id="h-notes">Notes from strangers</h2>
+  <div class="marquee" tabindex="0" aria-label="Notes left by readers, scrolling slowly. Hover or focus to pause.">
+    <div class="marquee-track" id="track">
+      <div class="note"><p>Read the bus 18 one on a night shift. Felt like someone was sitting with me.</p><span>grey_cloud_92 · last night, 23:04</span></div>
+      <div class="note"><p>First hit counter I've seen since 2007. Visitor four thousand something, reporting.</p><span>hanh. · 17 Oct, 01:12</span></div>
+      <div class="note"><p>Your playlist is exactly my mp3 player from ninth grade.</p><span>a passerby · 15 Oct, 19:30</span></div>
+      <div class="note"><p>It did snow on the hill. I went up to check. Your footprints were gone.</p><span>wren · 13 Oct, 22:41</span></div>
+      <div class="note"><p>Leaving the light on for whoever reads this at 3 am.</p><span>m. · 9 Oct, 02:58</span></div>
+    </div>
+  </div>
+  <form class="note-form" id="noteForm">
+    <div class="field f-name"><label for="nName">Your name</label><input id="nName" name="name" type="text" placeholder="a stranger" maxlength="40" autocomplete="nickname"></div>
+    <div class="field f-note"><label for="nText">A line for the diary</label><input id="nText" name="note" type="text" placeholder="Passed by tonight..." maxlength="160" required></div>
+    <button class="btn" type="submit">Leave a note</button>
+  </form>
+</section>
+
+<section class="write wrap" id="write" aria-label="Write to me">
+  <p class="lead reveal">Write if a page found you on the right night.</p>
+  <div style="display:flex;flex-direction:column;gap:32px">
+    <a class="mail" href="mailto:hello@4me.blog">hello@4me.blog</a>
+    <div class="write-foot">
+      <span>I usually reply after 10 pm</span>
+      <button class="btn" type="button" id="copyMail">Copy address</button>
+      <span class="write-links"><a class="link" href="#">RSS</a><a class="link" href="#">Last.fm</a><a class="link" href="#">Instagram</a></span>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="foot-pic lit">
+    <video autoplay muted loop playsinline poster="assets/okanagan-wila-wafting-on-branches-in-freezing-poster.jpg" aria-label="Freezing fog drifting through pine branches" style="filter: grayscale(0.7) brightness(0.62) contrast(1.15)"><source src="assets/okanagan-wila-wafting-on-branches-in-freezing.webm" type="video/webm"></video>
+  </div>
+  <div class="foot-menu wrap">
+    <a class="wordmark" href="#top">4me</a>
+    <ul>
+      <li><a href="#nights">Nights</a></li>
+      <li><a href="#">Archive</a></li>
+      <li><a href="#notes">Notes</a></li>
+      <li><a href="#write">About</a></li>
+      <li><a href="#">RSS</a></li>
+    </ul>
+    <div class="foot-blocks">
+      <div><span class="k">Write</span><span>hello@4me.blog</span></div>
+      <div><span class="k">Elsewhere</span><span>Last.fm · Instagram</span></div>
+      <div><span class="k">Visitor</span><span id="counter">004,271</span></div>
+    </div>
+    <p class="credits">Photographs via Unsplash: Dustin Scarpitti, Caleb George, Oscar Keys, Patryk Sobczak, Todd Quackenbush, hieu le, Morgan Sessions, Wellington Sanipe, Orlova Maria, Richard Loader, Sebastian Unrau, Aurélien Bellanger. “Multicolored aurora borealis pillar over Brastad” by W.carter, CC BY-SA 4.0. “Książ castle in fog” by Weldon Kennedy, CC BY 2.0. Fog footage by Extemporalist, CC0. Via Wikimedia Commons.</p>
+  </div>
+</footer>
+
+<div class="np" id="np" role="region" aria-label="Now playing">
+  <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+  <span class="np-text"><b>Fade Into You</b><span>Mazzy Star · via Last.fm</span></span>
+  <button type="button" id="npBtn" aria-pressed="false">Pause</button>
+</div>
+
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // film grain tile
+  try {
+    var c = document.createElement('canvas'); c.width = c.height = 140;
+    var g = c.getContext('2d'), d = g.createImageData(140, 140);
+    for (var i = 0; i < d.data.length; i += 4) { var v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+    g.putImageData(d, 0, 0);
+    document.documentElement.style.setProperty('--grain', 'url(' + c.toDataURL() + ')');
+  } catch (e) {}
+
+  // lantern: pointer position, or a slow wander when nobody is pointing
+  var lx = innerWidth * 0.5, ly = innerHeight * 0.45, lastMove = -1e9, visible = new Set();
+  var io = new IntersectionObserver(function (es) { es.forEach(function (e) { e.isIntersecting ? visible.add(e.target) : visible.delete(e.target); }); });
+  document.querySelectorAll('.lit').forEach(function (el) { io.observe(el); });
+  addEventListener('pointermove', function (e) { lx = e.clientX; ly = e.clientY; lastMove = performance.now(); }, { passive: true });
+  function lantern(t) {
+    if (!reduce && t - lastMove > 3500) {
+      lx = innerWidth * (0.5 + 0.32 * Math.sin(t / 3100));
+      ly = innerHeight * (0.5 + 0.22 * Math.sin(t / 2300 + 1));
+    }
+    visible.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      el.style.setProperty('--x', (lx - r.left).toFixed(0) + 'px');
+      el.style.setProperty('--y', (ly - r.top).toFixed(0) + 'px');
+    });
+  }
+
+  // hero reel: locked to the scrollbar while the two halves hold
+  var hero = document.querySelector('.hero'), reel = document.getElementById('reel');
+  var frames = reel.querySelectorAll('figure');
+  function placeReel() {
+    if (innerWidth < 900) { reel.style.transform = ''; return; }
+    var span = hero.offsetHeight - innerHeight;
+    var p = Math.min(1, Math.max(0, (scrollY - hero.offsetTop) / span));
+    var step = frames[0].offsetHeight + 24;
+    var first = frames[0].querySelector('.lit').offsetHeight;
+    var base = (innerHeight - first) / 2;
+    reel.style.transform = 'translate3d(0,' + (base - p * (frames.length - 1) * step).toFixed(1) + 'px,0)';
+  }
+
+  // nights: hover, focus or the row nearest the middle of the screen becomes active
+  var rows = Array.prototype.slice.call(document.querySelectorAll('.night'));
+  var pics = document.querySelectorAll('#nightsPhoto img');
+  var active = 0, pointerOnList = false;
+  function setActive(i) {
+    if (i === active) return;
+    rows[active].classList.remove('on'); pics[active].classList.remove('on');
+    active = i; rows[i].classList.add('on'); pics[i].classList.add('on');
+  }
+  rows.forEach(function (r, i) {
+    r.addEventListener('pointerenter', function () { pointerOnList = true; setActive(i); });
+    r.addEventListener('pointerleave', function () { pointerOnList = false; });
+    r.addEventListener('focusin', function () { setActive(i); });
+  });
+  function rowNearCentre() {
+    if (pointerOnList) return;
+    var list = document.getElementById('nightList').getBoundingClientRect();
+    if (list.bottom < 0 || list.top > innerHeight) return;
+    var mid = innerHeight * 0.5, best = active, bestD = 1e9;
+    rows.forEach(function (r, i) { var b = r.getBoundingClientRect(); var dd = Math.abs(b.top + 29 - mid); if (dd < bestD) { bestD = dd; best = i; } });
+    setActive(best);
+  }
+
+  var ticking = false;
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(function () { placeReel(); rowNearCentre(); ticking = false; }); } }
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  function loop(t) { lantern(t); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+  placeReel();
+
+  // skies: one frame, the sky changes; tap for the next
+  var skies = document.getElementById('skies'), skyImgs = skies.querySelectorAll('img'), cap = document.getElementById('skiesCap');
+  var caps = ['<b>Aurora pillar over Brastad</b> · Sweden', '<b>Książ Castle in fog</b> · Poland', '<b>Pines fading into fog</b>', '<b>Bare trees in fog</b>', '<b>Pale trunks in blue mist</b>', '<b>A boathouse at night</b>', '<b>Red leaves on a misty path</b>'];
+  var sky = 0, skyTimer = null;
+  var skyBtns = document.querySelectorAll('#skyList button');
+  function showSky(i) { skyImgs[sky].classList.remove('on'); skyBtns[sky].classList.remove('on'); sky = i; skyImgs[sky].classList.add('on'); skyBtns[sky].classList.add('on'); cap.innerHTML = caps[sky]; }
+  function nextSky() { showSky((sky + 1) % skyImgs.length); }
+  skyBtns.forEach(function (b, i) { b.addEventListener('click', function () { showSky(i); startSkies(); }); });
+  function startSkies() { if (!reduce) { clearInterval(skyTimer); skyTimer = setInterval(nextSky, 3000); } }
+  skies.addEventListener('click', function () { nextSky(); startSkies(); });
+  startSkies();
+
+  // notes: a new note joins the marquee at once
+  var track = document.getElementById('track');
+  var clone = track.innerHTML; track.insertAdjacentHTML('beforeend', clone);
+  Array.prototype.slice.call(track.children, track.children.length / 2).forEach(function (n) { n.setAttribute('aria-hidden', 'true'); });
+  document.getElementById('noteForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = document.getElementById('nName').value.trim() || 'a stranger';
+    var text = document.getElementById('nText').value.trim(); if (!text) return;
+    var n = document.createElement('div'); n.className = 'note';
+    var p = document.createElement('p'); p.textContent = text;
+    var s = document.createElement('span'); s.textContent = name + ' · just now';
+    n.appendChild(p); n.appendChild(s); track.insertBefore(n, track.firstChild);
+    document.getElementById('nText').value = '';
+    var k = document.getElementById('counter'); k.textContent = '004,272';
+  });
+
+  // copy the address; the mail link may not open inside every viewer
+  document.getElementById('copyMail').addEventListener('click', function () {
+    var b = this;
+    function done(t) { b.textContent = t; setTimeout(function () { b.textContent = 'Copy address'; }, 1800); }
+    if (navigator.clipboard) navigator.clipboard.writeText('hello@4me.blog').then(function () { done('Copied'); }, function () { done('Select it above'); });
+    else done('Select it above');
+  });
+
+  // now playing
+  var np = document.getElementById('np'), npBtn = document.getElementById('npBtn');
+  npBtn.addEventListener('click', function () { var p = np.classList.toggle('paused'); npBtn.textContent = p ? 'Play' : 'Pause'; npBtn.setAttribute('aria-pressed', p ? 'true' : 'false'); });
+})();
+</script>
+</body>
+</html>

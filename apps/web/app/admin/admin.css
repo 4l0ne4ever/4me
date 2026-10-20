@@ -1,0 +1,131 @@
+.admin {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  padding: 20px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px));
+  background: var(--desk);
+}
+.admin-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.admin-top span {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.admin-flash {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  background: var(--chrome-hi);
+  border: 1px solid var(--chrome-edge);
+}
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.admin-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.admin-win {
+  position: relative;
+  min-width: 0;
+  animation: none;
+}
+.admin-win .bar {
+  cursor: default;
+}
+.admin-login {
+  max-width: 420px;
+  margin: 12vh auto;
+}
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+.admin-form label {
+  font-size: 13px;
+  color: var(--chrome-dim);
+  margin-top: 6px;
+}
+.admin-form textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+.admin-form .hint {
+  font-size: 13px;
+  color: var(--chrome-dim);
+}
+.row2,
+.row3 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.row3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.row2 span,
+.row3 span {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 10px;
+}
+.admin-inline {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+}
+.admin-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 10px 10px;
+  max-height: 340px;
+  overflow: auto;
+}
+.admin-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--chrome-edge);
+  font-size: 13px;
+}
+.admin-list li span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-list small {
+  color: var(--chrome-dim);
+}
+.admin-mod {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 4px;
+}
+@media (max-width: 899px) {
+  .admin-grid,
+  .row2,
+  .row3 {
+    grid-template-columns: 1fr;
+  }
+}

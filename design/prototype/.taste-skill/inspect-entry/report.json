@@ -1,0 +1,1183 @@
+{
+ "url": "entry.html",
+ "at": "2026-10-20T02:12:36.420Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 5,
+   "filled": [
+    0.69,
+    0.81,
+    0.75,
+    0.8,
+    0.78
+   ],
+   "motion": {
+    "elements": 16,
+    "css": 16,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 1,
+    "playingVideos": 1
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 4100,
+     "screens": 4.6,
+     "words": 388,
+     "img": 5,
+     "video": 1,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 2,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 6,
+     "videoCount": 1,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-600.jpg",
+      "pic-229.jpg",
+      "pic-878.jpg",
+      "pic-338.jpg",
+      "pic-726.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "The lamps came on early",
+     "words": 5,
+     "chars": 23,
+     "lines": 2,
+     "size": 64,
+     "vw": 4.4,
+     "font": "Schibsted Grotesk",
+     "weight": 800,
+     "tracking": -0.05,
+     "leading": 0.95,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "right",
+     "widthRatio": 0.43,
+     "top": 253,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "The lamps came on early",
+     "words": 5,
+     "lines": 2,
+     "size": 64,
+     "font": "Schibsted Grotesk"
+    },
+    "headings": [
+     {
+      "text": "The lamps came on early",
+      "words": 5,
+      "chars": 23,
+      "lines": 2,
+      "size": 64,
+      "vw": 4.4,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.95,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.43,
+      "top": 253,
+      "tag": "h1",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 1,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Schibsted Grotesk",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      15,
+      19,
+      26,
+      64
+     ],
+     "sizeCount": 4,
+     "notLoaded": [],
+     "body": {
+      "font": "Schibsted Grotesk",
+      "size": 19,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": -0.01,
+      "contrast": 13.3
+     },
+     "measureChars": 65,
+     "max": {
+      "size": 64,
+      "vw": 4.4,
+      "font": "Schibsted Grotesk",
+      "text": "The"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.02,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#0d110f",
+     "bodyBgHsl": {
+      "h": 150,
+      "s": 0.13,
+      "l": 0.06
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#161b18",
+       "top": 0,
+       "hsl": {
+        "h": 144,
+        "s": 0.1,
+        "l": 0.1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#d5d9d3",
+       "share": 0.69
+      },
+      {
+       "color": "#949c94",
+       "share": 0.31
+      },
+      {
+       "color": "#0d110f",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#1f2621",
+      "hsl": {
+       "h": 137,
+       "s": 0.1,
+       "l": 0.14
+      },
+      "fg": "#d5d9d3"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 1,
+     "radius": 0,
+     "height": 44,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Play"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 3,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 4,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 2768
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.5
+     }
+    ],
+    "nav": {
+     "links": 2,
+     "fixed": false,
+     "height": 47,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "schibsted grotesk"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 4100,
+    "margins": {
+     "left": 36,
+     "right": 32
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "The lamps came on early",
+      "size": 64,
+      "top": 253,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 792,
+      "n": 8
+     },
+     {
+      "x": 814,
+      "n": 1
+     },
+     {
+      "x": 870,
+      "n": 1
+     },
+     {
+      "x": 915,
+      "n": 1
+     },
+     {
+      "x": 964,
+      "n": 1
+     },
+     {
+      "x": 1046,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 13,
+    "bodySize": 19,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0.06,
+    "voidBox": {
+     "x": 1200,
+     "y": 120,
+     "w": 240,
+     "h": 300
+    }
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 5,
+   "filled": [
+    0.61,
+    0.62,
+    0.59,
+    0.76,
+    0.59
+   ],
+   "motion": {
+    "elements": 16,
+    "css": 16,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 1,
+    "playingVideos": 1
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 4278,
+     "screens": 4.2,
+     "words": 388,
+     "img": 5,
+     "video": 1,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 2,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 6,
+     "videoCount": 1,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-600.jpg",
+      "pic-229.jpg",
+      "pic-878.jpg",
+      "pic-338.jpg",
+      "pic-726.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "The lamps came on early",
+     "words": 5,
+     "chars": 23,
+     "lines": 2,
+     "size": 45.4,
+     "vw": 5.9,
+     "font": "Schibsted Grotesk",
+     "weight": 800,
+     "tracking": -0.05,
+     "leading": 0.95,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "left",
+     "widthRatio": 0.61,
+     "top": 606,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "The lamps came on early",
+     "words": 5,
+     "lines": 2,
+     "size": 45.4,
+     "font": "Schibsted Grotesk"
+    },
+    "headings": [
+     {
+      "text": "The lamps came on early",
+      "words": 5,
+      "chars": 23,
+      "lines": 2,
+      "size": 45.4,
+      "vw": 5.9,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.95,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.61,
+      "top": 606,
+      "tag": "h1",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 1,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Schibsted Grotesk",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      14,
+      18,
+      23,
+      45
+     ],
+     "sizeCount": 4,
+     "notLoaded": [],
+     "body": {
+      "font": "Schibsted Grotesk",
+      "size": 17.9,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": -0.01,
+      "contrast": 13.3
+     },
+     "measureChars": 68,
+     "max": {
+      "size": 45.4,
+      "vw": 5.9,
+      "font": "Schibsted Grotesk",
+      "text": "The"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.02,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#0d110f",
+     "bodyBgHsl": {
+      "h": 150,
+      "s": 0.13,
+      "l": 0.06
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#161b18",
+       "top": 0,
+       "hsl": {
+        "h": 144,
+        "s": 0.1,
+        "l": 0.1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#d5d9d3",
+       "share": 0.69
+      },
+      {
+       "color": "#949c94",
+       "share": 0.31
+      },
+      {
+       "color": "#0d110f",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#1f2621",
+      "hsl": {
+       "h": 137,
+       "s": 0.1,
+       "l": 0.14
+      },
+      "fg": "#d5d9d3"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 1,
+     "radius": 0,
+     "height": 44,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Play"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 6,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.44
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 46,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "schibsted grotesk"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 4278,
+    "margins": {
+     "left": 16,
+     "right": 16
+    },
+    "sections": [
+     {
+      "sel": "div.photo.lit",
+      "tag": "div",
+      "top": 0,
+      "height": 451,
+      "words": 5,
+      "media": 1,
+      "middle": 0,
+      "heading": null,
+      "left": 36,
+      "right": 582,
+      "textLeft": 36,
+      "textRight": 582,
+      "fullBleed": true,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "header.head",
+      "tag": "header",
+      "top": 560,
+      "height": 400,
+      "words": 39,
+      "media": 0,
+      "middle": 190,
+      "heading": {
+       "text": "The",
+       "size": 45,
+       "tag": "h1"
+      },
+      "left": 16,
+      "right": 32,
+      "textLeft": 16,
+      "textRight": 52,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "article.body",
+      "tag": "article",
+      "top": 1000,
+      "height": 1420,
+      "words": 163,
+      "media": 2,
+      "middle": 0,
+      "heading": null,
+      "left": 16,
+      "right": 143,
+      "textLeft": 16,
+      "textRight": 144,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section.more",
+      "tag": "section",
+      "top": 2461,
+      "height": 394,
+      "words": 29,
+      "media": 3,
+      "middle": 12,
+      "heading": null,
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 70,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section.comments",
+      "tag": "section",
+      "top": 2985,
+      "height": 1128,
+      "words": 96,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 38,
+      "right": 40,
+      "textLeft": 38,
+      "textRight": 59,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "The lamps came on early",
+      "size": 45,
+      "top": 606,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 16,
+      "n": 8
+     },
+     {
+      "x": 38,
+      "n": 1
+     },
+     {
+      "x": 76,
+      "n": 1
+     },
+     {
+      "x": 103,
+      "n": 1
+     },
+     {
+      "x": 138,
+      "n": 1
+     },
+     {
+      "x": 196,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 13,
+    "bodySize": 18,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 5,
+   "filled": [
+    0.75,
+    0.67,
+    0.6,
+    0.78,
+    0.6
+   ],
+   "motion": {
+    "elements": 16,
+    "css": 16,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 1,
+    "playingVideos": 1
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 4023,
+     "screens": 4.8,
+     "words": 388,
+     "img": 5,
+     "video": 1,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 2,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 3,
+     "videoCount": 1,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-600.jpg",
+      "pic-229.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "The lamps came on early",
+     "words": 5,
+     "chars": 23,
+     "lines": 2,
+     "size": 36,
+     "vw": 9.2,
+     "font": "Schibsted Grotesk",
+     "weight": 800,
+     "tracking": -0.05,
+     "leading": 0.95,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "center",
+     "widthRatio": 0.92,
+     "top": 525,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "The lamps came on early",
+     "words": 5,
+     "lines": 2,
+     "size": 36,
+     "font": "Schibsted Grotesk"
+    },
+    "headings": [
+     {
+      "text": "The lamps came on early",
+      "words": 5,
+      "chars": 23,
+      "lines": 2,
+      "size": 36,
+      "vw": 9.2,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.95,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 525,
+      "tag": "h1",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 1,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Schibsted Grotesk",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      14,
+      17,
+      20,
+      36
+     ],
+     "sizeCount": 4,
+     "notLoaded": [],
+     "body": {
+      "font": "Schibsted Grotesk",
+      "size": 17,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": -0.01,
+      "contrast": 13.3
+     },
+     "measureChars": 42,
+     "max": {
+      "size": 36,
+      "vw": 9.2,
+      "font": "Schibsted Grotesk",
+      "text": "The"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.02,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#0d110f",
+     "bodyBgHsl": {
+      "h": 150,
+      "s": 0.13,
+      "l": 0.06
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#161b18",
+       "top": 0,
+       "hsl": {
+        "h": 144,
+        "s": 0.1,
+        "l": 0.1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#d5d9d3",
+       "share": 0.69
+      },
+      {
+       "color": "#949c94",
+       "share": 0.31
+      },
+      {
+       "color": "#0d110f",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#1f2621",
+      "hsl": {
+       "h": 137,
+       "s": 0.1,
+       "l": 0.14
+      },
+      "fg": "#d5d9d3"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 1,
+     "radius": 0,
+     "height": 44,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Play"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 3,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.44
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 45,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "schibsted grotesk"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 4023,
+    "margins": {
+     "left": 16,
+     "right": 16
+    },
+    "sections": [
+     {
+      "sel": "div.photo.lit",
+      "tag": "div",
+      "top": 0,
+      "height": 371,
+      "words": 5,
+      "media": 1,
+      "middle": 0,
+      "heading": null,
+      "left": 36,
+      "right": 208,
+      "textLeft": 36,
+      "textRight": 208,
+      "fullBleed": true,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "header.head",
+      "tag": "header",
+      "top": 480,
+      "height": 410,
+      "words": 39,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "The",
+       "size": 36,
+       "tag": "h1"
+      },
+      "left": 16,
+      "right": 22,
+      "textLeft": 16,
+      "textRight": 22,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "article.body",
+      "tag": "article",
+      "top": 931,
+      "height": 1258,
+      "words": 163,
+      "media": 2,
+      "middle": 0,
+      "heading": null,
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 17,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section.more",
+      "tag": "section",
+      "top": 2229,
+      "height": 271,
+      "words": 29,
+      "media": 0,
+      "middle": 12,
+      "heading": null,
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 28,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section.comments",
+      "tag": "section",
+      "top": 2629,
+      "height": 1210,
+      "words": 96,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 38,
+      "right": 40,
+      "textLeft": 38,
+      "textRight": 52,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "The lamps came on early",
+      "size": 36,
+      "top": 525,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 16,
+      "n": 8
+     },
+     {
+      "x": 38,
+      "n": 1
+     },
+     {
+      "x": 58,
+      "n": 1
+     },
+     {
+      "x": 85,
+      "n": 1
+     },
+     {
+      "x": 113,
+      "n": 1
+     },
+     {
+      "x": 159,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 13,
+    "bodySize": 17,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  }
+ ],
+ "findings": [],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-entry/desktop-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-entry/desktop-page-01.jpg",
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-entry/desktop-page-02.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-entry/tablet-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-entry/tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-entry/mobile-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect-entry/mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

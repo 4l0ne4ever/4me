@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4me Night Walks: 19 October</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: one night as a split page; the photograph holds on the left under the lantern, the night is written on the right. */
+:root {
+  color-scheme: dark;
+  --bg: #0d110f;
+  --surface: #161b18;
+  --raised: #1f2621;
+  --ink: #d5d9d3;
+  --muted: #949c94;
+  --fog: #c9cec6;
+  --fog-ink: #0d110f;
+  --font: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --step-small: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem);
+  --step-body: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --step-lead: clamp(1.25rem, 1.1rem + 0.7vw, 1.625rem);
+  --step-head: clamp(2.25rem, 1.3rem + 3.2vw, 4rem);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+body { margin: 0; color: var(--ink); font-family: var(--font); font-size: var(--step-body); line-height: 1.5; letter-spacing: -0.01em; overflow-x: hidden; }
+img, video { max-width: 100%; display: block; }
+a { color: inherit; }
+h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -0.05em; line-height: 0.95; text-wrap: balance; }
+p { margin: 0; }
+:focus-visible { outline: 2px solid var(--fog); outline-offset: 3px; }
+body::after { content: ""; position: fixed; inset: -50%; pointer-events: none; z-index: 60; background-image: var(--grain, none); opacity: 0.07; animation: grain 0.9s steps(4) infinite; }
+@keyframes grain { 0% { transform: translate(0, 0); } 25% { transform: translate(-3%, 2%); } 50% { transform: translate(2%, -3%); } 75% { transform: translate(-2%, -1%); } 100% { transform: translate(0, 0); } }
+.lit { position: relative; overflow: hidden; background: var(--surface); }
+.lit > img { width: 100%; height: 100%; object-fit: cover; }
+.lit::after { content: ""; position: absolute; inset: 0; pointer-events: none; /* the lantern is a scrim of light over the photograph: taste-skill-ignore */
+  background: radial-gradient(circle 340px at var(--x, 50%) var(--y, 40%), rgba(255, 196, 132, 0.10) 0%, rgba(9, 12, 10, 0) 42%, rgba(9, 12, 10, 0.5) 100%); } /* taste-skill-ignore */
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 20px; border: 0; background: var(--fog); color: var(--fog-ink); font: 600 var(--step-small)/1 var(--font); text-decoration: none; cursor: pointer; transition: transform 140ms var(--ease-out), background 180ms ease; }
+.btn:hover { background: #e2e6df; transform: translateY(-2px); }
+.btn:active { transform: translateY(0) scale(0.98); }
+.btn.quiet { background: var(--raised); color: var(--ink); }
+.btn.quiet:hover { background: #2a332d; }
+.link { text-decoration: none; position: relative; }
+.link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: currentColor; transform: scaleX(0); transform-origin: right; transition: transform 300ms var(--ease-out); }
+.link:hover::after, .link:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+
+.page { display: grid; grid-template-columns: 1fr 1fr; }
+.photo { position: sticky; top: 0; height: 100svh; }
+.photo img { animation: settle 1.6s var(--ease-expo) both; }
+@keyframes settle { from { transform: scale(1.08); opacity: 0.4; } to { transform: none; opacity: 1; } }
+.photo-cap { position: absolute; z-index: 2; left: max(24px, env(safe-area-inset-left, 0px)); bottom: 24px; font-size: var(--step-small); background: var(--bg); padding: 8px 12px; }
+.text { padding: 32px max(32px, env(safe-area-inset-right, 0px)) 64px clamp(32px, 5vw, 88px); min-width: 0; display: flex; flex-direction: column; gap: 56px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.wordmark { font-weight: 800; font-size: var(--step-lead); letter-spacing: -0.06em; text-decoration: none; }
+.top nav { display: flex; gap: 24px; font-weight: 600; font-size: var(--step-small); }
+.top nav a { padding-block: 12px; }
+.head { display: flex; flex-direction: column; gap: 24px; padding-top: 8vh; }
+.when { font-size: var(--step-small); color: var(--muted); font-variant-numeric: tabular-nums; animation: up 0.8s var(--ease-expo) both; }
+.head h1 { font-size: var(--step-head); max-width: 16ch; }
+.head h1 .w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.06em; }
+.head h1 .w > span { display: inline-block; animation: rise 0.9s var(--ease-expo) both; animation-delay: calc(var(--i) * 45ms + 100ms); }
+@keyframes rise { from { transform: translateY(105%); } to { transform: none; } }
+@keyframes up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 24px; animation: up 0.8s var(--ease-expo) both 420ms; }
+.facts div { display: flex; flex-direction: column; gap: 4px; }
+.facts .k { font-size: var(--step-small); color: var(--muted); }
+.player { background: var(--surface); padding: 16px; display: flex; flex-direction: column; gap: 14px; animation: up 0.8s var(--ease-expo) both 520ms; }
+.player-row { display: flex; align-items: center; gap: 14px; }
+.player-t { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; flex: 1; }
+.player-t span { color: var(--muted); font-size: var(--step-small); }
+.eq { display: flex; align-items: flex-end; gap: 3px; height: 22px; width: 26px; flex-shrink: 0; }
+.eq i { width: 4px; background: var(--fog); height: 30%; animation: eq 900ms ease-in-out infinite alternate; animation-play-state: paused; }
+.eq i:nth-child(2) { animation-delay: -300ms; animation-duration: 700ms; }
+.eq i:nth-child(3) { animation-delay: -600ms; animation-duration: 1100ms; }
+.eq i:nth-child(4) { animation-delay: -150ms; animation-duration: 800ms; }
+@keyframes eq { from { height: 20%; } to { height: 100%; } }
+.bar { height: 4px; background: var(--raised); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--fog); transform-origin: left; transform: scaleX(0.18); }
+.player.on .eq i { animation-play-state: running; }
+.player.on .bar i { animation: prog 60s linear forwards; }
+@keyframes prog { from { transform: scaleX(0.18); } to { transform: scaleX(1); } }
+.body { max-width: 34em; display: flex; flex-direction: column; gap: 1.2em; }
+.body figure { margin: 1em 0; display: flex; flex-direction: column; gap: 10px; }
+.body figure .lit { aspect-ratio: 4 / 3; }
+.cap { font-size: var(--step-small); color: var(--muted); }
+.end { font-weight: 800; letter-spacing: -0.04em; font-size: var(--step-lead); }
+.pn { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; font-size: var(--step-small); }
+.pn a { display: flex; flex-direction: column; gap: 2px; text-decoration: none; max-width: 16em; transition: transform 300ms var(--ease-out); }
+.pn a:hover { transform: translateX(-4px); }
+.pn a.next:hover { transform: translateX(4px); }
+.pn .k { color: var(--muted); }
+.pn b { font-weight: 600; font-size: var(--step-body); }
+.more { display: flex; flex-direction: column; gap: 20px; }
+.more h2 { font-size: var(--step-lead); letter-spacing: -0.03em; }
+.more-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.more-row a { display: flex; flex-direction: column; gap: 8px; text-decoration: none; font-size: var(--step-small); }
+.more-row .lit { display: block; aspect-ratio: 4 / 5; }
+.more-row img { transition: transform 600ms var(--ease-out); }
+.more-row a:hover img { transform: scale(1.05); }
+.more-row b { font-weight: 600; line-height: 1.25; }
+.comments { display: flex; flex-direction: column; gap: 24px; }
+.comments h2 { font-size: var(--step-lead); letter-spacing: -0.03em; }
+.c { display: flex; flex-direction: column; gap: 8px; padding: 20px 22px; background: var(--surface); }
+.c.reply { margin-left: clamp(20px, 5vw, 56px); background: var(--raised); }
+.c .who { font-size: var(--step-small); color: var(--muted); }
+.c .who b { color: var(--ink); font-weight: 600; }
+.c .acts { display: flex; gap: 20px; font-size: var(--step-small); }
+.c .acts button { font: 600 var(--step-small) var(--font); background: none; border: 0; color: var(--muted); padding: 10px 0; min-height: 44px; cursor: pointer; transition: color 180ms ease; }
+.c .acts button:hover { color: var(--ink); }
+.c form { display: none; flex-direction: column; gap: 10px; }
+.c.replying form { display: flex; animation: up 400ms var(--ease-out) both; }
+textarea, input { font: inherit; background: var(--bg); color: var(--ink); border: 0; padding: 12px 14px; min-height: 48px; }
+.c textarea { background: var(--bg); }
+.leave { display: flex; flex-direction: column; gap: 12px; background: var(--surface); padding: 24px; }
+.leave label { font-size: var(--step-small); color: var(--muted); font-weight: 600; }
+.leave textarea { resize: vertical; }
+.leave-row { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.foot { font-size: var(--step-small); color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+@supports (animation-timeline: view()) {
+  .reveal-mask { animation: openUp linear both; animation-timeline: view(); animation-range: entry 0% cover 35%; }
+  @keyframes openUp { from { clip-path: inset(18% 0 0 0); transform: translateY(24px); } to { clip-path: inset(0); transform: none; } }
+}
+@media (max-width: 899px) {
+  .page { grid-template-columns: 1fr; }
+  .photo { position: relative; height: 44svh; }
+  .text { padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); gap: 40px; }
+  .top { order: -1; }
+  .head { padding-top: 0; }
+  .facts { grid-template-columns: 1fr 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="photo lit">
+    <img src="assets/pic-600.jpg" alt="A hooded figure alone in a dark pine forest, light falling through the trees" width="1000" height="1250">
+    <p class="photo-cap">On the way home, 18:31</p>
+  </div>
+  <main class="text">
+    <div class="top">
+      <a class="wordmark" href="index.html">4me</a>
+      <nav aria-label="Main"><a class="link" href="index.html#nights">All nights</a><a class="link" href="index.html#notes">Notes</a></nav>
+    </div>
+
+    <header class="head">
+      <p class="when">Sunday 19 October 2026 · written at 18:42, blue hour</p>
+      <h1 id="title">The lamps came on early</h1>
+      <div class="player" id="player">
+        <div class="player-row">
+          <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="player-t"><b>How to Disappear Completely</b><span>Radiohead · Kid A, 2000 · on repeat while I wrote</span></span>
+          <button class="btn quiet" type="button" id="play" aria-pressed="false">Play</button>
+        </div>
+        <div class="bar" aria-hidden="true"><i></i></div>
+      </div>
+      <div class="facts">
+        <div><span class="k">Mood</span><span>drifting</span></div>
+        <div><span class="k">Weather</span><span>drizzle, 9°</span></div>
+        <div><span class="k">Read</span><span>318 times</span></div>
+      </div>
+    </header>
+
+    <article class="body">
+      <p>I left work a little later than usual. By the time I got out of the building every streetlamp was on, that orange light spilling over a road still wet from the afternoon. The sky wasn't dark yet, but it wasn't light either. Blue, like someone had stirred ink into water.</p>
+      <p>I stood at the bus stop for ten minutes without remembering which line I was waiting for. My headphones were still playing the old song, the one I wore out in eleventh grade, and the chorus came round just as a bus went past without stopping.</p>
+      <figure><div class="lit reveal-mask"><img src="assets/pic-229.jpg" alt="A path through tall pines fading into fog" width="1000" height="1250" loading="lazy"></div><figcaption class="cap">The shortcut through the pines. I didn't take it.</figcaption></figure>
+      <p>Some days nothing is sad, exactly. You just can't find where you are. Today was one of those.</p>
+      <p>When I got home I made a cup of tea, opened the balcony door to let the wind in, and sat down to write this. It will probably rain again tomorrow.</p>
+      <figure><div class="lit reveal-mask" style="aspect-ratio: 16 / 9"><video autoplay muted loop playsinline poster="assets/okanagan-wila-wafting-on-branches-in-freezing-poster.jpg" aria-label="Freezing fog drifting through pine branches" style="width:100%;height:100%;object-fit:cover;filter:grayscale(0.7) brightness(0.65) contrast(1.15)"><source src="assets/okanagan-wila-wafting-on-branches-in-freezing.webm" type="video/webm"></video></div><figcaption class="cap">From the balcony, a little after nine. The fog came down off the hill.</figcaption></figure>
+      <p class="end">Here ends 19 October.</p>
+    </article>
+
+    <section class="more" aria-labelledby="h-more">
+      <h2 id="h-more">Other nights</h2>
+      <div class="more-row">
+        <a href="#"><span class="lit"><img src="assets/pic-878.jpg" alt="Bare, twisted trees in fog" width="1000" height="1250" loading="lazy"></span><b>Thirteen minutes to three</b><span class="cap">17 Oct · sleepless</span></a>
+        <a href="#"><span class="lit"><img src="assets/pic-338.jpg" alt="A person in a hooded coat facing a grey shoreline" width="1000" height="1250" loading="lazy"></span><b>Bus 18 and the fogged-up window</b><span class="cap">15 Oct · calm</span></a>
+        <a href="#"><span class="lit"><img src="assets/pic-726.jpg" alt="A figure in a red coat in a snowy, misty field" width="1000" height="1250" loading="lazy"></span><b>Snow came early on the hill</b><span class="cap">12 Oct · missing someone</span></a>
+      </div>
+    </section>
+
+    <nav class="pn" aria-label="Previous and next night">
+      <a href="#"><span class="k">The night before</span><b>Thirteen minutes to three</b></a>
+      <a class="next" href="index.html#nights" style="text-align:right"><span class="k">Back to</span><b>All nights</b></a>
+    </nav>
+
+    <section class="comments" aria-labelledby="h-c">
+      <h2 id="h-c">4 notes on this night</h2>
+      <div class="c"><span class="who"><b>grey_cloud_92</b> · 19 Oct, 21:03</span><p>“Blue, like someone had stirred ink into water.” I sat looking out of the window for a while after reading that.</p><div class="acts"><button type="button" class="rb">Reply</button></div><form><label class="cap" for="r1">Reply to grey_cloud_92</label><textarea id="r1" rows="3"></textarea><button class="btn" type="submit">Send reply</button></form></div>
+      <div class="c reply"><span class="who"><b>4me</b> · the author · 19 Oct, 21:40</span><p>Thank you. Only after writing it did I notice the sky really was like that.</p><div class="acts"><button type="button" class="rb">Reply</button></div><form><label class="cap" for="r2">Reply to 4me</label><textarea id="r2" rows="3"></textarea><button class="btn" type="submit">Send reply</button></form></div>
+      <div class="c"><span class="who"><b>hanh.</b> · 19 Oct, 22:17</span><p>Listening to this song at a bus stop is a lost cause.</p><div class="acts"><button type="button" class="rb">Reply</button></div><form><label class="cap" for="r3">Reply to hanh.</label><textarea id="r3" rows="3"></textarea><button class="btn" type="submit">Send reply</button></form></div>
+      <div class="c"><span class="who"><b>a stranger</b> · 20 Oct, 00:52</span><p>It is raining tomorrow, for real. Bring an umbrella.</p><div class="acts"><button type="button" class="rb">Reply</button></div><form><label class="cap" for="r4">Reply to a stranger</label><textarea id="r4" rows="3"></textarea><button class="btn" type="submit">Send reply</button></form></div>
+      <form class="leave" id="leave">
+        <label for="lname">Your name</label>
+        <input id="lname" type="text" placeholder="a stranger" maxlength="40">
+        <label for="ltext">Your note</label>
+        <textarea id="ltext" rows="4" required></textarea>
+        <div class="leave-row"><button class="btn" type="submit">Leave a note</button><a class="link cap" href="#">or sign in with Google</a></div>
+      </form>
+    </section>
+
+    <footer class="foot"><span>4me, night walks written down</span><span>Photographs via Unsplash: Dustin Scarpitti, Orlova Maria, Richard Loader, Patryk Sobczak, Caleb George. Fog footage by Extemporalist, CC0.</span></footer>
+  </main>
+</div>
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  try {
+    var c = document.createElement('canvas'); c.width = c.height = 140;
+    var g = c.getContext('2d'), d = g.createImageData(140, 140);
+    for (var i = 0; i < d.data.length; i += 4) { var v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+    g.putImageData(d, 0, 0);
+    document.documentElement.style.setProperty('--grain', 'url(' + c.toDataURL() + ')');
+  } catch (e) {}
+
+  // split the title into words that rise one after another
+  var h = document.getElementById('title');
+  if (!reduce) h.innerHTML = h.textContent.split(' ').map(function (w, i) { return '<span class="w"><span style="--i:' + i + '">' + w + '</span></span>'; }).join(' ');
+
+  var lx = innerWidth * 0.25, ly = innerHeight * 0.45, last = -1e9, lits = document.querySelectorAll('.lit');
+  addEventListener('pointermove', function (e) { lx = e.clientX; ly = e.clientY; last = performance.now(); }, { passive: true });
+  (function loop(t) {
+    if (!reduce && t - last > 3500) { lx = innerWidth * (0.25 + 0.18 * Math.sin(t / 2900)); ly = innerHeight * (0.5 + 0.25 * Math.sin(t / 2100 + 1)); }
+    lits.forEach(function (el) { var r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return; el.style.setProperty('--x', (lx - r.left) + 'px'); el.style.setProperty('--y', (ly - r.top) + 'px'); });
+    requestAnimationFrame(loop);
+  })(0);
+
+  var player = document.getElementById('player'), play = document.getElementById('play');
+  play.addEventListener('click', function () { var on = player.classList.toggle('on'); play.textContent = on ? 'Pause' : 'Play'; play.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+
+  document.querySelectorAll('.c').forEach(function (c) {
+    c.querySelector('.rb').addEventListener('click', function () { c.classList.toggle('replying'); if (c.classList.contains('replying')) c.querySelector('textarea').focus(); });
+    c.querySelector('form').addEventListener('submit', function (e) { e.preventDefault(); var t = c.querySelector('textarea'); if (!t.value.trim()) return; var r = document.createElement('div'); r.className = 'c reply'; r.innerHTML = '<span class="who"><b>you</b> · just now</span><p></p>'; r.querySelector('p').textContent = t.value.trim(); c.after(r); t.value = ''; c.classList.remove('replying'); });
+  });
+  document.getElementById('leave').addEventListener('submit', function (e) {
+    e.preventDefault(); var t = document.getElementById('ltext'); if (!t.value.trim()) return;
+    var n = document.createElement('div'); n.className = 'c'; n.innerHTML = '<span class="who"><b></b> · just now</span><p></p>';
+    n.querySelector('b').textContent = document.getElementById('lname').value.trim() || 'a stranger'; n.querySelector('p').textContent = t.value.trim();
+    this.before(n); t.value = ''; document.getElementById('h-c').textContent = document.querySelectorAll('.comments .c').length + ' notes on this night';
+  });
+})();
+</script>
+</body>
+</html>

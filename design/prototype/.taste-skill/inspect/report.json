@@ -1,0 +1,2259 @@
+{
+ "url": "index.html",
+ "at": "2026-10-20T02:14:03.473Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 9,
+   "filled": [
+    0.27,
+    0.34,
+    0.17,
+    0.28,
+    0.36,
+    0.35,
+    0.32,
+    0.79,
+    0.61
+   ],
+   "motion": {
+    "elements": 37,
+    "css": 25,
+    "transitions": 11,
+    "scripted": 1,
+    "videos": 1,
+    "playingVideos": 1
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 7828,
+     "screens": 8.7,
+     "words": 524,
+     "img": 22,
+     "video": 1,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 23,
+     "videoCount": 1,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-600.jpg",
+      "pic-726.jpg",
+      "pic-1014.jpg",
+      "pic-338.jpg",
+      "pic-473.jpg",
+      "pic-832.jpg",
+      "pic-660.jpg",
+      "pic-375.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "chars": 26,
+     "lines": 1,
+     "size": 76,
+     "vw": 5.3,
+     "font": "Schibsted Grotesk",
+     "weight": 800,
+     "tracking": -0.05,
+     "leading": 0.92,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "center",
+     "widthRatio": 1,
+     "top": 408,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "lines": 1,
+     "size": 76,
+     "font": "Schibsted Grotesk"
+    },
+    "headings": [
+     {
+      "text": "Night walks, written down.",
+      "words": 4,
+      "chars": 26,
+      "lines": 1,
+      "size": 76,
+      "vw": 5.3,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 1,
+      "top": 408,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "Some nights nothing is wrong. You just can't find where you are, so you walk until you can.",
+      "words": 18,
+      "chars": 91,
+      "lines": 3,
+      "size": 36,
+      "vw": 2.5,
+      "font": "Schibsted Grotesk",
+      "weight": 600,
+      "tracking": -0.03,
+      "leading": 1.15,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.44,
+      "top": 2323,
+      "tag": "p",
+      "kind": "statement"
+     },
+     {
+      "text": "Recent nights",
+      "words": 2,
+      "chars": 13,
+      "lines": 1,
+      "size": 64,
+      "vw": 4.4,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.47,
+      "top": 3900,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Skies I'd walk under",
+      "words": 4,
+      "chars": 20,
+      "lines": 2,
+      "size": 64,
+      "vw": 4.4,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.31,
+      "top": 4975,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Notes from strangers",
+      "words": 3,
+      "chars": 20,
+      "lines": 1,
+      "size": 64,
+      "vw": 4.4,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 5816,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "hello@4me.blog",
+      "words": 1,
+      "chars": 14,
+      "lines": 1,
+      "size": 167,
+      "vw": 11.6,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.06,
+      "leading": 0.9,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 6653,
+      "tag": "a",
+      "kind": "heading"
+     },
+     {
+      "text": "Nights",
+      "words": 1,
+      "chars": 6,
+      "lines": 1,
+      "size": 36,
+      "vw": 2.5,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.46,
+      "top": 7101,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "Archive",
+      "words": 1,
+      "chars": 7,
+      "lines": 1,
+      "size": 36,
+      "vw": 2.5,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.46,
+      "top": 7162,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "Notes",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 36,
+      "vw": 2.5,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.46,
+      "top": 7223,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "About",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 36,
+      "vw": 2.5,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.46,
+      "top": 7283,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "RSS",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 36,
+      "vw": 2.5,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.46,
+      "top": 7344,
+      "tag": "li",
+      "kind": "statement"
+     }
+    ],
+    "headingSummary": {
+     "count": 11,
+     "maxLines": 3,
+     "over2Lines": 0,
+     "statements": 6,
+     "centered": 0,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Schibsted Grotesk",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      15,
+      19,
+      26,
+      36,
+      64,
+      76,
+      167
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": {
+      "font": "Schibsted Grotesk",
+      "size": 19,
+      "leading": 1.45,
+      "weight": 400,
+      "tracking": -0.01,
+      "contrast": null
+     },
+     "measureChars": 76,
+     "max": {
+      "size": 167,
+      "vw": 11.6,
+      "font": "Schibsted Grotesk",
+      "text": "hello@4me.blog"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.01,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#0d110f",
+     "bodyBgHsl": {
+      "h": 150,
+      "s": 0.13,
+      "l": 0.06
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#161b18",
+       "top": 3900,
+       "hsl": {
+        "h": 144,
+        "s": 0.1,
+        "l": 0.1
+       }
+      },
+      {
+       "color": "#c9cec6",
+       "top": 6346,
+       "hsl": {
+        "h": 98,
+        "s": 0.08,
+        "l": 0.79
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#d5d9d3",
+       "share": 0.49
+      },
+      {
+       "color": "#949c94",
+       "share": 0.45
+      },
+      {
+       "color": "#0d110f",
+       "share": 0.05
+      },
+      {
+       "color": "#c9cec6",
+       "share": 0
+      }
+     ],
+     "button": {
+      "bg": "#c9cec6",
+      "hsl": {
+       "h": 98,
+       "s": 0.08,
+       "l": 0.79
+      },
+      "fg": "#0d110f"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 4,
+     "inHero": 2,
+     "radius": 0,
+     "height": 44,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Read tonight's entry",
+      "Pause"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 23,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 10,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 5915
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.14
+     }
+    ],
+    "nav": {
+     "links": 5,
+     "fixed": true,
+     "height": 900,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "schibsted grotesk"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 7828,
+    "margins": {
+     "left": 32,
+     "right": 32
+    },
+    "sections": [
+     {
+      "sel": "section#top.hero",
+      "tag": "section",
+      "top": 0,
+      "height": 1935,
+      "words": 63,
+      "media": 3,
+      "middle": 50,
+      "heading": {
+       "text": "Night walks,",
+       "size": 76,
+       "tag": "h1"
+      },
+      "left": 32,
+      "right": 32,
+      "textLeft": 32,
+      "textRight": 32,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": true
+     },
+     {
+      "sel": "section.walk.wrap",
+      "tag": "section",
+      "top": 1935,
+      "height": 1845,
+      "words": 30,
+      "media": 3,
+      "middle": 16,
+      "heading": {
+       "text": "Some nights nothing is wrong. You just can't find ",
+       "size": 36,
+       "tag": "p"
+      },
+      "left": 43,
+      "right": 43,
+      "textLeft": 43,
+      "textRight": 272,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": true
+     },
+     {
+      "sel": "section#nights.nights.wrap",
+      "tag": "section",
+      "top": 3780,
+      "height": 979,
+      "words": 71,
+      "media": 1,
+      "middle": 229,
+      "heading": {
+       "text": "Recent nights",
+       "size": 64,
+       "tag": "h2"
+      },
+      "left": 31,
+      "right": 32,
+      "textLeft": 732,
+      "textRight": 32,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": true
+     },
+     {
+      "sel": "section.skies.wrap",
+      "tag": "section",
+      "top": 4759,
+      "height": 1017,
+      "words": 23,
+      "media": 1,
+      "middle": 245,
+      "heading": {
+       "text": "Skies I'd walk under",
+       "size": 64,
+       "tag": "h2"
+      },
+      "left": 32,
+      "right": 244,
+      "textLeft": 32,
+      "textRight": 711,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#notes.notes.wrap",
+      "tag": "section",
+      "top": 5776,
+      "height": 570,
+      "words": 205,
+      "media": 0,
+      "middle": 1521,
+      "heading": {
+       "text": "Notes from strangers",
+       "size": 64,
+       "tag": "h2"
+      },
+      "left": 0,
+      "right": 0,
+      "textLeft": -243,
+      "textRight": -1796,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#write.write.wrap",
+      "tag": "section",
+      "top": 6346,
+      "height": 582,
+      "words": 12,
+      "media": 0,
+      "middle": 24,
+      "heading": {
+       "text": "hello@4me.blog",
+       "size": 167,
+       "tag": "a"
+      },
+      "left": 32,
+      "right": 32,
+      "textLeft": 32,
+      "textRight": 32,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "footer.foot",
+      "tag": "footer",
+      "top": 6928,
+      "height": 900,
+      "words": 80,
+      "media": 1,
+      "middle": 32,
+      "heading": {
+       "text": "Nights",
+       "size": 36,
+       "tag": "a"
+      },
+      "left": 0,
+      "right": 134,
+      "textLeft": 752,
+      "textRight": 134,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [
+     {
+      "top": 6188,
+      "height": 436
+     }
+    ],
+    "h1s": [
+     {
+      "text": "Night walks, written down.",
+      "size": 76,
+      "top": 408,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 732,
+      "n": 8
+     },
+     {
+      "x": 32,
+      "n": 4
+     },
+     {
+      "x": 113,
+      "n": 1
+     },
+     {
+      "x": 403,
+      "n": 1
+     },
+     {
+      "x": 825,
+      "n": 1
+     },
+     {
+      "x": 925,
+      "n": 1
+     },
+     {
+      "x": 1537,
+      "n": 1
+     },
+     {
+      "x": 1893,
+      "n": 1
+     },
+     {
+      "x": 2605,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 19,
+    "bodySize": 19,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0.09,
+    "voidBox": {
+     "x": 0,
+     "y": 120,
+     "w": 480,
+     "h": 240
+    }
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 9,
+   "filled": [
+    0.73,
+    0.6,
+    0.62,
+    0.56,
+    0.24,
+    0.83,
+    0.66,
+    0.51,
+    0.38
+   ],
+   "motion": {
+    "elements": 30,
+    "css": 21,
+    "transitions": 9,
+    "scripted": 0,
+    "videos": 1,
+    "playingVideos": 1
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 8355,
+     "screens": 8.2,
+     "words": 491,
+     "img": 22,
+     "video": 1,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 20,
+     "videoCount": 1,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-600.jpg",
+      "pic-726.jpg",
+      "pic-832.jpg",
+      "pic-660.jpg",
+      "pic-375.jpg",
+      "pic-600.jpg",
+      "pic-878.jpg",
+      "pic-338.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "chars": 26,
+     "lines": 2,
+     "size": 84.5,
+     "vw": 11,
+     "font": "Schibsted Grotesk",
+     "weight": 800,
+     "tracking": -0.05,
+     "leading": 0.92,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "center",
+     "widthRatio": 0.96,
+     "top": 88,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "lines": 2,
+     "size": 84.5,
+     "font": "Schibsted Grotesk"
+    },
+    "headings": [
+     {
+      "text": "Night walks, written down.",
+      "words": 4,
+      "chars": 26,
+      "lines": 2,
+      "size": 84.5,
+      "vw": 11,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 88,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "Recent nights",
+      "words": 2,
+      "chars": 13,
+      "lines": 1,
+      "size": 45.4,
+      "vw": 5.9,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 3250,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Skies I'd walk under",
+      "words": 4,
+      "chars": 20,
+      "lines": 1,
+      "size": 45.4,
+      "vw": 5.9,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 4626,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Notes from strangers",
+      "words": 3,
+      "chars": 20,
+      "lines": 1,
+      "size": 45.4,
+      "vw": 5.9,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 6193,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "hello@4me.blog",
+      "words": 1,
+      "chars": 14,
+      "lines": 1,
+      "size": 89.1,
+      "vw": 11.6,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.06,
+      "leading": 0.9,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 6906,
+      "tag": "a",
+      "kind": "heading"
+     },
+     {
+      "text": "Nights",
+      "words": 1,
+      "chars": 6,
+      "lines": 1,
+      "size": 28.3,
+      "vw": 3.7,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 7791,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "Archive",
+      "words": 1,
+      "chars": 7,
+      "lines": 1,
+      "size": 28.3,
+      "vw": 3.7,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 7844,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "Notes",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 28.3,
+      "vw": 3.7,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 7897,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "About",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 28.3,
+      "vw": 3.7,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 7950,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "RSS",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 28.3,
+      "vw": 3.7,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.96,
+      "top": 8003,
+      "tag": "li",
+      "kind": "statement"
+     }
+    ],
+    "headingSummary": {
+     "count": 10,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 5,
+     "centered": 0,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Schibsted Grotesk",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      14,
+      18,
+      23,
+      24,
+      28,
+      45,
+      85,
+      89
+     ],
+     "sizeCount": 8,
+     "notLoaded": [],
+     "body": {
+      "font": "Schibsted Grotesk",
+      "size": 17.9,
+      "leading": 1.45,
+      "weight": 400,
+      "tracking": -0.01,
+      "contrast": 13.3
+     },
+     "measureChars": 76,
+     "max": {
+      "size": 89.1,
+      "vw": 11.6,
+      "font": "Schibsted Grotesk",
+      "text": "hello@4me.blog"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.01,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#0d110f",
+     "bodyBgHsl": {
+      "h": 150,
+      "s": 0.13,
+      "l": 0.06
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#161b18",
+       "top": 1140,
+       "hsl": {
+        "h": 144,
+        "s": 0.1,
+        "l": 0.1
+       }
+      },
+      {
+       "color": "#c9cec6",
+       "top": 6700,
+       "hsl": {
+        "h": 98,
+        "s": 0.08,
+        "l": 0.79
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#d5d9d3",
+       "share": 0.48
+      },
+      {
+       "color": "#949c94",
+       "share": 0.45
+      },
+      {
+       "color": "#0d110f",
+       "share": 0.05
+      },
+      {
+       "color": "#99a199",
+       "share": 0
+      },
+      {
+       "color": "#c9cec6",
+       "share": 0
+      }
+     ],
+     "button": {
+      "bg": "#c9cec6",
+      "hsl": {
+       "h": 98,
+       "s": 0.08,
+       "l": 0.79
+      },
+      "fg": "#0d110f"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 3,
+     "inHero": 1,
+     "radius": 0,
+     "height": 44,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Read tonight's entry"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 20,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 10,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 6275
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.22
+     },
+     {
+      "type": "img",
+      "ratio": 0.22
+     }
+    ],
+    "nav": {
+     "links": 3,
+     "fixed": false,
+     "height": 65,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "schibsted grotesk"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 8355,
+    "margins": {
+     "left": 16,
+     "right": 16
+    },
+    "sections": [
+     {
+      "sel": "section#top.hero",
+      "tag": "section",
+      "top": 0,
+      "height": 981,
+      "words": 55,
+      "media": 2,
+      "middle": 0,
+      "heading": {
+       "text": "Night walks,",
+       "size": 84,
+       "tag": "h1"
+      },
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 16,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "figure.walk-pic.wp1",
+      "tag": "figure",
+      "top": 1140,
+      "height": 620,
+      "words": 4,
+      "media": 1,
+      "middle": 0,
+      "heading": null,
+      "left": 16,
+      "right": 281,
+      "textLeft": 16,
+      "textRight": 616,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "figure.walk-pic.wp2",
+      "tag": "figure",
+      "top": 1800,
+      "height": 748,
+      "words": 4,
+      "media": 1,
+      "middle": 0,
+      "heading": null,
+      "left": 178,
+      "right": 16,
+      "textLeft": 178,
+      "textRight": 465,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "figure.walk-pic.wp3",
+      "tag": "figure",
+      "top": 2588,
+      "height": 502,
+      "words": 5,
+      "media": 1,
+      "middle": 0,
+      "heading": null,
+      "left": 16,
+      "right": 281,
+      "textLeft": 16,
+      "textRight": 587,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#nights.nights.wrap",
+      "tag": "section",
+      "top": 3154,
+      "height": 1392,
+      "words": 71,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "Recent nights",
+       "size": 45,
+       "tag": "h2"
+      },
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 16,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section.skies.wrap",
+      "tag": "section",
+      "top": 4546,
+      "height": 1607,
+      "words": 23,
+      "media": 2,
+      "middle": 0,
+      "heading": {
+       "text": "Skies I'd walk under",
+       "size": 45,
+       "tag": "h2"
+      },
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 341,
+      "fullBleed": true,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#notes.notes.wrap",
+      "tag": "section",
+      "top": 6153,
+      "height": 547,
+      "words": 205,
+      "media": 0,
+      "middle": 2205,
+      "heading": {
+       "text": "Notes from strangers",
+       "size": 45,
+       "tag": "h2"
+      },
+      "left": 0,
+      "right": 0,
+      "textLeft": -231,
+      "textRight": -2465,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#write.write.wrap",
+      "tag": "section",
+      "top": 6700,
+      "height": 411,
+      "words": 12,
+      "media": 0,
+      "middle": 24,
+      "heading": {
+       "text": "hello@4me.blog",
+       "size": 89,
+       "tag": "a"
+      },
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 16,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "footer.foot",
+      "tag": "footer",
+      "top": 7110,
+      "height": 1245,
+      "words": 80,
+      "media": 1,
+      "middle": 0,
+      "heading": null,
+      "left": 16,
+      "right": 222,
+      "textLeft": 16,
+      "textRight": 222,
+      "fullBleed": true,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [
+     {
+      "top": 6540,
+      "height": 348
+     }
+    ],
+    "h1s": [
+     {
+      "text": "Night walks, written down.",
+      "size": 84,
+      "top": 88,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 16,
+      "n": 13
+     },
+     {
+      "x": 125,
+      "n": 1
+     },
+     {
+      "x": 215,
+      "n": 1
+     },
+     {
+      "x": 837,
+      "n": 1
+     },
+     {
+      "x": 1549,
+      "n": 1
+     },
+     {
+      "x": 1905,
+      "n": 1
+     },
+     {
+      "x": 2617,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 19,
+    "bodySize": 18,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 8,
+   "filled": [
+    0.63,
+    0.58,
+    0.5,
+    0.33,
+    0.61,
+    0.61,
+    0.8,
+    0.26
+   ],
+   "motion": {
+    "elements": 30,
+    "css": 21,
+    "transitions": 9,
+    "scripted": 0,
+    "videos": 1,
+    "playingVideos": 1
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 6560,
+     "screens": 7.8,
+     "words": 491,
+     "img": 22,
+     "video": 1,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 20,
+     "videoCount": 1,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-600.jpg",
+      "pic-726.jpg",
+      "pic-832.jpg",
+      "pic-660.jpg",
+      "pic-375.jpg",
+      "pic-600.jpg",
+      "pic-878.jpg",
+      "pic-338.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "chars": 26,
+     "lines": 2,
+     "size": 42.9,
+     "vw": 11,
+     "font": "Schibsted Grotesk",
+     "weight": 800,
+     "tracking": -0.05,
+     "leading": 0.92,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "center",
+     "widthRatio": 0.92,
+     "top": 88,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Night walks, written down.",
+     "words": 4,
+     "lines": 2,
+     "size": 42.9,
+     "font": "Schibsted Grotesk"
+    },
+    "headings": [
+     {
+      "text": "Night walks, written down.",
+      "words": 4,
+      "chars": 26,
+      "lines": 2,
+      "size": 42.9,
+      "vw": 11,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 88,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "Some nights nothing is wrong. You just can't find where you are, so you walk until you can.",
+      "words": 18,
+      "chars": 91,
+      "lines": 3,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Schibsted Grotesk",
+      "weight": 600,
+      "tracking": -0.03,
+      "leading": 1.15,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 751,
+      "tag": "p",
+      "kind": "statement"
+     },
+     {
+      "text": "Recent nights",
+      "words": 2,
+      "chars": 13,
+      "lines": 1,
+      "size": 33.3,
+      "vw": 8.5,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 2069,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Skies I'd walk under",
+      "words": 4,
+      "chars": 20,
+      "lines": 1,
+      "size": 33.3,
+      "vw": 8.5,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 3168,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Notes from strangers",
+      "words": 3,
+      "chars": 20,
+      "lines": 1,
+      "size": 33.3,
+      "vw": 8.5,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 0.92,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 4272,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "hello@4me.blog",
+      "words": 1,
+      "chars": 14,
+      "lines": 1,
+      "size": 45.2,
+      "vw": 11.6,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.06,
+      "leading": 0.9,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 5106,
+      "tag": "a",
+      "kind": "heading"
+     },
+     {
+      "text": "Nights",
+      "words": 1,
+      "chars": 6,
+      "lines": 1,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 5890,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "Archive",
+      "words": 1,
+      "chars": 7,
+      "lines": 1,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 5943,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "Notes",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 5995,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "About",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 6048,
+      "tag": "li",
+      "kind": "statement"
+     },
+     {
+      "text": "RSS",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Schibsted Grotesk",
+      "weight": 800,
+      "tracking": -0.05,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 6101,
+      "tag": "li",
+      "kind": "statement"
+     }
+    ],
+    "headingSummary": {
+     "count": 11,
+     "maxLines": 3,
+     "over2Lines": 0,
+     "statements": 6,
+     "centered": 0,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Schibsted Grotesk",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      14,
+      17,
+      20,
+      24,
+      28,
+      33,
+      43,
+      45
+     ],
+     "sizeCount": 8,
+     "notLoaded": [],
+     "body": {
+      "font": "Schibsted Grotesk",
+      "size": 17,
+      "leading": 1.45,
+      "weight": 400,
+      "tracking": -0.01,
+      "contrast": 13.3
+     },
+     "measureChars": 51,
+     "max": {
+      "size": 45.2,
+      "vw": 11.6,
+      "font": "Schibsted Grotesk",
+      "text": "hello@4me.blog"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.01,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#0d110f",
+     "bodyBgHsl": {
+      "h": 150,
+      "s": 0.13,
+      "l": 0.06
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#161b18",
+       "top": 3692,
+       "hsl": {
+        "h": 144,
+        "s": 0.1,
+        "l": 0.1
+       }
+      },
+      {
+       "color": "#c9cec6",
+       "top": 4905,
+       "hsl": {
+        "h": 98,
+        "s": 0.08,
+        "l": 0.79
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#d5d9d3",
+       "share": 0.49
+      },
+      {
+       "color": "#949c94",
+       "share": 0.45
+      },
+      {
+       "color": "#0d110f",
+       "share": 0.05
+      },
+      {
+       "color": "#c9cec6",
+       "share": 0
+      }
+     ],
+     "button": {
+      "bg": "#c9cec6",
+      "hsl": {
+       "h": 98,
+       "s": 0.08,
+       "l": 0.79
+      },
+      "fg": "#0d110f"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 3,
+     "inHero": 1,
+     "radius": 0,
+     "height": 44,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Read tonight's entry"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 0,
+     "hairlineSamples": [],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 18,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 10,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 4342
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.12
+     },
+     {
+      "type": "img",
+      "ratio": 0.12
+     }
+    ],
+    "nav": {
+     "links": 3,
+     "fixed": false,
+     "height": 64,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "schibsted grotesk"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 6560,
+    "margins": {
+     "left": 16,
+     "right": 16
+    },
+    "sections": [
+     {
+      "sel": "section#top.hero",
+      "tag": "section",
+      "top": 0,
+      "height": 687,
+      "words": 55,
+      "media": 2,
+      "middle": 0,
+      "heading": {
+       "text": "Night walks,",
+       "size": 43,
+       "tag": "h1"
+      },
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 16,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section.walk.wrap",
+      "tag": "section",
+      "top": 687,
+      "height": 1286,
+      "words": 30,
+      "media": 3,
+      "middle": 0,
+      "heading": {
+       "text": "Some nights nothing is wrong. You just can't find ",
+       "size": 24,
+       "tag": "p"
+      },
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 22,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#nights.nights.wrap",
+      "tag": "section",
+      "top": 1973,
+      "height": 1115,
+      "words": 71,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "Recent nights",
+       "size": 33,
+       "tag": "h2"
+      },
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 16,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section.skies.wrap",
+      "tag": "section",
+      "top": 3088,
+      "height": 1144,
+      "words": 23,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "Skies I'd walk under",
+       "size": 33,
+       "tag": "h2"
+      },
+      "left": 13,
+      "right": 9,
+      "textLeft": 16,
+      "textRight": 73,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#notes.notes.wrap",
+      "tag": "section",
+      "top": 4232,
+      "height": 673,
+      "words": 205,
+      "media": 0,
+      "middle": 2302,
+      "heading": {
+       "text": "Notes from strangers",
+       "size": 33,
+       "tag": "h2"
+      },
+      "left": 0,
+      "right": 0,
+      "textLeft": -190,
+      "textRight": -2548,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#write.write.wrap",
+      "tag": "section",
+      "top": 4905,
+      "height": 398,
+      "words": 12,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "hello@4me.blog",
+       "size": 45,
+       "tag": "a"
+      },
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 36,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "footer.foot",
+      "tag": "footer",
+      "top": 5303,
+      "height": 1258,
+      "words": 80,
+      "media": 1,
+      "middle": 0,
+      "heading": null,
+      "left": 16,
+      "right": 18,
+      "textLeft": 16,
+      "textRight": 18,
+      "fullBleed": true,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [
+     {
+      "top": 4748,
+      "height": 348
+     }
+    ],
+    "h1s": [
+     {
+      "text": "Night walks, written down.",
+      "size": 43,
+      "top": 88,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 16,
+      "n": 13
+     },
+     {
+      "x": 102,
+      "n": 1
+     },
+     {
+      "x": 130,
+      "n": 1
+     },
+     {
+      "x": 771,
+      "n": 1
+     },
+     {
+      "x": 1411,
+      "n": 1
+     },
+     {
+      "x": 1731,
+      "n": 1
+     },
+     {
+      "x": 2372,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 19,
+    "bodySize": 17,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "WARN",
+   "id": "empty-middle",
+   "width": 1440,
+   "message": "1 section(s) have content at both edges and 1521px of nothing between: \"Notes from strangers\"",
+   "fix": "Bring the two parts together on the grid, or put the picture or figure of the section in the middle. An empty middle third reads as a hole, the same as an empty half.",
+   "alsoAt": [
+    768
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "blank-gap",
+   "width": 1440,
+   "message": "A 436px stretch at 6188px holds nothing.",
+   "fix": "Check that it is a deliberate rest (once per page at most); otherwise close it to the normal section gap."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect/desktop-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect/desktop-page-01.jpg",
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect/desktop-page-02.jpg",
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect/desktop-page-03.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect/tablet-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect/tablet-page-01.jpg",
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect/tablet-page-02.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect/mobile-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/inspect/mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

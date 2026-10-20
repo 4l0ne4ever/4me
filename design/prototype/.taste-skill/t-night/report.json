@@ -1,0 +1,1736 @@
+{
+ "url": "test-night.html",
+ "at": "2026-10-20T02:50:09.244Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.97
+   ],
+   "motion": {
+    "elements": 34,
+    "css": 31,
+    "transitions": 2,
+    "scripted": 1,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 900,
+     "screens": 1,
+     "words": 400,
+     "img": 23,
+     "video": 0,
+     "canvas": 0,
+     "svg": 39,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 12,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-229.jpg",
+      "pic-832.jpg",
+      "pic-600.jpg",
+      "pic-832.jpg",
+      "pic-600.jpg",
+      "pic-726.jpg",
+      "pic-878.jpg",
+      "pic-338.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "The lamps came on before I got home",
+     "words": 8,
+     "chars": 35,
+     "lines": 2,
+     "size": 49,
+     "vw": 3.4,
+     "font": "Newsreader",
+     "weight": 400,
+     "tracking": -0.02,
+     "leading": 1,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "left",
+     "widthRatio": 0.35,
+     "top": 137,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "The lamps came on before I got home",
+     "words": 8,
+     "lines": 2,
+     "size": 49,
+     "font": "Newsreader"
+    },
+    "headings": [
+     {
+      "text": "Sunday, 19 October — 18:42",
+      "words": 5,
+      "chars": 26,
+      "lines": 1,
+      "size": 38,
+      "vw": 2.6,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 0.9,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.25,
+      "top": 77,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "words": 8,
+      "chars": 35,
+      "lines": 2,
+      "size": 49,
+      "vw": 3.4,
+      "font": "Newsreader",
+      "weight": 400,
+      "tracking": -0.02,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.35,
+      "top": 137,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "01:25 *** 1. Radiohead – How to Disappear Completely (05:56) ***",
+      "words": 11,
+      "chars": 64,
+      "lines": 1,
+      "size": 30,
+      "vw": 2.1,
+      "font": "VT323",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": true,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.22,
+      "top": 599,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 3,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 11,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Tahoma",
+       "share": 0.65,
+       "mono": false
+      },
+      {
+       "family": "Newsreader",
+       "share": 0.28,
+       "mono": false
+      },
+      {
+       "family": "Reenie Beanie",
+       "share": 0.04,
+       "mono": false
+      },
+      {
+       "family": "VT323",
+       "share": 0.03,
+       "mono": true
+      }
+     ],
+     "familyCount": 4,
+     "sizes": [
+      12,
+      13,
+      14,
+      16,
+      19,
+      22,
+      23,
+      26,
+      30,
+      38,
+      49
+     ],
+     "sizeCount": 11,
+     "notLoaded": [],
+     "body": {
+      "font": "Newsreader",
+      "size": 19,
+      "leading": 1.62,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 14.9
+     },
+     "measureChars": 40,
+     "max": {
+      "size": 49,
+      "vw": 3.4,
+      "font": "Newsreader",
+      "text": "The lamps came on before I got home"
+     },
+     "monoShare": 0.03,
+     "monoProseShare": 0.03,
+     "monoFamilies": [
+      "VT323"
+     ],
+     "monoSamples": [
+      "01:25",
+      "*** 1. Radiohead – How to Disappear Comp"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.01,
+     "centerShare": 0.07,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#070a0e",
+     "bodyBgHsl": {
+      "h": 214,
+      "s": 0.33,
+      "l": 0.04
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#161e2a",
+       "top": 18,
+       "hsl": {
+        "h": 216,
+        "s": 0.31,
+        "l": 0.13
+       }
+      },
+      {
+       "color": "#17130f",
+       "top": 53,
+       "hsl": {
+        "h": 30,
+        "s": 0.21,
+        "l": 0.07
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#dfe6ef",
+       "share": 0.33
+      },
+      {
+       "color": "#efe6d6",
+       "share": 0.27
+      },
+      {
+       "color": "#a2afc1",
+       "share": 0.21
+      },
+      {
+       "color": "#f0ac5c",
+       "share": 0.05
+      },
+      {
+       "color": "#9cc2ff",
+       "share": 0.04
+      }
+     ],
+     "button": {
+      "bg": "#22304a",
+      "hsl": {
+       "h": 219,
+       "s": 0.37,
+       "l": 0.21
+      },
+      "fg": "#dfe6ef"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 17,
+     "inHero": 17,
+     "radius": 0,
+     "height": 78,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Diary",
+      "Messenger",
+      "Guestbook",
+      "Mixtape",
+      "Photos"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 3,
+     "shadowOverlay": 5,
+     "shadowSamples": [
+      "button.pol → rgba(0, 0, 0, 0.55) 0px 14px 30px 0px",
+      "button.pol → rgba(0, 0, 0, 0.55) 0px 14px 30px 0px",
+      "button.ticket → rgba(0, 0, 0, 0.5) 0px 10px 24px 0px"
+     ],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 11,
+     "hairlineSamples": [
+      "div.bar 698px",
+      "div.bar 338px",
+      "div.me 338px",
+      "details.older 338px",
+      "details.buddies 338px"
+     ],
+     "outlinedBoxes": 5,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 11,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 6,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.96
+     },
+     {
+      "type": "img",
+      "ratio": 0.19
+     },
+     {
+      "type": "img",
+      "ratio": 0.18
+     },
+     {
+      "type": "img",
+      "ratio": 0.18
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 852,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "newsreader",
+     "reenie beanie",
+     "vt323"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 900,
+    "margins": {
+     "left": null,
+     "right": null
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "The lamps came on before I got home",
+      "size": 49,
+      "top": 137,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [],
+    "leftBlocks": 0,
+    "bodySize": 16,
+    "stage": true,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 3,
+   "filled": [
+    1,
+    1,
+    1
+   ],
+   "motion": {
+    "elements": 35,
+    "css": 31,
+    "transitions": 3,
+    "scripted": 1,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 2656,
+     "screens": 2.6,
+     "words": 389,
+     "img": 23,
+     "video": 0,
+     "canvas": 0,
+     "svg": 39,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 12,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-229.jpg",
+      "pic-832.jpg",
+      "pic-600.jpg",
+      "pic-832.jpg",
+      "pic-600.jpg",
+      "pic-726.jpg",
+      "pic-878.jpg",
+      "pic-338.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Sunday, 19 October — 18:42",
+     "words": 5,
+     "chars": 26,
+     "lines": 1,
+     "size": 38,
+     "vw": 4.9,
+     "font": "Reenie Beanie",
+     "weight": 400,
+     "tracking": 0,
+     "leading": 0.9,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "left",
+     "widthRatio": 0.46,
+     "top": -999,
+     "tag": "span",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "The lamps came on before I got home",
+     "words": 8,
+     "lines": 2,
+     "size": 34,
+     "font": "Newsreader"
+    },
+    "headings": [
+     {
+      "text": "Sunday, 19 October — 18:42",
+      "words": 5,
+      "chars": 26,
+      "lines": 1,
+      "size": 38,
+      "vw": 4.9,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 0.9,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.46,
+      "top": -999,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "words": 8,
+      "chars": 35,
+      "lines": 2,
+      "size": 34,
+      "vw": 4.4,
+      "font": "Newsreader",
+      "weight": 400,
+      "tracking": -0.02,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.45,
+      "top": -938,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "it will probably rain again tomorrow.",
+      "words": 6,
+      "chars": 37,
+      "lines": 1,
+      "size": 26,
+      "vw": 3.4,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.91,
+      "top": -625,
+      "tag": "p",
+      "kind": "statement"
+     },
+     {
+      "text": "01:27 *** 1. Radiohead – How to Disappear Completely (05:56) ***",
+      "words": 11,
+      "chars": 64,
+      "lines": 1,
+      "size": 30,
+      "vw": 3.9,
+      "font": "VT323",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": true,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 663,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 4,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 1,
+     "centered": 0,
+     "medianWords": 8,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Tahoma",
+       "share": 0.64,
+       "mono": false
+      },
+      {
+       "family": "Newsreader",
+       "share": 0.29,
+       "mono": false
+      },
+      {
+       "family": "Reenie Beanie",
+       "share": 0.04,
+       "mono": false
+      },
+      {
+       "family": "VT323",
+       "share": 0.03,
+       "mono": true
+      }
+     ],
+     "familyCount": 4,
+     "sizes": [
+      12,
+      13,
+      14,
+      16,
+      19,
+      22,
+      23,
+      26,
+      30,
+      34,
+      38
+     ],
+     "sizeCount": 11,
+     "notLoaded": [],
+     "body": {
+      "font": "Newsreader",
+      "size": 19,
+      "leading": 1.62,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 14.9
+     },
+     "measureChars": 73,
+     "max": {
+      "size": 38,
+      "vw": 4.9,
+      "font": "Reenie Beanie",
+      "text": "Sunday, 19 October — 18:42"
+     },
+     "monoShare": 0.03,
+     "monoProseShare": 0.03,
+     "monoFamilies": [
+      "VT323"
+     ],
+     "monoSamples": [
+      "01:27",
+      "*** 1. Radiohead – How to Disappear Comp"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.01,
+     "centerShare": 0.05,
+     "smallText": 0
+    },
+    "eyebrows": [
+     {
+      "text": "diary — 19 October 2026.doc",
+      "above": "Sunday, 19 October — 18:42",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": -1037
+     },
+     {
+      "text": "mixtape.m3u — October nights",
+      "above": "01:27 *** 1. Radiohead – How to Disappea",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 624
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#070a0e",
+     "bodyBgHsl": {
+      "h": 214,
+      "s": 0.33,
+      "l": 0.04
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#161e2a",
+       "top": -1045,
+       "hsl": {
+        "h": 216,
+        "s": 0.31,
+        "l": 0.13
+       }
+      },
+      {
+       "color": "#17130f",
+       "top": -1010,
+       "hsl": {
+        "h": 30,
+        "s": 0.21,
+        "l": 0.07
+       }
+      },
+      {
+       "color": "#111824",
+       "top": 953,
+       "hsl": {
+        "h": 218,
+        "s": 0.36,
+        "l": 0.1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#dfe6ef",
+       "share": 0.33
+      },
+      {
+       "color": "#efe6d6",
+       "share": 0.28
+      },
+      {
+       "color": "#a2afc1",
+       "share": 0.2
+      },
+      {
+       "color": "#f0ac5c",
+       "share": 0.05
+      },
+      {
+       "color": "#9cc2ff",
+       "share": 0.04
+      }
+     ],
+     "button": {
+      "bg": "#22304a",
+      "hsl": {
+       "h": 219,
+       "s": 0.37,
+       "l": 0.21
+      },
+      "fg": "#dfe6ef"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 11,
+     "inHero": 10,
+     "radius": 0,
+     "height": 70,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Diary",
+      "Messenger",
+      "Guestbook",
+      "Mixtape",
+      "Photos"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 7,
+     "shadowOverlay": 1,
+     "shadowSamples": [
+      "section#w-diary.win → rgba(0, 0, 0, 0.6) 0px 24px 60px 0px",
+      "button.pol → rgba(0, 0, 0, 0.55) 0px 14px 30px 0px",
+      "button.pol → rgba(0, 0, 0, 0.55) 0px 14px 30px 0px",
+      "button.ticket → rgba(0, 0, 0, 0.5) 0px 10px 24px 0px"
+     ],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 11,
+     "hairlineSamples": [
+      "div.bar 734px",
+      "div.bar 734px",
+      "div.me 734px",
+      "details.older 734px",
+      "details.buddies 734px"
+     ],
+     "outlinedBoxes": 5,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 12,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 6,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 1
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 144,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "newsreader",
+     "reenie beanie",
+     "vt323"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 2656,
+    "margins": {
+     "left": 22,
+     "right": 19
+    },
+    "sections": [
+     {
+      "sel": "nav.icons",
+      "tag": "nav",
+      "top": -1205,
+      "height": 144,
+      "words": 7,
+      "media": 0,
+      "middle": 4,
+      "heading": null,
+      "left": 16,
+      "right": 16,
+      "textLeft": 115,
+      "textRight": 97,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#w-diary.win",
+      "tag": "section",
+      "top": -1045,
+      "height": 1104,
+      "words": 162,
+      "media": 2,
+      "middle": 0,
+      "heading": {
+       "text": "Sunday, 19 October — 18:42",
+       "size": 38,
+       "tag": "span"
+      },
+      "left": 22,
+      "right": 19,
+      "textLeft": 34,
+      "textRight": 35,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#w-msn.win",
+      "tag": "section",
+      "top": 75,
+      "height": 525,
+      "words": 155,
+      "media": 0,
+      "middle": 9816,
+      "heading": null,
+      "left": 0,
+      "right": 21,
+      "textLeft": -9982,
+      "textRight": 38,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#w-amp.win",
+      "tag": "section",
+      "top": 616,
+      "height": 286,
+      "words": 47,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "01:27",
+       "size": 30,
+       "tag": "span"
+      },
+      "left": 29,
+      "right": 0,
+      "textLeft": 33,
+      "textRight": -111,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#w-photos.win.focus",
+      "tag": "section",
+      "top": 918,
+      "height": 413,
+      "words": 14,
+      "media": 1,
+      "middle": 243,
+      "heading": null,
+      "left": 25,
+      "right": 21,
+      "textLeft": 38,
+      "textRight": 86,
+      "fullBleed": true,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "The lamps came on before I got home",
+      "size": 34,
+      "top": -938,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 35,
+      "n": 4
+     },
+     {
+      "x": 235,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 5,
+    "bodySize": 19,
+    "stage": true,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 4,
+   "filled": [
+    1,
+    1,
+    1,
+    0.67
+   ],
+   "motion": {
+    "elements": 38,
+    "css": 34,
+    "transitions": 3,
+    "scripted": 1,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 392,
+     "h": 849
+    },
+    "page": {
+     "height": 2998,
+     "screens": 3.5,
+     "words": 404,
+     "img": 23,
+     "video": 0,
+     "canvas": 0,
+     "svg": 40,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 12,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "pic-229.jpg",
+      "pic-832.jpg",
+      "pic-600.jpg",
+      "pic-832.jpg",
+      "pic-600.jpg",
+      "pic-726.jpg",
+      "pic-878.jpg",
+      "pic-338.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Sunday, 19 October — 18:42",
+     "words": 5,
+     "chars": 26,
+     "lines": 2,
+     "size": 38,
+     "vw": 9.7,
+     "font": "Reenie Beanie",
+     "weight": 400,
+     "tracking": 0,
+     "leading": 0.9,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "center",
+     "widthRatio": 0.82,
+     "top": -1096,
+     "tag": "span",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "The lamps came on before I got home",
+     "words": 8,
+     "lines": 2,
+     "size": 34,
+     "font": "Newsreader"
+    },
+    "headings": [
+     {
+      "text": "Sunday, 19 October — 18:42",
+      "words": 5,
+      "chars": 26,
+      "lines": 2,
+      "size": 38,
+      "vw": 9.7,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 0.9,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.82,
+      "top": -1096,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "The lamps came on before I got home",
+      "words": 8,
+      "chars": 35,
+      "lines": 2,
+      "size": 34,
+      "vw": 8.7,
+      "font": "Newsreader",
+      "weight": 400,
+      "tracking": -0.02,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.82,
+      "top": -1003,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "it will probably rain again tomorrow.",
+      "words": 6,
+      "chars": 37,
+      "lines": 1,
+      "size": 26,
+      "vw": 6.6,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.82,
+      "top": -446,
+      "tag": "p",
+      "kind": "statement"
+     },
+     {
+      "text": "the shortcut",
+      "words": 2,
+      "chars": 12,
+      "lines": 1,
+      "size": 23,
+      "vw": 5.9,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.45,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.43,
+      "top": -246,
+      "tag": "button",
+      "kind": "heading"
+     },
+     {
+      "text": "after, writing",
+      "words": 2,
+      "chars": 14,
+      "lines": 1,
+      "size": 23,
+      "vw": 5.9,
+      "font": "Reenie Beanie",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.45,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.42,
+      "top": -245,
+      "tag": "button",
+      "kind": "heading"
+     },
+     {
+      "text": "01:27 *** 1. Radiohead – How to Disappear Completely (05:56) ***",
+      "words": 11,
+      "chars": 64,
+      "lines": 1,
+      "size": 30,
+      "vw": 7.7,
+      "font": "VT323",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": true,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.85,
+      "top": 861,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 6,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 1,
+     "centered": 0,
+     "medianWords": 6,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Tahoma",
+       "share": 0.66,
+       "mono": false
+      },
+      {
+       "family": "Newsreader",
+       "share": 0.28,
+       "mono": false
+      },
+      {
+       "family": "Reenie Beanie",
+       "share": 0.04,
+       "mono": false
+      },
+      {
+       "family": "VT323",
+       "share": 0.03,
+       "mono": true
+      }
+     ],
+     "familyCount": 4,
+     "sizes": [
+      12,
+      13,
+      14,
+      16,
+      19,
+      22,
+      23,
+      26,
+      30,
+      34,
+      38
+     ],
+     "sizeCount": 11,
+     "notLoaded": [],
+     "body": {
+      "font": "Newsreader",
+      "size": 19,
+      "leading": 1.62,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 14.9
+     },
+     "measureChars": 34,
+     "max": {
+      "size": 38,
+      "vw": 9.7,
+      "font": "Reenie Beanie",
+      "text": "Sunday, 19 October — 18:42"
+     },
+     "monoShare": 0.03,
+     "monoProseShare": 0.03,
+     "monoFamilies": [
+      "VT323"
+     ],
+     "monoSamples": [
+      "01:27",
+      "*** 1. Radiohead – How to Disappear Comp"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.01,
+     "centerShare": 0.05,
+     "smallText": 0
+    },
+    "eyebrows": [
+     {
+      "text": "diary — 19 October 2026.doc",
+      "above": "Sunday, 19 October — 18:42",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": -1136
+     },
+     {
+      "text": "mixtape.m3u — October nights",
+      "above": "01:27 *** 1. Radiohead – How to Disappea",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 822
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#070a0e",
+     "bodyBgHsl": {
+      "h": 214,
+      "s": 0.33,
+      "l": 0.04
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#161e2a",
+       "top": -1144,
+       "hsl": {
+        "h": 216,
+        "s": 0.31,
+        "l": 0.13
+       }
+      },
+      {
+       "color": "#17130f",
+       "top": -1109,
+       "hsl": {
+        "h": 30,
+        "s": 0.21,
+        "l": 0.07
+       }
+      },
+      {
+       "color": "#111824",
+       "top": 1151,
+       "hsl": {
+        "h": 218,
+        "s": 0.36,
+        "l": 0.1
+       }
+      },
+      {
+       "color": "#050709",
+       "top": 1151,
+       "hsl": {
+        "h": 210,
+        "s": 0.29,
+        "l": 0.03
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#dfe6ef",
+       "share": 0.33
+      },
+      {
+       "color": "#efe6d6",
+       "share": 0.27
+      },
+      {
+       "color": "#a2afc1",
+       "share": 0.19
+      },
+      {
+       "color": "#f0ac5c",
+       "share": 0.05
+      },
+      {
+       "color": "#9cc2ff",
+       "share": 0.04
+      }
+     ],
+     "button": {
+      "bg": "#22304a",
+      "hsl": {
+       "h": 219,
+       "s": 0.37,
+       "l": 0.21
+      },
+      "fg": "#dfe6ef"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 13,
+     "inHero": 9,
+     "radius": 0,
+     "height": 70,
+     "withShadow": 1,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Diary",
+      "Messenger",
+      "Guestbook",
+      "Mixtape",
+      "Photos"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 7,
+     "shadowOverlay": 2,
+     "shadowSamples": [
+      "section#w-diary.win → rgba(0, 0, 0, 0.6) 0px 24px 60px 0px",
+      "button.pol → rgba(0, 0, 0, 0.55) 0px 14px 30px 0px",
+      "button.pol → rgba(0, 0, 0, 0.55) 0px 14px 30px 0px",
+      "button.ticket → rgba(0, 0, 0, 0.5) 0px 10px 24px 0px"
+     ],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 11,
+     "hairlineSamples": [
+      "div.bar 356px",
+      "div.bar 356px",
+      "div.me 356px",
+      "details.older 356px",
+      "details.buddies 356px"
+     ],
+     "outlinedBoxes": 5,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 10,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 6,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 1
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 144,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "newsreader",
+     "reenie beanie",
+     "vt323"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 395,
+     "h": 855
+    },
+    "pageH": 2997,
+    "margins": {
+     "left": 21,
+     "right": 17
+    },
+    "sections": [
+     {
+      "sel": "nav.icons",
+      "tag": "nav",
+      "top": -1305,
+      "height": 144,
+      "words": 7,
+      "media": 0,
+      "middle": 4,
+      "heading": null,
+      "left": 21,
+      "right": 17,
+      "textLeft": 57,
+      "textRight": 34,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#w-diary.win",
+      "tag": "section",
+      "top": -1145,
+      "height": 1280,
+      "words": 162,
+      "media": 2,
+      "middle": 0,
+      "heading": {
+       "text": "Sunday, 19 October — 18:42",
+       "size": 38,
+       "tag": "span"
+      },
+      "left": 33,
+      "right": 21,
+      "textLeft": 38,
+      "textRight": 38,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#w-msn.win",
+      "tag": "section",
+      "top": 150,
+      "height": 646,
+      "words": 163,
+      "media": 0,
+      "middle": 9816,
+      "heading": null,
+      "left": 0,
+      "right": 21,
+      "textLeft": -9977,
+      "textRight": 30,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#w-amp.win",
+      "tag": "section",
+      "top": 813,
+      "height": 286,
+      "words": 39,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "01:28",
+       "size": 30,
+       "tag": "span"
+      },
+      "left": 34,
+      "right": 21,
+      "textLeft": 38,
+      "textRight": -184,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#w-photos.win.focus",
+      "tag": "section",
+      "top": 1115,
+      "height": 459,
+      "words": 14,
+      "media": 1,
+      "middle": 0,
+      "heading": null,
+      "left": 15,
+      "right": 11,
+      "textLeft": 43,
+      "textRight": 38,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "The lamps came on before I got home",
+      "size": 34,
+      "top": -1004,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 40,
+      "n": 5
+     }
+    ],
+    "leftBlocks": 5,
+    "bodySize": 19,
+    "stage": true,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "FAIL",
+   "id": "mono",
+   "width": 1440,
+   "message": "Monospace type outside code: VT323 — e.g. \"01:25\", \"*** 1. Radiohead – How to Disappear Comp\"",
+   "fix": "Set it in the text face. Monospace is for literal code inside <pre>/<code> only.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "shadow",
+   "width": 1440,
+   "message": "3 box-shadow(s) on elements at rest: button.pol → rgba(0, 0, 0, 0.55) 0px 14px 30px 0px | button.pol → rgba(0, 0, 0, 0.55) 0px 14px 30px 0px | button.ticket → rgba(0, 0, 0, 0.5) 0px 10px 24px 0px",
+   "fix": "Remove. Separate surfaces with a tone step or space. Shadows are for things that really float (menus, dialogs, sticky bars).",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "text-shadow",
+   "width": 1440,
+   "message": "6 text-shadow(s).",
+   "fix": "Remove; fix legibility with a scrim or a different crop.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "hairline",
+   "width": 1440,
+   "message": "11 thin rule(s)/divider line(s): div.bar 698px | div.bar 338px | div.me 338px | details.older 338px",
+   "fix": "Delete. Separate with space, a tone change, or scale. Lines are only for real tables and form fields.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "outlined-box",
+   "width": 1440,
+   "message": "5 boxes drawn with a 1px outline.",
+   "fix": "Define a surface by its fill (one tone step from the page) or leave the content unboxed.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "palette-cream",
+   "width": 1440,
+   "message": "Yellow-cream background (text #efe6d6).",
+   "fix": "Use the drawn palette. If you want warmth, take a low-chroma stone or bone, not a yellow cream.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "font-count",
+   "width": 1440,
+   "message": "4 typefaces in use (Tahoma, Newsreader, Reenie Beanie, VT323).",
+   "fix": "Two at most: one display, one text. Often one is enough.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "size-count",
+   "width": 1440,
+   "message": "11 different font sizes (12, 13, 14, 16, 19, 22, 23, 26, 30, 38, 49).",
+   "fix": "A page needs about five: display, heading, lead, body, small.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "no-footage",
+   "width": 1440,
+   "message": "No video anywhere on the page.",
+   "fix": "Look for one honest clip with scripts/assets.mjs --video (the place, the material, the process) and use it as a muted loop with a poster frame. Defend its absence only if no clip fits the subject."
+  },
+  {
+   "level": "WARN",
+   "id": "font-not-dealt",
+   "width": 1440,
+   "message": "The sheet dealt Schibsted Grotesk and Schibsted Grotesk, but the page renders Tahoma, Newsreader.",
+   "fix": "Load the dealt face (the link on the sheet) and put it first in font-family. A build that falls back to a default face lands on the default look."
+  },
+  {
+   "level": "FAIL",
+   "id": "late-title",
+   "width": 1440,
+   "message": "The title is not readable 1.2s after the page loaded (something lies over it).",
+   "fix": "Put the headline in the HTML, painted on the first frame; the load sequence only adds arrival and is settled by 1.2s (references/motion.md, \"Load sequence in 1.2 seconds\"). No preloader, no gate, no waiting for the load event."
+  },
+  {
+   "level": "FAIL",
+   "id": "covered-text",
+   "width": 1440,
+   "message": "Large text lies under another element at some scroll position: \"Sunday, 19 October — 18:42\" (screen 1, 75% hidden); \"The lamps came on before I got home\" (screen 1, 75% hidden); \"it will probably rain again tomorrow.\" (screen 1, 50% hidden)",
+   "fix": "Nothing may sit on top of a headline or statement. Move the picture, shorten the pinned run, or raise the text above it (z-index) and give it a ground."
+  },
+  {
+   "level": "WARN",
+   "id": "pinned-over-picture",
+   "width": 1440,
+   "message": "Pinned large text slides across pictures while the page scrolls: \"Sunday, 19 October — 18:42\" (screen 1, 100% over a picture); \"The lamps came on before I got home\" (screen 1, 100% over a picture)",
+   "fix": "Jurors read a pinned title crossing drawings or photographs as a collision. Keep the pictures in the column the title does not occupy, or unpin it."
+  },
+  {
+   "level": "FAIL",
+   "id": "eyebrow",
+   "width": 768,
+   "message": "2 eyebrow/kicker label(s) above headings: \"diary — 19 October 2026.doc\" above \"Sunday, 19 October — 18:42\"; \"mixtape.m3u — October nights\" above \"01:27 *** 1. Radiohead – How to Disappea\"",
+   "fix": "Delete them. If the label carried real information, fold it into the headline or the supporting sentence.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "button-fx",
+   "width": 390,
+   "message": "Buttons with shadow/glow.",
+   "fix": "Flat fill, one colour."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/t-night/desktop-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/t-night/desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/t-night/tablet-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/t-night/tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/t-night/mobile-fold.jpg",
+   "pages": [
+    "/Users/duongcongthuyet/Downloads/workspace/AI/4me/prototype/.taste-skill/t-night/mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

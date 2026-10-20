@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+.turbo
+.wrangler
+.vercel
+.env
+.env.local
+.dev.vars
+*.tsbuildinfo
+.pglite
+coverage
+.DS_Store
+.impeccable/
