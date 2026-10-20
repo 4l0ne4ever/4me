@@ -83,7 +83,7 @@ Every pet, fish and game is also counted for everyone on the API (`/cat`).
 ## Deploy
 
 `main` deploys automatically: **CI → migrate Neon → deploy the Worker → deploy the web app**. Pull requests run
-CI and get a Vercel preview.
+CI only; preview the web app locally with `pnpm dev`.
 
 ### One-time setup
 
@@ -96,7 +96,7 @@ CI and get a Vercel preview.
    variables below. If you deploy from GitHub Actions (as configured), turn off Vercel's own Git deployments
    to avoid building twice. Run `pnpm dlx vercel link` once locally to get the org and project IDs from
    `.vercel/project.json`.
-4. **GitHub** → Settings → Environments → `production` (and `preview` for pull requests):
+4. **GitHub** → Settings → Environments → `production`:
 
 | Kind | Name | Value |
 | --- | --- | --- |

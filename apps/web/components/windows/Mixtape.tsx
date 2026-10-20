@@ -14,6 +14,22 @@ function searchUrl(t: Track) {
   return `https://open.spotify.com/search/${encodeURIComponent(`${t.artist} ${t.title}`.trim())}`;
 }
 
+/** What the author is playing on Last.fm, shown above the playlist (and even when the playlist is empty). */
+function Live({ live }: { live: NowPlaying | null }) {
+  if (!live) return null;
+  return (
+    <p className="live">
+      <span className="dot" style={{ background: live.live ? "var(--ok)" : "var(--away)" }} />
+      <span>
+        {live.live ? "4me is listening to" : "4me last played"}{" "}
+        <b>
+          {live.artist} – {live.title}
+        </b>
+      </span>
+    </p>
+  );
+}
+
 /** Every song pinned to a night, as one playlist. Real playback comes from the provider's embed. */
 export function Mixtape({
   entries,
@@ -57,6 +73,7 @@ export function Mixtape({
   if (!track) {
     return (
       <div className="amp">
+        <Live live={live} />
         <div className="lcd">
           <span className="time">--:--</span>
           <span className="scroll">
@@ -69,17 +86,7 @@ export function Mixtape({
 
   return (
     <div className={`amp${playing ? "" : " paused"}`}>
-      {live && (
-        <p className="live">
-          <span className="dot" style={{ background: live.live ? "var(--ok)" : "var(--away)" }} />
-          <span>
-            {live.live ? "4me is listening to" : "4me last played"}{" "}
-            <b>
-              {live.artist} – {live.title}
-            </b>
-          </span>
-        </p>
-      )}
+      <Live live={live} />
       <div className="lcd">
         <span className="time">{fmt(sec)}</span>
         <span className="scroll">
