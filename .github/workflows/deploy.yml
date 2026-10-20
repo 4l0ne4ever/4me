@@ -72,7 +72,8 @@ jobs:
           IP_SALT: ${{ secrets.IP_SALT }}
       - name: Smoke test
         if: vars.API_URL != ''
-        run: curl --fail --silent --show-error --retry 5 --retry-delay 3 "${{ vars.API_URL }}/health"
+        # A brand-new workers.dev route can answer 404 for a minute, so every error is retried.
+        run: curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors "${{ vars.API_URL }}/health"
 
   web:
     name: Deploy web to Vercel
