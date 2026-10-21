@@ -12,10 +12,10 @@
   },
   "dependencies": {
     "@4me/shared": "workspace:*",
-    "fflate": "0.8.2",
-    "next": "16.3.8",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "fflate": "0.8.3",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "server-only": "0.0.1"
   },
   "devDependencies": {
