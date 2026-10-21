@@ -2,8 +2,8 @@
 
 import { type Author, avatarUrl, type Blast, type Entry, type Me, type Note, type NowPlaying } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { apiSend, hhmm, shortDate } from "@/lib/api";
-import { useLiveEvent } from "@/lib/live";
+import { API_URL, apiSend, hhmm, shortDate } from "@/lib/api";
+import { useFresh, useLiveEvent } from "@/lib/live";
 import { noteAsMember } from "@/lib/member-actions";
 import { DeskLink } from "../DeskLink";
 import { Eq } from "../Icons";
@@ -80,6 +80,16 @@ export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, 
         : [...l, { kind: "note", note }],
     );
   const [reading, setReading] = useState<number | null>(null);
+  useFresh<Note[]>(entry && !entry.sealedUntil ? `${API_URL}/entries/${entry.id}/notes` : null, (fresh) =>
+    setLines((l) => {
+      // The fresh list is the truth for notes; the system lines (BUZZes, "waiting for…") stay in place.
+      const sys = l.filter((x) => x.kind === "sys");
+      return [...fresh.map((note) => ({ kind: "note" as const, note })), ...sys];
+    }),
+  );
+  // "5 minutes ago" depends on the moment it is drawn, so only the browser says it (after the page has hydrated).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const ownBuzz = useRef(0);
 
   useLiveEvent((e) => {
@@ -160,7 +170,7 @@ export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, 
             {latest && (
               <div className="blast">
                 <q>{latest.body}</q>
-                <small>Blast · {ago(latest.createdAt)}</small>
+                <small>Blast · {mounted ? ago(latest.createdAt) : shortDate(latest.createdAt)}</small>
               </div>
             )}
             {song && (

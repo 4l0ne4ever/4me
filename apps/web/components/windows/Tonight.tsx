@@ -2,17 +2,15 @@
 
 import type { EntrySummary, Me } from "@4me/shared";
 import { useEffect, useState } from "react";
-import { hhmm, shortDate } from "@/lib/api";
-import { useLiveEvent } from "@/lib/live";
+import { API_URL, dayOf, hhmm, shortDate } from "@/lib/api";
+import { useFresh, useLiveEvent } from "@/lib/live";
 import { myFeed } from "@/lib/member-actions";
 import { DeskLink } from "../DeskLink";
 import { useDesk } from "../DeskShell";
 import { Eq } from "../Icons";
 
 function when(iso: string): string {
-  const d = new Date(iso);
-  const today = new Date();
-  return d.toDateString() === today.toDateString() ? `tonight, ${hhmm(iso)}` : `${shortDate(iso)}, ${hhmm(iso)}`;
+  return dayOf(iso) === dayOf(new Date()) ? `tonight, ${hhmm(iso)}` : `${shortDate(iso)}, ${hhmm(iso)}`;
 }
 
 function ago(iso: string | null): string {
@@ -64,6 +62,7 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
   const [feed, setFeed] = useState<EntrySummary[] | null>(null);
   const [fresh, setFresh] = useState<Set<number>>(() => new Set());
   const following = new Set(subscriptions?.map((s) => s.handle));
+  useFresh<EntrySummary[]>(`${API_URL}/entries?limit=30`, setList);
 
   useEffect(() => {
     if (tab === "subs" && me) void myFeed().then(setFeed);

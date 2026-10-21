@@ -25,7 +25,7 @@ import {
   useTransition,
 } from "react";
 import { signOut } from "@/app/welcome/actions";
-import { API_URL, hhmm } from "@/lib/api";
+import { API_URL, clockTime } from "@/lib/api";
 import { useLiveConnection, useLiveEvent } from "@/lib/live";
 import { liveTicket } from "@/lib/live-actions";
 import { mySubscriptions, setSubscribed } from "@/lib/member-actions";
@@ -262,14 +262,16 @@ export function DeskShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [wins, setWins] = useState<Record<WinId, WinState>>(() => ({
     // The front page opens on everyone's newest pages; a diary opens on its page.
+    // The front page is everyone's: tonight's pages, the shared guestbook and tonight's songs. A diary opens on its
+    // page and its Messenger.
     tonight: { open: path === "/", min: false, z: 14 },
-    diary: { open: true, min: false, z: 13 },
-    msn: { open: true, min: false, z: 12 },
+    diary: { open: path !== "/", min: false, z: 13 },
+    msn: { open: path !== "/", min: false, z: 12 },
     amp: { open: true, min: false, z: 11 },
     write: { open: false, min: false, z: 10 },
     search: { open: false, min: false, z: 10 },
     archive: { open: false, min: false, z: 10 },
-    guest: { open: false, min: false, z: 10 },
+    guest: { open: path === "/", min: false, z: 10 },
     photos: { open: false, min: false, z: 10 },
     almost: { open: false, min: false, z: 10 },
     display: { open: false, min: false, z: 10 },
@@ -320,7 +322,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
     const tick = () => {
       const d = new Date();
       setHour(d.getHours());
-      setClock(hhmm(d));
+      setClock(clockTime(d));
     };
     tick();
     const t = window.setInterval(tick, 15_000);
@@ -369,10 +371,12 @@ export function DeskShell({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  /* what the person this page is about is listening to */
+  /* what the person this diary belongs to is listening to (nobody's on the front page) */
   useEffect(() => {
+    setListening(null);
+    if (!personaHandle) return;
     const load = () =>
-      fetch(`${API_URL}/now-playing${personaHandle ? `?user=${encodeURIComponent(personaHandle)}` : ""}`)
+      fetch(`${API_URL}/now-playing?user=${encodeURIComponent(personaHandle)}`)
         .then((r) => (r.ok ? r.json() : null))
         .then((v: NowPlaying | null) => setListening(v))
         .catch(() => undefined);

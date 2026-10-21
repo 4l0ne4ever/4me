@@ -21,7 +21,7 @@ const https = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
 // and every other source is pinned to the hosts this site really uses.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com`,
+  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com https://www.youtube.com https://s.ytimg.com`,
   "style-src 'self' 'unsafe-inline'",
   // Photos are served by the API (http on localhost while developing), song covers and other pictures over https.
   `img-src 'self' data: blob: https: ${apiOrigin}`,
@@ -30,7 +30,7 @@ const csp = [
   "media-src 'self' blob: https://*.apple.com https://*.mzstatic.com",
   // The API, its live WebSocket, Turnstile, and Apple's music search (asked straight from the browser).
   `connect-src 'self' ${apiOrigin} ${liveOrigin} https://challenges.cloudflare.com https://itunes.apple.com${dev ? " ws:" : ""}`,
-  "frame-src https://open.spotify.com https://www.youtube-nocookie.com https://w.soundcloud.com https://challenges.cloudflare.com",
+  "frame-src https://open.spotify.com https://www.youtube-nocookie.com https://www.youtube.com https://w.soundcloud.com https://challenges.cloudflare.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -40,6 +40,9 @@ const csp = [
 ].join("; ");
 
 const config: NextConfig = {
+  // Pages a reader goes back to are reused from memory for 30 seconds at most (not five minutes), so new notes
+  // and pages show up; the windows also fetch their latest copy when they open.
+  experimental: { staleTimes: { static: 30 } },
   transpilePackages: ["@4me/shared"],
   poweredByHeader: false,
   agentRules: false,

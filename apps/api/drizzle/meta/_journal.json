@@ -50,6 +50,13 @@
       "when": 1792553384445,
       "tag": "0006_high_crusher_hogan",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792558167636,
+      "tag": "0007_friendly_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }

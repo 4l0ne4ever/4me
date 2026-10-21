@@ -31,8 +31,13 @@ export type DesktopData = {
 export function DeskPage({ data }: { data: DesktopData }) {
   const { entry, entries, owner } = data;
   const { me, open, write, setCurrent, buzz, listening, awake } = useDesk();
-  /** Who Messenger, the blasts and the bin are about: the diary's owner, or whoever wrote the page that is open. */
-  const persona = owner ?? entry?.author ?? null;
+  /**
+   * Whose things these windows show: the diary's owner. The front page belongs to nobody in particular, so its
+   * mixtape is everyone's songs and it shows no one's blast, bin or Last.fm; only Messenger, which is about the
+   * page itself, names that page's writer.
+   */
+  const persona = owner;
+  const pageWriter = owner ?? entry?.author ?? null;
   const [photoView, setPhotoView] = useState<number | null>(null);
 
   // Tell the computer what's on screen (for the live connection and Last.fm), and bring the page forward.
@@ -91,11 +96,11 @@ export function DeskPage({ data }: { data: DesktopData }) {
           onGuestbook={() => open("guest")}
         />
       </DeskWindow>
-      <DeskWindow id="msn" title={persona ? `Messenger — ${persona.name}` : undefined}>
+      <DeskWindow id="msn" title={pageWriter ? `Messenger — ${pageWriter.name}` : undefined}>
         <Messenger
           key={entry?.id ?? "none"}
           entry={entry}
-          persona={persona}
+          persona={pageWriter}
           notes={data.notes}
           blasts={data.blasts}
           awake={awake}
@@ -107,7 +112,7 @@ export function DeskPage({ data }: { data: DesktopData }) {
       <DeskWindow id="guest" title={owner ? `${owner.name}'s guestbook` : "Guestbook — everyone"}>
         <Guestbook key={owner?.handle ?? "_"} initial={data.shouts} me={me} owner={owner} />
       </DeskWindow>
-      <DeskWindow id="amp" title={whose ? `${whose} mixtape.m3u` : undefined}>
+      <DeskWindow id="amp" title={whose ? `${whose} mixtape.m3u` : "mixtape.m3u — tonight's songs"}>
         <Mixtape entries={entries} currentId={entry?.id} live={listening} persona={persona} />
       </DeskWindow>
       <DeskWindow id="photos" title={whose ? `${whose} pictures` : undefined}>

@@ -29,15 +29,29 @@ export async function apiSend<T>(path: string, body?: unknown, method = "POST"):
   }
 }
 
-export function hhmm(iso: string | Date): string {
-  const d = typeof iso === "string" ? new Date(iso) : iso;
+/**
+ * Pages say when they were written in the diary's own time, Vietnam's, the same on the server and in every browser
+ * (so the page the server sends and the one the browser draws agree, and "21:04" means the night it was written).
+ */
+export const SITE_TZ = "Asia/Ho_Chi_Minh";
+
+const hm = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: SITE_TZ,
+});
+const long = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: SITE_TZ });
+const short = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: SITE_TZ });
+const day = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: SITE_TZ });
+
+export const hhmm = (iso: string | Date) => hm.format(typeof iso === "string" ? new Date(iso) : iso);
+export const longDate = (iso: string) => long.format(new Date(iso));
+export const shortDate = (iso: string) => short.format(new Date(iso));
+/** "2026-10-21" in the diary's time, for "is this tonight?" */
+export const dayOf = (iso: string | Date) => day.format(typeof iso === "string" ? new Date(iso) : iso);
+
+/** The taskbar clock is the reader's own. */
+export function clockTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-export function longDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
-}
-
-export function shortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }

@@ -371,10 +371,11 @@ body[data-skin="snow"] .wall .paint:not(.color) {
   width: 340px;
 }
 .w-guest {
-  left: 360px;
-  top: 40px;
+  /* beside Tonight on the front page, left of the Messenger and mixtape column */
+  left: min(640px, calc(100vw - 770px));
+  top: 30px;
   width: 390px;
-  height: 480px;
+  height: min(520px, calc(100% - 60px));
 }
 .w-photos {
   left: 290px;
@@ -3128,4 +3129,21 @@ body.busy * {
   .arch-star {
     animation: none;
   }
+}
+
+/* the mixtape's video window: YouTube's player, shown while a whole song plays */
+.amp-video {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  background: #000;
+  border: 1px solid var(--chrome-edge);
+}
+.amp-video.empty {
+  display: none;
+}
+.amp-video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
 }

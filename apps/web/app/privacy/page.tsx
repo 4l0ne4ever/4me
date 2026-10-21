@@ -71,7 +71,8 @@ export default function Privacy() {
         </li>
         <li>
           When you search for a song, your browser sends the words you type straight to Apple&apos;s music search, and
-          playing a 30-second preview loads it from Apple&apos;s servers.
+          playing a 30-second preview loads it from Apple&apos;s servers. Playing a whole song in the Mixtape loads
+          YouTube&apos;s player (from its no-cookie domain) only when you press play.
         </li>
         <li>
           If you add a Last.fm username, what you listen to on Last.fm shows on your desktop. Leave it empty and nothing

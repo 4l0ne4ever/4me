@@ -10,6 +10,7 @@ import { entryRoutes } from "./routes/entries";
 import { internalRoutes } from "./routes/internal";
 import { liveRoutes } from "./routes/live";
 import { mediaRoutes } from "./routes/media";
+import { musicRoutes } from "./routes/music";
 import { searchRoutes } from "./routes/search";
 import { socialRoutes } from "./routes/social";
 
@@ -55,6 +56,7 @@ export function createApp(
   app.route("/", liveRoutes);
   app.route("/", searchRoutes);
   app.route("/", archiveRoutes);
+  app.route("/", musicRoutes);
   app.route("/", socialRoutes);
   app.route("/admin", adminRoutes);
   app.route("/internal", internalRoutes);

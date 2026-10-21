@@ -55,8 +55,10 @@ The Diary shows *Edit this page* to its writer and *report* to everyone else.
 **Songs** come from the iTunes Search API (free, no key). The reader's browser asks Apple directly (Apple allows it
 from any site, and turns many cloud servers away, Cloudflare's included); the API only checks that every link of a
 picked song is one of Apple's own (`*.apple.com`, `*.mzstatic.com`) before storing it. Songs play their 30-second
-preview on the page; the Mixtape links to the whole song on Spotify, and plays a preview of what the writer is
-listening to on Last.fm.
+preview on the page. The Mixtape plays whole songs through YouTube's embedded player: the API looks each song up
+once with the YouTube Data API (`GET /music/video`, key kept as the Worker secret `YOUTUBE_API_KEY`) and remembers
+the answer in `song_videos`, so the free quota (about 100 searches a day) goes a long way. Without the key, or when
+no video is found, it falls back to the preview. The writer's Last.fm song is in the Mixtape too.
 
 **Photos** are shrunk in the browser to 2048 px JPEG (which also applies their rotation and drops EXIF and GPS),
 then sent straight to the API with a ten-minute upload ticket signed by the web server. The API checks it is a JPEG,
@@ -182,7 +184,8 @@ CI only; preview the web app locally with `pnpm dev`.
    `DATABASE_URL=... pnpm db:migrate && DATABASE_URL=... pnpm --filter @4me/api db:seed`.
 2. **Cloudflare**: create an API token with the *Edit Cloudflare Workers* template; note your account ID.
    Optional secrets are set once by hand, in the dashboard (Workers & Pages → 4me-api → Settings → Variables and
-   Secrets) or with `pnpm --filter @4me/api exec wrangler secret put <NAME>`: `TURNSTILE_SECRET`, `LASTFM_API_KEY`.
+   Secrets) or with `pnpm --filter @4me/api exec wrangler secret put <NAME>`: `TURNSTILE_SECRET`, `LASTFM_API_KEY`,
+   `YOUTUBE_API_KEY` (Google Cloud → enable *YouTube Data API v3* → Credentials → API key, restricted to that API).
 3. **Photo bucket** (any S3-compatible store; without it, photo uploads are switched off). Set four Worker secrets
    the same way:
 

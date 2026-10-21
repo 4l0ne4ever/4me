@@ -20,6 +20,8 @@ export type Bindings = {
   S3_REGION?: string;
   S3_ACCESS_KEY_ID?: string;
   S3_SECRET_ACCESS_KEY?: string;
+  /** YouTube Data API key: lets the mixtape play whole songs through YouTube's player. Optional. */
+  YOUTUBE_API_KEY?: string;
   /** The Durable Object that holds everyone's live connections (Workers only). */
   HUB?: DurableObjectNamespace;
 };

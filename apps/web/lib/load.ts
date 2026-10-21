@@ -28,12 +28,11 @@ export async function loadDesktop({
     apiGet<EntrySummary[]>("/entries?limit=30", 30),
     apiGet<Shout[]>(who ? `/guestbook?owner=${q(who)}` : "/guestbook", 15),
   ]);
-  // Messenger, blasts and the bin belong to whoever the desktop is about: its owner, or the writer of the page open.
-  const persona = who ?? entry?.author.handle;
+  // Blasts and the bin belong to a diary's owner. The front page is everyone's, so it shows nobody's.
   const [notes, blasts, almost] = await Promise.all([
     entry ? apiGet<Note[]>(`/entries/${entry.id}/notes`, 10) : null,
-    persona ? apiGet<Blast[]>(`/blasts?author=${q(persona)}`, 60) : null,
-    persona ? apiGet<Almost[]>(`/almost?author=${q(persona)}`, 120) : null,
+    who ? apiGet<Blast[]>(`/blasts?author=${q(who)}`, 60) : null,
+    who ? apiGet<Almost[]>(`/almost?author=${q(who)}`, 120) : null,
   ]);
   return {
     owner,

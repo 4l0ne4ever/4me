@@ -17,6 +17,30 @@ export function useLiveEvent(handler: (e: LiveEvent) => void) {
   }, []);
 }
 
+/**
+ * Fetches the latest copy of something when a window opens and again every time the live connection (re)connects,
+ * so nothing written while the page was cached, or while the connection was down, is missed. Live events then keep
+ * it current in between.
+ */
+export function useFresh<T>(url: string | null, apply: (data: T) => void) {
+  const latest = useRef(apply);
+  latest.current = apply;
+  const load = useRef<() => void>(() => undefined);
+  useEffect(() => {
+    load.current = () => {
+      if (!url) return;
+      fetch(url, { cache: "no-store" })
+        .then((r) => (r.ok ? (r.json() as Promise<T>) : null))
+        .then((data) => data !== null && latest.current(data))
+        .catch(() => undefined);
+    };
+    load.current();
+  }, [url]);
+  useLiveEvent((e) => {
+    if (e.type === "hello") load.current();
+  });
+}
+
 export type LiveState = "connecting" | "live" | "offline";
 
 /**

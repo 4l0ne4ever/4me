@@ -3,7 +3,7 @@
 import { avatarUrl, type Entry, type Me, type MyReactions, type Note, type ReactionKind } from "@4me/shared";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { API_URL, apiSend, hhmm, shortDate } from "@/lib/api";
-import { useLiveEvent } from "@/lib/live";
+import { useFresh, useLiveEvent } from "@/lib/live";
 import {
   deleteNote,
   editNote,
@@ -275,6 +275,7 @@ export function Comments({ entry, initial, me }: { entry: Entry; initial: Note[]
   }, [entry.id, me]);
 
   // A note can come back from the server and live at once, or be edited: it shows once, newest version.
+  useFresh<Note[]>(entry.sealedUntil ? null : `${API_URL}/entries/${entry.id}/notes`, setNotes);
   const add = (note: Note) =>
     setNotes((l) => (l.some((x) => x.id === note.id) ? l.map((x) => (x.id === note.id ? note : x)) : [...l, note]));
   useLiveEvent((e) => {

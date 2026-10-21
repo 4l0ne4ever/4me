@@ -35,6 +35,7 @@ const env: Bindings = {
   S3_REGION: process.env.S3_REGION,
   S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID,
   S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
+  YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
 };
 
 // Photos stay in memory unless a bucket is configured in .env; they are gone when the dev server restarts.

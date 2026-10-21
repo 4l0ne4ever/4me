@@ -152,3 +152,20 @@ describe("lit windows", () => {
     hub.remove(a);
   });
 });
+
+describe("whole songs", () => {
+  it("answers 'no video' without a YouTube key, so the mixtape plays the preview", async () => {
+    const res = await json<{ videoId: string | null }>(
+      call("/music/video?artist=Ngọt&title=Em%20Dạo%20Này", { internal: false }),
+    );
+    expect(res).toEqual({ videoId: null });
+  });
+
+  it("remembers each song's video so YouTube is asked only once", async () => {
+    await db.insert(schema.songVideos).values({ key: "ngot|em dao nay", videoId: "abcdef12345" });
+    const res = await json<{ videoId: string | null }>(
+      call("/music/video?artist=Ngọt&title=Em%20Dạo%20Này", { internal: false }),
+    );
+    expect(res).toEqual({ videoId: "abcdef12345" });
+  });
+});

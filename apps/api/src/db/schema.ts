@@ -269,6 +269,13 @@ export const notifications = pgTable(
   (t) => [index("notifications_user_created_idx").on(t.userId, t.createdAt)],
 );
 
+/** Which YouTube video plays a song in full, looked up once per song. A null video means none was found. */
+export const songVideos = pgTable("song_videos", {
+  key: text("key").primaryKey(),
+  videoId: text("video_id"),
+  checkedAt: timestamp("checked_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const catStats = pgTable("cat_stats", {
   id: integer("id").primaryKey().default(1),
   pets: bigint("pets", { mode: "number" }).notNull().default(0),

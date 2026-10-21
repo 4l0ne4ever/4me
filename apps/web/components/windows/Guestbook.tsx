@@ -2,8 +2,8 @@
 
 import { avatarUrl, type Me, type Profile, type Shout } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { apiSend, hhmm } from "@/lib/api";
-import { useLiveEvent } from "@/lib/live";
+import { API_URL, apiSend, hhmm } from "@/lib/api";
+import { useFresh, useLiveEvent } from "@/lib/live";
 import { shoutAsMember } from "@/lib/member-actions";
 import { DeskLink } from "../DeskLink";
 import { nudgeInk } from "../ink/Ink";
@@ -21,6 +21,7 @@ export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | n
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const human = useTurnstile();
+  useFresh<Shout[]>(`${API_URL}/guestbook${owner ? `?owner=${encodeURIComponent(owner.handle)}` : ""}`, setShouts);
   const addShout = (shout: Shout) => setShouts((s) => (s.some((x) => x.id === shout.id) ? s : [...s, shout]));
   useLiveEvent((e) => {
     if (e.type === "shout" && e.owner === (owner?.handle ?? null)) addShout(e.shout);
