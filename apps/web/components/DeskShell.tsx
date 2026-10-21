@@ -261,7 +261,10 @@ export function DeskWindow({ id, title, children }: { id: WinId; title?: string;
 }
 
 export function DeskShell({ children }: { children: ReactNode }) {
-  const path = usePathname() ?? "/";
+  // Vercel prerenders the front page as "/index"; it is the same page as "/", and the windows must agree on both
+  // sides of hydration.
+  const raw = usePathname() ?? "/";
+  const path = raw === "/index" ? "/" : raw;
   const router = useRouter();
   const [wins, setWins] = useState<Record<WinId, WinState>>(() => ({
     // The front page is everyone's: tonight's pages and tonight's songs. A diary opens on its page and Messenger,
