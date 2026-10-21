@@ -224,9 +224,24 @@ CI only; preview the web app locally with `pnpm dev`.
 | secret | `IP_SALT` | a random string used to hash visitor IPs |
 | secret | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | from step 2 |
 | secret | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | from step 3 |
-| variable | `SITE_URL` | the web address, e.g. `https://4me.vercel.app` (also the API's allowed origin) |
-| variable | `API_URL` | the Worker address, e.g. `https://4me-api.<you>.workers.dev` |
+| variable | `SITE_URL` | the web address, `https://2die429.com` (also the API's allowed origin) |
+| variable | `API_URL` | the API address, `https://api.2die429.com` |
 | variable | `LASTFM_USER` | your Last.fm username, for the "listening now" line (optional) |
+
+### Domain
+
+`2die429.com` is registered with Cloudflare, so its DNS lives there:
+
+| Name | Type | Points to | Proxy |
+| --- | --- | --- | --- |
+| `2die429.com` | A | the address Vercel shows under Settings → Domains | DNS only |
+| `www` | CNAME | the target Vercel shows (redirects to `2die429.com`) | DNS only |
+| `api` | Worker Custom Domain | `4me-api` (added from the Worker's Domains & Routes; Cloudflare creates the record and certificate) | proxied |
+| `send`, `resend._domainkey`, `_dmarc` | MX / TXT | Resend's sending records (SPF, DKIM) and a DMARC policy | DNS only |
+
+Vercel's records stay *DNS only* so Vercel can issue its own certificate. The old `*.vercel.app` address redirects to
+the domain from Vercel's Domains settings. Google sign-in lists `https://2die429.com` as an origin and
+`https://2die429.com/auth/google/callback` as a redirect URI; Turnstile lists `2die429.com` as a hostname.
 
 ### Web environment (Vercel)
 
