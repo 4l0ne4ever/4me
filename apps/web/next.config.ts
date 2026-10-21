@@ -46,6 +46,10 @@ const config: NextConfig = {
   transpilePackages: ["@4me/shared"],
   poweredByHeader: false,
   agentRules: false,
+  // Browsers and feed readers that never read the page's <link rel="icon"> still ask for /favicon.ico.
+  async redirects() {
+    return [{ source: "/favicon.ico", destination: "/icon.svg", permanent: true }];
+  },
   async headers() {
     return [
       {
