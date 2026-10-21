@@ -5,8 +5,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { API_URL } from "@/lib/api";
 import { IconNext, IconPause, IconPlay, IconPrev } from "../Icons";
 
-/** `live` marks what the writer is playing on Last.fm right now; its preview is found by searching for it. */
-type Track = Song & { night: number; live?: boolean };
+/**
+ * Where a song comes from: `live` is what the writer is playing on Last.fm right now, `lately` what they played
+ * before it, and the rest are pinned to their pages (`night` is the page). Last.fm songs' previews are found by
+ * searching for them.
+ */
+type Track = Song & { night: number; live?: boolean; lately?: boolean };
 /** How a track plays: a YouTube video (the whole song), its 30-second preview, or not at all. */
 type Source = { videoId: string | null; preview: string | null };
 
@@ -98,6 +102,23 @@ export function Mixtape({
   persona: Author | null;
 }) {
   const liveKey = live ? keyOf(live) : null;
+  const [recent, setRecent] = useState<NowPlaying[]>([]);
+  const handle = persona?.handle;
+
+  /* the writer's last few songs on Last.fm, asked again whenever a new one starts */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: liveKey is the "a new song started" signal
+  useEffect(() => {
+    if (!handle) return setRecent([]);
+    let alive = true;
+    fetch(`${API_URL}/recent-tracks?user=${encodeURIComponent(handle)}`)
+      .then((r) => (r.ok ? (r.json() as Promise<NowPlaying[]>) : []))
+      .then((list) => alive && setRecent(Array.isArray(list) ? list : []))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [handle, liveKey]);
+
   // Last.fm is asked again every minute; only a new song (liveKey) changes the list.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `live` is read through liveKey
   const tracks = useMemo<Track[]>(() => {
@@ -123,8 +144,23 @@ export function Mixtape({
       seen.add(key);
       list.push({ ...e.song, night: e.id });
     }
+    for (const r of recent) {
+      const key = keyOf(r);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      list.push({
+        title: r.title,
+        artist: r.artist,
+        url: r.url,
+        embedUrl: null,
+        coverUrl: r.image,
+        previewUrl: null,
+        night: -1,
+        lately: true,
+      });
+    }
     return list;
-  }, [entries, liveKey]);
+  }, [entries, liveKey, recent]);
 
   // The song is remembered by name, not position: the Last.fm song can arrive (or change) after the list is drawn.
   const [picked, setPicked] = useState<string | null>(null);
@@ -142,34 +178,42 @@ export function Mixtape({
   const player = useRef<YTPlayer | null>(null);
   const playerVideo = useRef<string | null>(null);
   const goNext = useRef<() => void>(() => undefined);
-  const asked = useRef(new Set<string>());
+  const asked = useRef(new Map<string, Promise<Source>>());
 
-  /* look every song's source up ahead of time: a YouTube video, and for the Last.fm song its preview too */
+  /**
+   * Finds how a song plays, once: a YouTube video (each new song costs a search from the day's quota, so only songs
+   * about to be played are looked up) and its preview.
+   */
+  const lookUp = useCallback((t: Track | undefined): Promise<Source> | null => {
+    if (!t) return null;
+    const k = keyOf(t);
+    const known = asked.current.get(k);
+    if (known) return known;
+    const video = fetch(
+      `${API_URL}/music/video?artist=${encodeURIComponent(t.artist)}&title=${encodeURIComponent(t.title)}`,
+    )
+      .then((r) => (r.ok ? (r.json() as Promise<{ videoId: string | null }>) : { videoId: null }))
+      .then((r) => r.videoId)
+      .catch(() => null);
+    const preview = t.previewUrl
+      ? Promise.resolve(t.previewUrl)
+      : searchSongs(`${t.artist} ${t.title}`)
+          .then((hits) => hits.find((h) => h.previewUrl)?.previewUrl ?? null)
+          .catch(() => null);
+    const found = Promise.all([video, preview]).then(([videoId, p]) => {
+      const s: Source = { videoId, preview: p };
+      setSources((all) => ({ ...all, [k]: s }));
+      return s;
+    });
+    asked.current.set(k, found);
+    return found;
+  }, []);
+
+  /* the song on screen and the one after it are looked up ahead, so pressing play or next starts at once */
   useEffect(() => {
-    let alive = true;
-    for (const t of tracks) {
-      const k = keyOf(t);
-      if (asked.current.has(k)) continue;
-      asked.current.add(k);
-      const video = fetch(
-        `${API_URL}/music/video?artist=${encodeURIComponent(t.artist)}&title=${encodeURIComponent(t.title)}`,
-      )
-        .then((r) => (r.ok ? (r.json() as Promise<{ videoId: string | null }>) : { videoId: null }))
-        .then((r) => r.videoId)
-        .catch(() => null);
-      const preview = t.previewUrl
-        ? Promise.resolve(t.previewUrl)
-        : searchSongs(`${t.artist} ${t.title}`)
-            .then((hits) => hits.find((h) => h.previewUrl)?.previewUrl ?? null)
-            .catch(() => null);
-      void Promise.all([video, preview]).then(([videoId, p]) => {
-        if (alive) setSources((s) => ({ ...s, [k]: { videoId, preview: p } }));
-      });
-    }
-    return () => {
-      alive = false;
-    };
-  }, [tracks]);
+    void lookUp(track);
+    if (tracks.length > 1) void lookUp(tracks[(i + 1) % tracks.length]);
+  }, [lookUp, track, tracks, i]);
 
   const source = track ? sources[keyOf(track)] : undefined;
   const mode: "video" | "preview" | "none" | "looking" = !source
@@ -197,9 +241,15 @@ export function Mixtape({
 
   /** Starts a track. Runs inside the click, so the browser lets the sound start. */
   const start = useCallback(
-    (t: Track | undefined) => {
+    (t: Track | undefined, known?: Source) => {
       if (!t) return;
-      const s = sources[keyOf(t)];
+      const s = known ?? sources[keyOf(t)];
+      if (!s) {
+        // Not looked up yet (a song far down the list, tapped on a phone): play it as soon as it's found.
+        setPlaying(false);
+        void lookUp(t)?.then((found) => start(t, found));
+        return;
+      }
       setSec(0);
       setBlocked(false);
       if (s?.videoId) {
@@ -252,7 +302,7 @@ export function Mixtape({
         },
       );
     },
-    [sources],
+    [sources, lookUp],
   );
 
   const go = (n: number) => {
@@ -347,8 +397,15 @@ export function Mixtape({
       </p>
       <ul className="plist">
         {tracks.map((t, n) => (
-          <li key={keyOf(t)}>
-            <button type="button" aria-current={n === i} onClick={() => go(n)}>
+          <li key={keyOf(t)} className={t.lately && !tracks[n - 1]?.lately ? "plist-lately" : undefined}>
+            {t.lately && !tracks[n - 1]?.lately && <span className="plist-head">played lately on Last.fm</span>}
+            <button
+              type="button"
+              aria-current={n === i}
+              onPointerEnter={() => void lookUp(t)}
+              onFocus={() => void lookUp(t)}
+              onClick={() => go(n)}
+            >
               <span>
                 {num(t, n)}. {t.artist} – {t.title}
               </span>

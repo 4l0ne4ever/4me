@@ -171,6 +171,8 @@ type Props = {
   onPhoto: (url: string) => void;
   onSong: () => void;
   onGuestbook: () => void;
+  /** Opens the archive gathered by this mood. */
+  onMood: (mood: string) => void;
 };
 
 /** The page's own reactions: counts for everyone, the reader's own choice, kept live. */
@@ -225,6 +227,7 @@ function DiaryPage({
   onPhoto,
   onSong,
   onGuestbook,
+  onMood,
   onOpened,
 }: Props & { onOpened: (e: Entry) => void }) {
   const clip = useClip(entry?.song?.previewUrl);
@@ -283,7 +286,15 @@ function DiaryPage({
       <div className="d-cur">
         {entry.mood && (
           <span>
-            Current mood: <b>{entry.mood}</b>
+            Current mood:{" "}
+            <button
+              type="button"
+              className="d-mood"
+              title={`Every night that felt “${entry.mood}”`}
+              onClick={() => onMood(entry.mood)}
+            >
+              {entry.mood}
+            </button>
           </span>
         )}
         {entry.weather && (

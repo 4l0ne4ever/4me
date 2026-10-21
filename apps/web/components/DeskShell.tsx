@@ -32,6 +32,7 @@ import { mySubscriptions, setSubscribed } from "@/lib/member-actions";
 import { DEFAULT_PREF, PREF_KEY, parsePref, resolveBackground, type WallpaperPref } from "@/lib/wallpaper";
 import { deleteUpload, loadUpload, saveUpload } from "@/lib/wallpaper-store";
 import { AddressBar } from "./AddressBar";
+import { ConfirmHost, Dialog } from "./Dialog";
 import {
   IconArchive,
   IconBin,
@@ -42,6 +43,7 @@ import {
   IconMessenger,
   IconMixtape,
   IconPhotos,
+  IconRss,
   IconSearch,
   IconTonight,
   IconWrite,
@@ -280,6 +282,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
   const [focus, setFocus] = useState<WinId>(path === "/" ? "tonight" : "diary");
   const zTop = useRef(20);
   const [startOpen, setStartOpen] = useState(false);
+  const [rssOpen, setRssOpen] = useState(false);
   const [skin, setSkin] = useLocal<SkinId>(
     "4me-skin",
     "midnight",
@@ -589,275 +592,338 @@ export function DeskShell({ children }: { children: ReactNode }) {
 
   return (
     <DeskContext.Provider value={desk}>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: right-click on empty desktop; the same actions are in the Start menu */}
-      <div
-        className={`desk${shaking ? " shake" : ""}${settled ? " settled" : ""}${pending ? " busy" : ""}`}
-        onContextMenu={onDeskContext}
-      >
-        <div className="wall" aria-hidden="true">
-          <div className={`paint ${paintClass}`} style={paintStyle(background)} />
-        </div>
-        <Skyline />
-        <nav className="icons" aria-label="Desktop">
-          {ICONS.map(([id, label]) => (
-            <button key={id} type="button" className="icon" onClick={() => (id === "write" ? write(null) : open(id))}>
-              {WINDOWS[id].icon()}
-              {label}
-            </button>
-          ))}
-        </nav>
-
-        {children}
-
-        <DeskWindow id="write" title={editing ? "Notepad — editing a page" : undefined}>
-          {me ? (
-            <Write
-              me={me}
-              editing={editing}
-              onEditing={setEditing}
-              onSaved={(e) => {
-                patch("write", { open: false, min: false });
-                navigate(`/u/${e.author.handle}/${e.slug}`);
-              }}
-              onDeleted={() => navigate(`/u/${me.handle}`)}
-            />
-          ) : (
-            <div className="body acc">
-              <p>
-                Everyone here keeps a night diary. <a href={login}>Log on or create an account</a> to write yours.
-              </p>
-            </div>
-          )}
-        </DeskWindow>
-        <DeskWindow id="search">
-          <Search query={query} onQuery={setQuery} />
-        </DeskWindow>
-        <DeskWindow id="display">
-          <DisplayProperties
-            pref={wallPref}
-            skinWall={skinWall}
-            uploadUrl={uploadUrl}
-            onApply={applyWallpaper}
-            onClose={() => patch("display", { open: false, min: false })}
-            onUpload={storeUpload}
-            onRemoveUpload={removeUpload}
-          />
-        </DeskWindow>
-        <DeskWindow id="account">
-          {me ? (
-            <Account me={me} onMe={setMe} />
-          ) : (
-            <div className="body acc">
-              <p>
-                You&apos;re not logged on. <a href={login}>Log on or create an account</a>.
-              </p>
-            </div>
-          )}
-        </DeskWindow>
-      </div>
-
-      {startOpen && (
-        <div className="startmenu" ref={startMenu} id="startmenu" role="menu" aria-label="Start">
-          <div className="sm-head">
-            <img src={me ? avatarUrl(me.avatar) : "/photos/pic-229.jpg"} alt="" width={44} height={44} />
-            <div>
-              <b>{me ? me.displayName : "Guest"}</b>
-              <span>{me ? `4me://${me.handle}` : "log on to keep a diary"}</span>
-            </div>
+      <ConfirmHost>
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: right-click on empty desktop; the same actions are in the Start menu */}
+        <div
+          className={`desk${shaking ? " shake" : ""}${settled ? " settled" : ""}${pending ? " busy" : ""}`}
+          onContextMenu={onDeskContext}
+        >
+          <div className="wall" aria-hidden="true">
+            <div className={`paint ${paintClass}`} style={paintStyle(background)} />
           </div>
-          <ul className="sm-list">
+          <Skyline />
+          <nav className="icons" aria-label="Desktop">
+            {ICONS.map(([id, label]) => (
+              <button key={id} type="button" className="icon" onClick={() => (id === "write" ? write(null) : open(id))}>
+                {WINDOWS[id].icon()}
+                {label}
+              </button>
+            ))}
+          </nav>
+
+          {children}
+
+          <DeskWindow id="write" title={editing ? "Notepad — editing a page" : undefined}>
             {me ? (
+              <Write
+                me={me}
+                editing={editing}
+                onEditing={setEditing}
+                onSaved={(e) => {
+                  patch("write", { open: false, min: false });
+                  navigate(`/u/${e.author.handle}/${e.slug}`);
+                }}
+                onDeleted={() => navigate(`/u/${me.handle}`)}
+              />
+            ) : (
+              <div className="body acc">
+                <p>
+                  Everyone here keeps a night diary. <a href={login}>Log on or create an account</a> to write yours.
+                </p>
+              </div>
+            )}
+          </DeskWindow>
+          <DeskWindow id="search">
+            <Search query={query} onQuery={setQuery} />
+          </DeskWindow>
+          <DeskWindow id="display">
+            <DisplayProperties
+              pref={wallPref}
+              skinWall={skinWall}
+              uploadUrl={uploadUrl}
+              onApply={applyWallpaper}
+              onClose={() => patch("display", { open: false, min: false })}
+              onUpload={storeUpload}
+              onRemoveUpload={removeUpload}
+            />
+          </DeskWindow>
+          <DeskWindow id="account">
+            {me ? (
+              <Account me={me} onMe={setMe} />
+            ) : (
+              <div className="body acc">
+                <p>
+                  You&apos;re not logged on. <a href={login}>Log on or create an account</a>.
+                </p>
+              </div>
+            )}
+          </DeskWindow>
+        </div>
+
+        {startOpen && (
+          <div className="startmenu" ref={startMenu} id="startmenu" role="menu" aria-label="Start">
+            <div className="sm-head">
+              <img src={me ? avatarUrl(me.avatar) : "/photos/pic-229.jpg"} alt="" width={44} height={44} />
+              <div>
+                <b>{me ? me.displayName : "Guest"}</b>
+                <span>{me ? `4me://${me.handle}` : "log on to keep a diary"}</span>
+              </div>
+            </div>
+            <ul className="sm-list">
+              {me ? (
+                <li>
+                  <button type="button" role="menuitem" onClick={() => navigate(`/u/${me.handle}`)}>
+                    <img className="sm-av" src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
+                    My diary
+                  </button>
+                </li>
+              ) : (
+                <li>
+                  <a href="/welcome?start=register" role="menuitem">
+                    <IconWrite />
+                    Start a diary
+                  </a>
+                </li>
+              )}
               <li>
-                <button type="button" role="menuitem" onClick={() => navigate(`/u/${me.handle}`)}>
-                  <img className="sm-av" src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
-                  My diary
+                <button type="button" role="menuitem" onClick={() => navigate("/")}>
+                  {WINDOWS.tonight.icon()}
+                  Home: tonight&apos;s pages
                 </button>
               </li>
-            ) : (
               <li>
-                <a href="/welcome?start=register" role="menuitem">
-                  <IconWrite />
-                  Start a diary
-                </a>
+                <button type="button" role="menuitem" onClick={() => write(null)}>
+                  {WINDOWS.write.icon()}
+                  Write tonight&apos;s page
+                </button>
               </li>
-            )}
-            <li>
-              <button type="button" role="menuitem" onClick={() => navigate("/")}>
-                {WINDOWS.tonight.icon()}
-                Home: tonight&apos;s pages
-              </button>
-            </li>
-            <li>
-              <button type="button" role="menuitem" onClick={() => write(null)}>
-                {WINDOWS.write.icon()}
-                Write tonight&apos;s page
-              </button>
-            </li>
-            <li>
-              <button type="button" role="menuitem" onClick={() => open("search")}>
-                {WINDOWS.search.icon()}
-                Search…
-              </button>
-            </li>
-            <li className="sm-sep" aria-hidden="true" />
-            {(["feed", "play", "call"] as const).map((a) => (
-              <li key={a}>
+              <li>
+                <button type="button" role="menuitem" onClick={() => open("search")}>
+                  {WINDOWS.search.icon()}
+                  Search…
+                </button>
+              </li>
+              <li className="sm-sep" aria-hidden="true" />
+              {(["feed", "play", "call"] as const).map((a) => (
+                <li key={a}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setStartOpen(false);
+                      nudgeInk(a);
+                    }}
+                  >
+                    <IconHeart />
+                    {a === "feed" ? "Give Ink a fish" : a === "play" ? "Play with Ink" : "Call Ink over"}
+                  </button>
+                </li>
+              ))}
+              <li className="sm-sep" aria-hidden="true" />
+              <li>
+                <button type="button" role="menuitem" onClick={() => open("display")}>
+                  <IconDisplay />
+                  Change background…
+                </button>
+              </li>
+              <li>
                 <button
                   type="button"
                   role="menuitem"
                   onClick={() => {
                     setStartOpen(false);
-                    nudgeInk(a);
+                    setRssOpen(true);
                   }}
                 >
-                  <IconHeart />
-                  {a === "feed" ? "Give Ink a fish" : a === "play" ? "Play with Ink" : "Call Ink over"}
+                  <IconRss />
+                  Follow in a feed reader…
                 </button>
               </li>
-            ))}
-            <li className="sm-sep" aria-hidden="true" />
-            <li>
-              <button type="button" role="menuitem" onClick={() => open("display")}>
-                <IconDisplay />
-                Change background…
-              </button>
-            </li>
-            <li>
-              <a href={owner ? `/u/${owner.handle}/rss.xml` : "/rss.xml"} role="menuitem">
-                RSS feed
-              </a>
-            </li>
-            <li className="sm-sep" aria-hidden="true" />
-            {me ? (
-              <>
-                <li>
-                  <button type="button" role="menuitem" onClick={() => open("account")}>
-                    <img className="sm-av" src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
-                    My account…
-                  </button>
-                </li>
-                <li>
-                  <form action={signOut}>
-                    <button type="submit" role="menuitem">
-                      <span className="sm-power" aria-hidden="true" />
-                      Log off {me.displayName}
+              <li className="sm-sep" aria-hidden="true" />
+              {me ? (
+                <>
+                  <li>
+                    <button type="button" role="menuitem" onClick={() => open("account")}>
+                      <img className="sm-av" src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
+                      My account…
                     </button>
-                  </form>
+                  </li>
+                  <li>
+                    <form action={signOut}>
+                      <button type="submit" role="menuitem">
+                        <span className="sm-power" aria-hidden="true" />
+                        Log off {me.displayName}
+                      </button>
+                    </form>
+                  </li>
+                </>
+              ) : (
+                <li>
+                  <a href={login} role="menuitem">
+                    <span className="sm-power" aria-hidden="true" />
+                    Log on…
+                  </a>
                 </li>
-              </>
-            ) : (
-              <li>
-                <a href={login} role="menuitem">
-                  <span className="sm-power" aria-hidden="true" />
-                  Log on…
-                </a>
-              </li>
-            )}
-          </ul>
+              )}
+            </ul>
 
-          <fieldset className="skins">
-            <legend className="sm-label">Skin</legend>
-            {SKINS.map((s) => (
+            <fieldset className="skins">
+              <legend className="sm-label">Skin</legend>
+              {SKINS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className="skin"
+                  aria-pressed={skin === s.id}
+                  onClick={() => setSkin(s.id)}
+                >
+                  <i style={{ background: s.swatch }} />
+                  {s.name}
+                </button>
+              ))}
+            </fieldset>
+          </div>
+        )}
+
+        {deskMenu && (
+          <div className="deskmenu" role="menu" aria-label="Desktop" style={{ left: deskMenu.x, top: deskMenu.y }}>
+            <button
+              type="button"
+              role="menuitem"
+              // biome-ignore lint/a11y/noAutofocus: a context menu takes focus when it opens
+              autoFocus
+              onClick={() => {
+                setDeskMenu(null);
+                open("display");
+              }}
+            >
+              Change background…
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setDeskMenu(null);
+                startTransition(() => router.refresh());
+              }}
+            >
+              Refresh
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setDeskMenu(null);
+                nudgeInk("call");
+              }}
+            >
+              Call Ink over
+            </button>
+          </div>
+        )}
+
+        <Ink awake={awake} stats={cat} onStats={setCat} me={me} />
+
+        <footer className="task">
+          <button
+            ref={startBtn}
+            type="button"
+            className="start"
+            aria-haspopup="menu"
+            aria-expanded={startOpen}
+            aria-controls="startmenu"
+            onClick={() => setStartOpen((o) => !o)}
+          >
+            4me
+          </button>
+          <AddressBar path={path} me={me} />
+          <div className="tasks">
+            {visible.map((id) => (
               <button
-                key={s.id}
+                key={id}
                 type="button"
-                className="skin"
-                aria-pressed={skin === s.id}
-                onClick={() => setSkin(s.id)}
+                className="tbtn"
+                aria-pressed={focus === id && !wins[id].min}
+                onClick={() => taskClick(id)}
               >
-                <i style={{ background: s.swatch }} />
-                {s.name}
+                {WINDOWS[id].task}
               </button>
             ))}
-          </fieldset>
-        </div>
-      )}
-
-      {deskMenu && (
-        <div className="deskmenu" role="menu" aria-label="Desktop" style={{ left: deskMenu.x, top: deskMenu.y }}>
-          <button
-            type="button"
-            role="menuitem"
-            // biome-ignore lint/a11y/noAutofocus: a context menu takes focus when it opens
-            autoFocus
-            onClick={() => {
-              setDeskMenu(null);
-              open("display");
-            }}
-          >
-            Change background…
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setDeskMenu(null);
-              startTransition(() => router.refresh());
-            }}
-          >
-            Refresh
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setDeskMenu(null);
-              nudgeInk("call");
-            }}
-          >
-            Call Ink over
-          </button>
-        </div>
-      )}
-
-      <Ink awake={awake} stats={cat} onStats={setCat} me={me} />
-
-      <footer className="task">
-        <button
-          ref={startBtn}
-          type="button"
-          className="start"
-          aria-haspopup="menu"
-          aria-expanded={startOpen}
-          aria-controls="startmenu"
-          onClick={() => setStartOpen((o) => !o)}
-        >
-          4me
-        </button>
-        <AddressBar path={path} me={me} />
-        <div className="tasks">
-          {visible.map((id) => (
+          </div>
+          <div className="tray">
+            {me && <Notifications me={me} />}
+            <span
+              className={`net net-${liveState}`}
+              title={liveState === "live" ? "Live: new notes appear by themselves" : "Reconnecting…"}
+              role="img"
+              aria-label={liveState === "live" ? "Live updates on" : "Reconnecting"}
+            />
+            <span className="hearts" title="Times readers have petted Ink">
+              <IconHeart />
+              {cat.pets.toLocaleString("en")}
+            </span>
+            <span className="state-dot" aria-hidden="true" />
+            <span>{awake ? "awake" : "asleep"}</span>
             <button
-              key={id}
               type="button"
-              className="tbtn"
-              aria-pressed={focus === id && !wins[id].min}
-              onClick={() => taskClick(id)}
+              className="preview"
+              aria-pressed={preview !== null}
+              onClick={() => setPreview(!awake)}
             >
-              {WINDOWS[id].task}
+              {awake ? "Preview daytime" : "Preview night"}
             </button>
-          ))}
-        </div>
-        <div className="tray">
-          {me && <Notifications me={me} />}
-          <span
-            className={`net net-${liveState}`}
-            title={liveState === "live" ? "Live: new notes appear by themselves" : "Reconnecting…"}
-            role="img"
-            aria-label={liveState === "live" ? "Live updates on" : "Reconnecting"}
-          />
-          <span className="hearts" title="Times readers have petted Ink">
-            <IconHeart />
-            {cat.pets.toLocaleString("en")}
-          </span>
-          <span className="state-dot" aria-hidden="true" />
-          <span>{awake ? "awake" : "asleep"}</span>
-          <button type="button" className="preview" aria-pressed={preview !== null} onClick={() => setPreview(!awake)}>
-            {awake ? "Preview daytime" : "Preview night"}
-          </button>
-          <span className="clock">{clock}</span>
-        </div>
-      </footer>
+            <span className="clock">{clock}</span>
+          </div>
+        </footer>
+        {rssOpen && <RssDialog owner={owner} onClose={() => setRssOpen(false)} />}
+      </ConfirmHost>
     </DeskContext.Provider>
+  );
+}
+
+/**
+ * What "RSS" means, in a message box: the feed's address to paste into a reader app, instead of the raw XML the
+ * browser would otherwise show.
+ */
+function RssDialog({ owner, onClose }: { owner: Profile | null; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const path = owner ? `/u/${owner.handle}/rss.xml` : "/rss.xml";
+  const url = `${typeof window === "undefined" ? "" : window.location.origin}${path}`;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+  return (
+    <Dialog
+      title={owner ? `Follow ${owner.name}'s diary` : "Follow 4me"}
+      onClose={onClose}
+      buttons={
+        <>
+          <button type="button" className="btn" onClick={() => void copy()}>
+            {copied ? "Copied" : "Copy address"}
+          </button>
+          <button type="button" className="btn ghost" onClick={onClose}>
+            Close
+          </button>
+        </>
+      }
+    >
+      <p>
+        {owner ? `Every new page ${owner.name} writes` : "Every new page on 4me"} can come to you in a feed reader
+        (Feedly, Inoreader, NetNewsWire, Reeder…), with no account here and nothing to check.
+      </p>
+      <p>Paste this address into the reader&apos;s &ldquo;add feed&rdquo; box:</p>
+      <input
+        className="field mb-copy"
+        readOnly
+        value={url}
+        aria-label="Feed address"
+        onFocus={(e) => e.currentTarget.select()}
+      />
+    </Dialog>
   );
 }

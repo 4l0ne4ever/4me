@@ -39,6 +39,12 @@ export function DeskPage({ data }: { data: DesktopData }) {
   const persona = owner;
   const pageWriter = owner ?? entry?.author ?? null;
   const [photoView, setPhotoView] = useState<number | null>(null);
+  /** The mood the archive is gathering nights by: picked there, or from a page's "Current mood". */
+  const [mood, setMood] = useState<string | null>(null);
+
+  // Another diary has other moods.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset whenever the diary changes
+  useEffect(() => setMood(null), [owner?.handle]);
 
   // Tell the computer what's on screen (for the live connection and Last.fm), and bring the page forward.
   useEffect(() => {
@@ -94,6 +100,10 @@ export function DeskPage({ data }: { data: DesktopData }) {
           onPhoto={showPhoto}
           onSong={() => open("amp")}
           onGuestbook={() => open("guest")}
+          onMood={(m) => {
+            setMood(m);
+            open("archive");
+          }}
         />
       </DeskWindow>
       <DeskWindow id="msn" title={pageWriter ? `Messenger — ${pageWriter.name}` : undefined}>
@@ -122,7 +132,7 @@ export function DeskPage({ data }: { data: DesktopData }) {
         id="archive"
         title={owner ? (owner.handle === me?.handle ? "My archive" : `${owner.name}'s archive`) : undefined}
       >
-        <Archive persona={owner} />
+        <Archive key={owner?.handle ?? "_"} persona={owner} mood={mood} onMood={setMood} />
       </DeskWindow>
       <DeskWindow id="almost" title={whose ? `${whose} almost posted` : undefined}>
         <Almost items={data.almost} persona={persona} />

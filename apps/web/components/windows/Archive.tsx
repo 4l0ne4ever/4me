@@ -27,11 +27,23 @@ function depth(d: Date): number {
   return night < 19 ? 1 : 0;
 }
 
+/** Moods are typed freely; "Drifting " and "drifting" are the same night. */
+export const moodKey = (m: string) => m.trim().toLowerCase();
+
 /**
  * The archive as a night sky, one sky per month: every page is a star, across by the day it was written and up by
  * how late in the night, brighter the more it was answered. Below the sky, the same pages as a plain list.
+ * Picking a mood gathers every night written in it, from every month, and dims the other stars.
  */
-export function Archive({ persona }: { persona: Author | null }) {
+export function Archive({
+  persona,
+  mood,
+  onMood,
+}: {
+  persona: Author | null;
+  mood: string | null;
+  onMood: (mood: string | null) => void;
+}) {
   const { navigate } = useDesk();
   const [stars, setStars] = useState<Star[] | null>(null);
   const [month, setMonth] = useState<string | null>(null);
@@ -63,6 +75,25 @@ export function Archive({ persona }: { persona: Author | null }) {
   const current = month ?? keys[0] ?? null;
   const shown = current ? (months.get(current) ?? []) : [];
   const at = current ? keys.indexOf(current) : -1;
+
+  /** Every mood written in, most-felt first, each spelled the way it was written most often. */
+  const moods = useMemo(() => {
+    const by = new Map<string, { label: string; n: number; spellings: Map<string, number> }>();
+    for (const s of stars ?? []) {
+      const k = moodKey(s.mood);
+      if (!k) continue;
+      const m = by.get(k) ?? { label: s.mood.trim(), n: 0, spellings: new Map() };
+      m.n++;
+      m.spellings.set(s.mood.trim(), (m.spellings.get(s.mood.trim()) ?? 0) + 1);
+      by.set(k, m);
+    }
+    return [...by.entries()]
+      .map(([k, m]) => ({ key: k, n: m.n, label: [...m.spellings].sort((a, b) => b[1] - a[1])[0]![0] }))
+      .sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
+  }, [stars]);
+  const picked = mood ? moodKey(mood) : null;
+  const pickedLabel = moods.find((m) => m.key === picked)?.label ?? mood?.trim() ?? "";
+  const felt = picked ? (stars ?? []).filter((s) => moodKey(s.mood) === picked) : [];
 
   // Pages written on this night in earlier years.
   const onThisNight = useMemo(() => {
@@ -103,6 +134,26 @@ export function Archive({ persona }: { persona: Author | null }) {
             </DeskLink>
           ))}
         </div>
+      )}
+      {moods.length > 0 && (
+        <fieldset className="arch-moods">
+          <legend>Nights by mood</legend>
+          <button type="button" className="arch-mood" aria-pressed={!picked} onClick={() => onMood(null)}>
+            every night
+          </button>
+          {moods.slice(0, 14).map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              className="arch-mood"
+              aria-pressed={picked === m.key}
+              onClick={() => onMood(picked === m.key ? null : m.label)}
+            >
+              {m.label}
+              <small>{m.n}</small>
+            </button>
+          ))}
+        </fieldset>
       )}
       <div className="arch-nav">
         <button type="button" className="btn" disabled={at >= keys.length - 1} onClick={() => setMonth(keys[at + 1]!)}>
@@ -154,7 +205,7 @@ export function Archive({ persona }: { persona: Author | null }) {
                 key={s.id}
                 role="link"
                 tabIndex={0}
-                className={`arch-star${s.sealedUntil ? " sealed" : ""}`}
+                className={`arch-star${s.sealedUntil ? " sealed" : ""}${picked && moodKey(s.mood) !== picked ? " dim" : ""}`}
                 aria-label={`${s.title}, ${shortDate(s.writtenAt)} ${hhmm(s.writtenAt)}${s.sealedUntil ? ", sealed" : ""}`}
                 onClick={() => open(s)}
                 onKeyDown={key(s)}
@@ -177,13 +228,41 @@ export function Archive({ persona }: { persona: Author | null }) {
         </p>
       </figure>
 
-      <ol className="arch-list">
+      {picked && (
+        <section className="arch-felt" aria-live="polite">
+          <h3>
+            {felt.length === 0
+              ? `No nights felt “${pickedLabel}” here yet.`
+              : `${felt.length} ${felt.length === 1 ? "night" : "nights"} that felt “${pickedLabel}”`}
+          </h3>
+          <ol className="arch-list">
+            {felt.map((s) => (
+              <li key={s.id}>
+                <time dateTime={s.writtenAt}>{shortDate(s.writtenAt)}</time>
+                <DeskLink href={`/u/${s.author.handle}/${s.slug}`}>{s.title}</DeskLink>
+                <small>
+                  {new Date(s.writtenAt).getFullYear()}
+                  {!persona && ` · ${s.author.name}`}
+                </small>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      <ol className="arch-list" hidden={Boolean(picked)}>
         {shown.map((s) => (
           <li key={s.id}>
             <time dateTime={s.writtenAt}>{shortDate(s.writtenAt)}</time>
             <DeskLink href={`/u/${s.author.handle}/${s.slug}`}>{s.title}</DeskLink>
             <small>
-              {s.sealedUntil ? `✉ sealed until ${shortDate(s.sealedUntil)}` : s.mood}
+              {s.sealedUntil ? (
+                `✉ sealed until ${shortDate(s.sealedUntil)}`
+              ) : s.mood ? (
+                <button type="button" className="linkish" onClick={() => onMood(s.mood)}>
+                  {s.mood}
+                </button>
+              ) : null}
               {!persona && ` · ${s.author.name}`}
             </small>
           </li>

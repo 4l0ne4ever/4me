@@ -219,3 +219,28 @@ export type CatStats = { pets: number; fish: number; plays: number };
 export type NowPlaying = { artist: string; title: string; url: string; image: string | null; live: boolean };
 
 export type ApiError = { error: string; issues?: unknown };
+
+/** Everything a member wrote, to take with them: what "Download my diary" packs into a zip. */
+export type DiaryExport = {
+  exportedAt: string;
+  writer: { name: string; handle: string; bio: string; joinedAt: string; lastfm: string | null };
+  pages: Array<{
+    title: string;
+    slug: string;
+    body: string;
+    mood: string;
+    weather: string;
+    writtenAt: string;
+    visibility: Visibility;
+    /** A sealed letter's opening time. */
+    opensAt: string | null;
+    song: { title: string; artist: string; url: string | null } | null;
+    photos: Photo[];
+    readCount: number;
+    /** What readers left on the page (visible notes only), oldest first. */
+    notes: Array<{ id: number; replyTo: number | null; name: string; body: string; at: string }>;
+  }>;
+  blasts: Array<{ body: string; at: string }>;
+  almost: Array<{ body: string; at: string }>;
+  guestbook: Array<{ name: string; body: string; at: string }>;
+};

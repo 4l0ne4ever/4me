@@ -136,6 +136,13 @@ export default function Privacy() {
         pages.
       </p>
 
+      <h2>Taking it with you</h2>
+      <p>
+        Signed in, open <b>Start → My account → Download my diary</b>. You get a zip of every page you wrote (private
+        ones and sealed letters too) as Markdown, with their photos, the notes readers left on them, your blasts, the
+        almost-posted bin and your guestbook. It is made in your browser and goes nowhere else.
+      </p>
+
       <h2>Deleting it</h2>
       <p>
         Signed in, open <b>Start → My account → Delete my account</b>. Your account, email, pages, photos, guestbook,

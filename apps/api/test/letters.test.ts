@@ -3,11 +3,12 @@ import { PGlite } from "@electric-sql/pglite";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import * as schema from "../src/db/schema";
 import type { DB } from "../src/db/types";
 import type { Bindings, Live } from "../src/env";
+import { lately } from "../src/lib/music";
 import { MemoryHub, type Socket } from "../src/live/memory";
 import { seedIfEmpty } from "../src/seed";
 
@@ -167,5 +168,30 @@ describe("whole songs", () => {
       call("/music/video?artist=Ngọt&title=Em%20Dạo%20Này", { internal: false }),
     );
     expect(res).toEqual({ videoId: "abcdef12345" });
+  });
+});
+
+describe("a writer's recent songs", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("is empty without Last.fm", async () => {
+    expect(await json(call("/recent-tracks?user=nobody", { internal: false }))).toEqual([]);
+  });
+
+  it("keeps each song once and leaves out the one playing now", async () => {
+    const track = (name: string, now = false) => ({
+      name,
+      url: `https://last.fm/${name}`,
+      artist: { "#text": "Ngọt" },
+      ...(now ? { "@attr": { nowplaying: "true" } } : {}),
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({ recenttracks: { track: [track("Live", true), track("A"), track("B"), track("A")] } }),
+      ),
+    );
+    const songs = await lately("key", "lastfm-user-for-test");
+    expect(songs.map((s) => s.title)).toEqual(["A", "B"]);
   });
 });

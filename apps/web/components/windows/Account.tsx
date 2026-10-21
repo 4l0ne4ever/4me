@@ -4,7 +4,15 @@ import { AVATARS, type Me, type MyNote } from "@4me/shared";
 import { type FormEvent, useEffect, useState, useTransition } from "react";
 import { signOut } from "@/app/welcome/actions";
 import { shortDate } from "@/lib/api";
-import { changePassword, deleteAccount, myNotes, signOutEverywhere, updateProfile } from "@/lib/member-actions";
+import { diaryZip } from "@/lib/diary-zip";
+import {
+  changePassword,
+  deleteAccount,
+  exportDiary,
+  myNotes,
+  signOutEverywhere,
+  updateProfile,
+} from "@/lib/member-actions";
 import { DeskLink } from "../DeskLink";
 
 type Msg = { kind: "ok" | "err"; text: string; field?: string } | null;
@@ -18,7 +26,7 @@ function Line({ msg }: { msg: Msg }) {
   );
 }
 
-/** My account: picture, name, my notes, password, and leaving. */
+/** My account: picture, name, my notes, password, taking the diary home, and leaving. */
 export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
   const [pending, start] = useTransition();
   const [name, setName] = useState(me.displayName);
@@ -30,6 +38,30 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
   const [pwMsg, setPwMsg] = useState<Msg>(null);
   const [confirm, setConfirm] = useState("");
   const [leaveMsg, setLeaveMsg] = useState<Msg>(null);
+  const [packing, setPacking] = useState<string | null>(null);
+  const [packMsg, setPackMsg] = useState<Msg>(null);
+
+  /** Asks for everything, fetches the photos, packs the zip and hands it to the browser to save. */
+  const takeHome = async () => {
+    setPackMsg(null);
+    setPacking("Gathering your pages…");
+    try {
+      const res = await exportDiary();
+      if (!res.ok) return setPackMsg({ kind: "err", text: res.error });
+      const blob = await diaryZip(res.diary, (done, total) => setPacking(`Packing photos… ${done} of ${total}`));
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `4me-${me.handle}.zip`;
+      a.click();
+      window.setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
+      const n = res.diary.pages.length;
+      setPackMsg({ kind: "ok", text: `Saved: ${n} ${n === 1 ? "page" : "pages"}, with their photos and notes.` });
+    } catch {
+      setPackMsg({ kind: "err", text: "The zip couldn't be made. Try again in a moment." });
+    } finally {
+      setPacking(null);
+    }
+  };
 
   useEffect(() => {
     void myNotes().then(setNotes);
@@ -250,6 +282,25 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
         </button>
         <Line msg={pwMsg} />
       </form>
+
+      <section className="acc-sec">
+        <h3>Take your diary home</h3>
+        <p className="acc-dim">
+          Every page you wrote (private ones and sealed letters too) as Markdown files, with their photos, the notes
+          readers left, your blasts, the almost-posted bin and your guestbook, in one zip. It&apos;s yours.
+        </p>
+        <div className="acc-row">
+          <button className="btn" type="button" disabled={packing !== null} onClick={() => void takeHome()}>
+            {packing ? "Packing…" : "Download my diary (.zip)"}
+          </button>
+          {packing && (
+            <span className="acc-dim" role="status">
+              {packing}
+            </span>
+          )}
+        </div>
+        <Line msg={packMsg} />
+      </section>
 
       <section className="acc-sec">
         <h3>Signing in</h3>

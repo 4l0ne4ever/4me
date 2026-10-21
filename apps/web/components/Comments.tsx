@@ -13,6 +13,7 @@ import {
   reportNoteAsMember,
 } from "@/lib/member-actions";
 import { DeskLink } from "./DeskLink";
+import { useConfirm } from "./Dialog";
 import { nudgeInk } from "./ink/Ink";
 import { ReactionBar, shift } from "./Reactions";
 import { Report } from "./Report";
@@ -257,6 +258,7 @@ function NoteItem({
  */
 export function Comments({ entry, initial, me }: { entry: Entry; initial: Note[]; me: Me | null }) {
   const [notes, setNotes] = useState(initial);
+  const confirm = useConfirm();
   const [mine, setMine] = useState<MyReactions>({ entry: null, notes: {} });
   const [replying, setReplying] = useState<number | null>(null);
   const isOwner = me?.handle === entry.author.handle;
@@ -310,7 +312,13 @@ export function Comments({ entry, initial, me }: { entry: Entry; initial: Note[]
   };
 
   const remove = async (note: Note) => {
-    if (!window.confirm("Delete this note and its replies?")) return;
+    const ok = await confirm({
+      title: "Delete note",
+      text: "Delete this note, and every reply under it? This can't be undone.",
+      ok: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     const res = await deleteNote(note.id);
     if (res.ok) setNotes((l) => l.filter((x) => x.id !== note.id && x.parentId !== note.id));
   };

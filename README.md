@@ -58,7 +58,9 @@ picked song is one of Apple's own (`*.apple.com`, `*.mzstatic.com`) before stori
 preview on the page. The Mixtape plays whole songs through YouTube's embedded player: the API looks each song up
 once with the YouTube Data API (`GET /music/video`, key kept as the Worker secret `YOUTUBE_API_KEY`) and remembers
 the answer in `song_videos`, so the free quota (about 100 searches a day) goes a long way. Without the key, or when
-no video is found, it falls back to the preview. The writer's Last.fm song is in the Mixtape too.
+no video is found, it falls back to the preview. A writer who linked Last.fm also has what they are playing now
+and their last ten different songs in their Mixtape (`GET /recent-tracks`). Only the song about to play is looked up
+on YouTube, to spare the quota.
 
 **Photos** are shrunk in the browser to 2048 px JPEG (which also applies their rotation and drops EXIF and GPS),
 then sent straight to the API with a ten-minute upload ticket signed by the web server. The API checks it is a JPEG,
@@ -117,10 +119,11 @@ A blog, not a social network, so the extras stay quiet:
   Worker (every ten minutes) tells its writer and subscribers.
 - **The archive is a night sky.** *Archive* shows a diary month by month, each page a star: across by the day,
   up by how late in the night it was written (17:00 at the horizon, 06:00 at the top), brighter the more it was
-  answered. Above it, *On this night*: pages written on this date in earlier years. The same pages are listed below
-  in plain text.
-- **Lit windows.** A pixel skyline at the foot of the desktop has one lit window for everyone with 4me open right
-  now (only a count; nobody is named).
+  answered. Above it, *On this night*: pages written on this date in earlier years, and *Nights by mood*: pick a mood
+  (or press a page's "Current mood") to gather every night written in it, from every month. The same pages are
+  listed below in plain text.
+- **Lit windows.** A row of tube houses across the street sits at the foot of the desktop, with one lit window for
+  everyone with 4me open right now (only a count; nobody is named). Hover or tap it to read what the lights mean.
 - **Link previews** are drawn per page, diary and front page as a 2006 window with the date, title, mood, a few
   words, the song and the first photo (`opengraph-image.tsx`, fonts in `app/og-fonts`, Vietnamese included).
 
@@ -153,7 +156,9 @@ their own pages, but can't write, and their desktop is closed.
 when it is configured. Every account gets a desktop address made from its name (`Đêm mưa` → `/u/dem_mua`).
 Signed-in readers write under their own name with their picture, and nobody else (signed in or not) can use that
 name. *Start → My account* changes the picture, name, desktop address, the line about them and their Last.fm
-username, lists their notes, changes or sets a password, logs off on every device, or deletes the account (with
+username, lists their notes, changes or sets a password, downloads the whole diary as a zip (every page as Markdown,
+private ones too, with photos, notes, blasts, the bin and the guestbook, plus `diary.json`; the browser packs it from
+`/internal/users/:id/export`), logs off on every device, or deletes the account (with
 their pages and photos; notes on other people's pages stay, signed "a former reader").
 
 How it is built: the **web server** does the authentication (scrypt hashing, Google's code flow with PKCE, the session

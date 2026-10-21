@@ -57,6 +57,7 @@ import {
   readableEntry,
   threadOf,
 } from "../lib/entries";
+import { diaryExport } from "../lib/export";
 import { allow, allowKey, humanCheck, isReservedName, looksLikeSpam, sameSecret, sha256 } from "../lib/guard";
 import { isSealed, toAlmost, toAuthor, toBlast, toEntry, toNote, toShout, toSummary } from "../lib/map";
 import { notify, publish, quote, recentNotifications } from "../lib/notify";
@@ -996,4 +997,12 @@ export const internalRoutes = new Hono<AppEnv>()
         .where(eq(users.id, reset.userId));
       return c.json({ ok: true });
     },
-  );
+  )
+  /** Everything the member wrote, to take with them. Heavy, so a few times an hour at most. */
+  .get("/users/:id/export", async (c) => {
+    const id = userId(c.req.param("id"));
+    if (!id) return c.json({ error: "not found" }, 404);
+    if (!(await allowKey(c, `export:${id}`, 6, 3600))) return c.json({ error: "try again in a little while" }, 429);
+    const diary = await diaryExport(c, id);
+    return diary ? c.json(diary) : c.json({ error: "not found" }, 404);
+  });

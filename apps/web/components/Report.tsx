@@ -2,6 +2,7 @@
 
 import type { Me } from "@4me/shared";
 import { useState } from "react";
+import { Dialog } from "./Dialog";
 import { useTurnstile } from "./Turnstile";
 
 const REASONS = [
@@ -12,10 +13,11 @@ const REASONS = [
 ] as const;
 
 type Result = { ok: true } | { ok: false; error: string };
+type Send = (reason: string, turnstileToken: string | undefined) => Promise<Result>;
 
 /**
- * "report": a small link that opens a reason picker. Members are counted by account; guests pass Turnstile.
- * Three different readers take a page or a note down until the moderator looks.
+ * "report": a small link that opens a message box with the reasons. Members are counted by account; guests pass
+ * Turnstile. Three different readers take a page or a note down until the moderator looks.
  */
 export function Report({
   me,
@@ -25,34 +27,64 @@ export function Report({
   me: Me | null;
   /** "page" or "note", for the question. */
   what: string;
-  send: (reason: string, turnstileToken: string | undefined) => Promise<Result>;
+  send: Send;
 }) {
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
-  const [error, setError] = useState<string | null>(null);
-  const human = useTurnstile();
-  if (state === "done") return <span className="d-reported">Thanks. The moderator will look at it.</span>;
-  if (!open)
-    return (
+  const [done, setDone] = useState(false);
+  if (done) return <span className="d-reported">Thanks. The moderator will look at it.</span>;
+  return (
+    <>
       <button type="button" className="linkish" onClick={() => setOpen(true)}>
         report
       </button>
-    );
+      {open && (
+        <Dialog title={`Report this ${what}`} tone="warn" onClose={() => setOpen(false)}>
+          <ReportForm
+            me={me}
+            what={what}
+            send={send}
+            onCancel={() => setOpen(false)}
+            onDone={() => {
+              setOpen(false);
+              setDone(true);
+            }}
+          />
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+/** The reasons, inside the box. Mounted only while the box is open, so Turnstile draws into it. */
+function ReportForm({
+  me,
+  what,
+  send,
+  onCancel,
+  onDone,
+}: {
+  me: Me | null;
+  what: string;
+  send: Send;
+  onCancel: () => void;
+  onDone: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const human = useTurnstile();
   return (
     <form
-      className="d-report"
+      className="mb-form"
       onSubmit={async (e) => {
         e.preventDefault();
         if (!reason) return setError("pick a reason");
-        setState("busy");
+        setBusy(true);
         const res = await send(reason, me ? undefined : human.token);
         if (!me) human.reset();
-        if (!res.ok) {
-          setState("idle");
-          return setError(res.error);
-        }
-        setState("done");
+        setBusy(false);
+        if (!res.ok) return setError(res.error);
+        onDone();
       }}
     >
       <fieldset>
@@ -70,20 +102,24 @@ export function Report({
           </label>
         ))}
       </fieldset>
+      <p className="mb-note">
+        Only the moderator sees reports. When three different readers report the same {what}, it is hidden until the
+        moderator looks.
+      </p>
       {!me && human.widget}
       {error && (
         <p className="err" role="alert">
           {error}
         </p>
       )}
-      <span className="acc-row">
-        <button className="btn" type="submit" disabled={state === "busy" || (!me && human.needed && !human.token)}>
+      <div className="mb-btns">
+        <button className="btn" type="submit" disabled={busy || (!me && human.needed && !human.token)}>
           Send report
         </button>
-        <button type="button" className="btn" onClick={() => setOpen(false)}>
+        <button type="button" className="btn ghost" onClick={onCancel}>
           Cancel
         </button>
-      </span>
+      </div>
     </form>
   );
 }

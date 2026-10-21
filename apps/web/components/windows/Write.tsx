@@ -18,6 +18,7 @@ import {
   saveEntry,
 } from "@/lib/writer-actions";
 import { DeskLink } from "../DeskLink";
+import { useConfirm } from "../Dialog";
 import { type DraftPhoto, PhotoPicker } from "../PhotoPicker";
 import { type PickedSong, SongPicker } from "../SongPicker";
 
@@ -154,6 +155,7 @@ export function Write({
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const [pending, start] = useTransition();
+  const confirm = useConfirm();
   const [mine, setMine] = useState<MyEntry[] | null>(null);
   const [blasts, setBlasts] = useState<Blast[] | null>(null);
   const [bin, setBin] = useState<Almost[] | null>(null);
@@ -275,8 +277,14 @@ export function Write({
     });
   };
 
-  const remove = (id: number, title: string) => {
-    if (!window.confirm(`Delete “${title}” and its photos? This can't be undone.`)) return;
+  const remove = async (id: number, title: string) => {
+    const ok = await confirm({
+      title: "Delete page",
+      text: `Delete “${title}” and its photos? Its notes and reactions go with it. This can't be undone.`,
+      ok: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     start(async () => {
       const res = await deleteEntry(id);
       if (!res.ok) return setMsg({ kind: "err", text: res.error });
@@ -519,7 +527,7 @@ export function Write({
                 >
                   New page
                 </button>
-                <button type="button" className="btn buzz" onClick={() => remove(editing, draft.title)}>
+                <button type="button" className="btn buzz" onClick={() => void remove(editing, draft.title)}>
                   Delete
                 </button>
               </>
@@ -559,7 +567,7 @@ export function Write({
                   >
                     Edit
                   </button>
-                  <button type="button" className="btn" onClick={() => remove(e.id, e.title)}>
+                  <button type="button" className="btn" onClick={() => void remove(e.id, e.title)}>
                     Delete
                   </button>
                 </span>

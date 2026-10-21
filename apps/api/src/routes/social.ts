@@ -6,7 +6,7 @@ import type { AppEnv } from "../env";
 import { isReadable } from "../lib/entries";
 import { allow, humanCheck, ipHash, looksLikeSpam } from "../lib/guard";
 import { toAlmost, toAuthor, toBlast, toShout } from "../lib/map";
-import { nowPlaying } from "../lib/music";
+import { lately, nowPlaying } from "../lib/music";
 import { anonymousNameProblem } from "../lib/names";
 import { notify, publish } from "../lib/notify";
 import { json } from "../lib/validate";
@@ -148,6 +148,14 @@ export const socialRoutes = new Hono<AppEnv>()
     const lastfm = handle ? (await activeMember(c, handle))?.lastfmUser : c.env.LASTFM_USER;
     const value = await nowPlaying(c.env.LASTFM_API_KEY, lastfm || undefined);
     c.header("Cache-Control", "public, max-age=30, s-maxage=30");
+    return c.json(value);
+  })
+  /** `?user=<handle>`: that member's last few songs on Last.fm, for their mixtape. */
+  .get("/recent-tracks", async (c) => {
+    const handle = c.req.query("user");
+    const lastfm = handle ? (await activeMember(c, handle))?.lastfmUser : null;
+    const value = await lately(c.env.LASTFM_API_KEY, lastfm || undefined);
+    c.header("Cache-Control", "public, max-age=60, s-maxage=60");
     return c.json(value);
   })
   /** `photos` says whether the photo bucket is configured (S3_* secrets), without saying anything about them. */

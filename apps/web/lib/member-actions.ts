@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  type DiaryExport,
   type EntrySummary,
   editNoteInput,
   type InkState,
@@ -262,4 +263,15 @@ export async function deleteAccount(confirmName: string): Promise<Fail | undefin
   revalidatePath("/", "layout");
   await endSession();
   redirect("/?goodbye=1");
+}
+
+/** Everything the member wrote, for "Download my diary"; the browser fetches the photos and packs the zip. */
+export async function exportDiary(): Promise<Ok<{ diary: DiaryExport }> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  try {
+    return { ok: true, diary: await internalApi<DiaryExport>(`/users/${me.id}/export`) };
+  } catch (e) {
+    return fail(e);
+  }
 }

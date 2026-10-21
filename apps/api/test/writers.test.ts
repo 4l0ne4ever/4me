@@ -284,6 +284,26 @@ describe("suspension", () => {
   });
 });
 
+describe("taking a diary home", () => {
+  it("gives a member everything they wrote, private pages too, and nobody else's", async () => {
+    const res = await call(`/internal/users/${mai.id}/export`);
+    expect(res.status).toBe(200);
+    const diary = (await res.json()) as {
+      writer: { handle: string };
+      pages: Array<{ title: string; visibility: string }>;
+    };
+    expect(diary.writer.handle).toBe("mai");
+    expect(diary.pages.some((p) => p.title === "only me" && p.visibility === "private")).toBe(true);
+    const own = (await (await call(`/internal/users/${khoa.id}/entries`)).json()) as unknown[];
+    const theirs = (await (await call(`/internal/users/${khoa.id}/export`)).json()) as { pages: unknown[] };
+    expect(theirs.pages).toHaveLength(own.length);
+  });
+
+  it("is only for the web server", async () => {
+    expect((await call(`/internal/users/${mai.id}/export`, { internal: false })).status).toBe(401);
+  });
+});
+
 describe("leaving", () => {
   it("deletes a member's pages and photos with their account", async () => {
     const { path } = (await (await upload(ticket(mai.id))).json()) as { path: string };

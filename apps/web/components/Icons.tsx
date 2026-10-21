@@ -60,6 +60,14 @@ export const IconDisplay = ({ className }: P) => (
     <rect x="11" y="31" width="18" height="2" fill="#8d96a3" />
   </svg>
 );
+export const IconRss = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <rect x="5" y="5" width="30" height="30" rx="5" fill="#e8892f" />
+    <circle cx="13" cy="27" r="3" fill="#fff" />
+    <path d="M10 18a12 12 0 0 1 12 12h-4a8 8 0 0 0-8-8z" fill="#fff" />
+    <path d="M10 10a20 20 0 0 1 20 20h-4a16 16 0 0 0-16-16z" fill="#fff" />
+  </svg>
+);
 export const IconWrite = ({ className }: P) => (
   <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
     <rect x="7" y="5" width="22" height="30" fill="#f6f1e6" />
