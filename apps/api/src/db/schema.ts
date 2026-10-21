@@ -1,5 +1,6 @@
 import type { InkState, Photo, Visibility } from "@4me/shared";
 import {
+  type AnyPgColumn,
   bigint,
   boolean,
   index,
@@ -37,6 +38,8 @@ export const entries = pgTable(
     /** The music search id the song was picked by, so saving again needs no lookup. */
     songId: bigint("song_id", { mode: "number" }),
     photos: jsonb("photos").$type<Photo[]>().notNull().default([]),
+    /** Title and body as search compares them (lower-case, no accents). */
+    searchText: text("search_text").notNull().default(""),
     visibility: text("visibility").$type<Visibility>().notNull().default("public"),
     /** "hidden" by the site's moderator, or by enough reports; only the author still sees it. */
     status: text("status").$type<"visible" | "hidden">().notNull().default("visible"),
@@ -66,6 +69,8 @@ export const users = pgTable(
     /** The address of their desktop, /u/<handle>. */
     handle: text("handle").notNull(),
     bio: text("bio").notNull().default(""),
+    /** Name and handle as search compares them. */
+    searchName: text("search_name").notNull().default(""),
     lastfmUser: text("lastfm_user").notNull().default(""),
     status: text("status").$type<"active" | "suspended">().notNull().default("active"),
     passwordHash: text("password_hash"),
@@ -113,15 +118,22 @@ export const notes = pgTable(
     entryId: integer("entry_id")
       .notNull()
       .references(() => entries.id, { onDelete: "cascade" }),
+    /** A reply's top-level note. Replies are one level deep; deleting a note deletes its replies. */
+    parentId: integer("parent_id").references((): AnyPgColumn => notes.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     body: text("body").notNull(),
     isAuthor: boolean("is_author").notNull().default(false),
     userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
     status: text("status").$type<"visible" | "hidden" | "pending">().notNull().default("visible"),
     ipHash: text("ip_hash"),
+    editedAt: timestamp("edited_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => [index("notes_entry_created_idx").on(t.entryId, t.createdAt), index("notes_user_idx").on(t.userId)],
+  (t) => [
+    index("notes_entry_created_idx").on(t.entryId, t.createdAt),
+    index("notes_user_idx").on(t.userId),
+    index("notes_parent_idx").on(t.parentId),
+  ],
 );
 
 export const shouts = pgTable(
@@ -174,6 +186,50 @@ export const reports = pgTable(
   (t) => [uniqueIndex("reports_entry_reporter_idx").on(t.entryId, t.reporter)],
 );
 
+/** One report per reader per note; three different readers hide the note until the moderator looks. */
+export const noteReports = pgTable(
+  "note_reports",
+  {
+    id: serial("id").primaryKey(),
+    noteId: integer("note_id")
+      .notNull()
+      .references(() => notes.id, { onDelete: "cascade" }),
+    reporter: text("reporter").notNull(),
+    reason: text("reason").$type<"spam" | "hurtful" | "private" | "other">().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("note_reports_note_reporter_idx").on(t.noteId, t.reporter)],
+);
+
+/** Subscriptions to a diary, like a blog's: subscribers hear when it has a new page, and see it in their list. */
+export const follows = pgTable(
+  "follows",
+  {
+    followerId: integer("follower_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    followeeId: integer("followee_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.followerId, t.followeeId] }), index("follows_followee_idx").on(t.followeeId)],
+);
+
+/** One reaction per reader per page or note: a member ("u:<id>") or a guest (their hashed IP). */
+export const reactions = pgTable(
+  "reactions",
+  {
+    id: serial("id").primaryKey(),
+    target: text("target").$type<"entry" | "note">().notNull(),
+    targetId: integer("target_id").notNull(),
+    reactor: text("reactor").notNull(),
+    kind: text("kind").$type<"love" | "hug" | "haha" | "wow" | "sad" | "moon">().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("reactions_target_reactor_idx").on(t.target, t.targetId, t.reactor)],
+);
+
 /** Every photo a member uploaded, for their storage quota and to clean up after them. */
 export const uploads = pgTable(
   "uploads",
@@ -196,7 +252,7 @@ export const notifications = pgTable(
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    kind: text("kind").$type<"note" | "pending" | "reply" | "shout" | "buzz">().notNull(),
+    kind: text("kind").$type<"note" | "pending" | "reply" | "shout" | "buzz" | "reaction" | "post">().notNull(),
     text: text("text").notNull(),
     link: text("link").notNull(),
     actorName: text("actor_name"),

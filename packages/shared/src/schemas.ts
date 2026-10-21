@@ -8,16 +8,46 @@ const name = z
   .max(32)
   .transform((v) => v || "a stranger");
 
-/** Public writes: a note on an entry, a shout in the guestbook. */
+/** Public writes: a note on an entry (or a reply to one), a shout in the guestbook. */
 export const noteInput = z.object({
   name: name.default("a stranger"),
   body: z.string().trim().min(1).max(500),
+  parentId: z.number().int().positive().optional(),
   turnstileToken: z.string().max(2048).optional(),
 });
 export type NoteInput = z.input<typeof noteInput>;
 
 /** A signed-in reader writes under their own name, so only the text is needed. */
-export const memberNoteInput = z.object({ body: z.string().trim().min(1).max(500) });
+export const memberNoteInput = z.object({
+  body: z.string().trim().min(1).max(500),
+  parentId: z.number().int().positive().optional(),
+});
+
+/** How a reader feels about a page or a note: one at a time, like Yahoo 360 smileys. */
+export const REACTIONS = [
+  { id: "love", emoji: "❤️", label: "Love" },
+  { id: "hug", emoji: "🤗", label: "Hug" },
+  { id: "haha", emoji: "😂", label: "Haha" },
+  { id: "wow", emoji: "😮", label: "Wow" },
+  { id: "sad", emoji: "😢", label: "Sad" },
+  { id: "moon", emoji: "🌙", label: "Goodnight" },
+] as const;
+export type ReactionKind = (typeof REACTIONS)[number]["id"];
+export const reactionKind = z.enum(REACTIONS.map((r) => r.id) as [ReactionKind, ...ReactionKind[]]);
+/** Counts per kind; kinds nobody chose are left out. */
+export type Reactions = Partial<Record<ReactionKind, number>>;
+/** `kind: null` takes the reader's reaction back. */
+export const reactInput = z.object({
+  kind: reactionKind.nullable(),
+  turnstileToken: z.string().max(2048).optional(),
+});
+export const editNoteInput = z.object({ body: z.string().trim().min(1).max(500) });
+
+export const memberReactInput = z.object({
+  target: z.enum(["entry", "note"]),
+  targetId: z.number().int().positive(),
+  kind: reactionKind.nullable(),
+});
 export const memberShoutInput = z.object({ body: z.string().trim().min(1).max(280), owner: handle.optional() });
 
 /** `owner` signs that member's guestbook; without it, the shared one on the front desktop. */
@@ -105,7 +135,7 @@ export type SongResult = {
 export type Author = { handle: string; name: string; avatar: string };
 
 /** A member's desktop, as the public sees it. */
-export type Profile = Author & { bio: string; since: string; nights: number };
+export type Profile = Author & { bio: string; since: string; nights: number; subscribers: number };
 
 export type Photo = z.infer<typeof photo>;
 
@@ -124,6 +154,7 @@ export type EntrySummary = {
 
 export type Entry = EntrySummary & {
   body: string;
+  reactions: Reactions;
   photos: Photo[];
   visibility: Visibility;
   readCount: number;
@@ -132,7 +163,26 @@ export type Entry = EntrySummary & {
 
 /** `member` is set when a signed-in reader wrote it: their avatar and desktop, and the name is theirs alone. */
 export type Member = { avatar: string; handle: string } | null;
-export type Note = { id: number; name: string; body: string; isAuthor: boolean; member: Member; createdAt: string };
+export type Note = {
+  id: number;
+  /** The note this one answers; replies are one level deep, so this is always a top-level note. */
+  parentId: number | null;
+  name: string;
+  body: string;
+  isAuthor: boolean;
+  member: Member;
+  reactions: Reactions;
+  createdAt: string;
+  /** Set when the writer changed it after posting. */
+  editedAt: string | null;
+};
+
+/** A diary a member subscribed to: whose, and when they last wrote. */
+export type Subscription = Author & { lastWroteAt: string | null };
+
+export type SearchResults = { people: Array<Author & { bio: string }>; pages: EntrySummary[] };
+/** Which reaction this reader left, on the page and on each of its notes. */
+export type MyReactions = { entry: ReactionKind | null; notes: Record<number, ReactionKind> };
 export type Shout = { id: number; name: string; body: string; member: Member; createdAt: string };
 /** A member's own page, for the list in their Notepad. */
 export type MyEntry = {

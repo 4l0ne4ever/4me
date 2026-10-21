@@ -1,12 +1,27 @@
 "use client";
 
-import { type Entry, type EntrySummary, type Inline, type Me, type Profile, parseBody } from "@4me/shared";
-import Link from "next/link";
+import {
+  type Entry,
+  type EntrySummary,
+  type Inline,
+  type Me,
+  type MyReactions,
+  type Note,
+  type Profile,
+  parseBody,
+  type ReactionKind,
+} from "@4me/shared";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
-import { apiSend, hhmm, longDate } from "@/lib/api";
+import { API_URL, apiSend, hhmm, longDate } from "@/lib/api";
+import { useLiveEvent } from "@/lib/live";
+import { myReactions, reactAsMember } from "@/lib/member-actions";
 import { reportAsMember } from "@/lib/writer-actions";
+import { Comments } from "../Comments";
+import { DeskLink } from "../DeskLink";
 import { Eq, IconPause, IconPlay } from "../Icons";
-import { useTurnstile } from "../Turnstile";
+import { ReactionBar, shift } from "../Reactions";
+import { Report } from "../Report";
+import { Subscribe } from "../Subscribe";
 
 function Inlines({ parts }: { parts: Inline[] }) {
   return (
@@ -28,72 +43,6 @@ function Inlines({ parts }: { parts: Inline[] }) {
 }
 
 const TILTS = ["-4deg", "5deg", "-2deg", "3deg"];
-
-const REASONS = [
-  ["spam", "Spam or advertising"],
-  ["hurtful", "Hurtful, hateful or threatening"],
-  ["private", "Shares someone's private information"],
-  ["other", "Something else that shouldn't be here"],
-] as const;
-
-/** "Report this page": members are counted by account, guests pass Turnstile. Three readers hide a page. */
-function Report({ entryId, me }: { entryId: number; me: Me | null }) {
-  const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState<string>("");
-  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
-  const [error, setError] = useState<string | null>(null);
-  const human = useTurnstile();
-  if (state === "done") return <span className="d-reported">Thanks. The moderator will look at it.</span>;
-  if (!open)
-    return (
-      <button type="button" className="linkish" onClick={() => setOpen(true)}>
-        report
-      </button>
-    );
-  return (
-    <form
-      className="d-report"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        if (!reason) return setError("pick a reason");
-        setState("busy");
-        const res = me
-          ? await reportAsMember(entryId, reason)
-          : await apiSend(`/entries/${entryId}/report`, { reason, turnstileToken: human.token });
-        if (!me) human.reset();
-        if (!res.ok) {
-          setState("idle");
-          return setError(res.error);
-        }
-        setState("done");
-      }}
-    >
-      <fieldset>
-        <legend>What&apos;s wrong with this page?</legend>
-        {REASONS.map(([id, label]) => (
-          <label key={id}>
-            <input type="radio" name="reason" value={id} checked={reason === id} onChange={() => setReason(id)} />
-            {label}
-          </label>
-        ))}
-      </fieldset>
-      {!me && human.widget}
-      {error && (
-        <p className="err" role="alert">
-          {error}
-        </p>
-      )}
-      <span className="acc-row">
-        <button className="btn" type="submit" disabled={state === "busy" || (!me && human.needed && !human.token)}>
-          Send report
-        </button>
-        <button type="button" className="btn" onClick={() => setOpen(false)}>
-          Cancel
-        </button>
-      </span>
-    </form>
-  );
-}
 
 /** The song ticket plays the page's 30-second preview, the way a song sticker does. */
 function useClip(url: string | null | undefined) {
@@ -129,18 +78,53 @@ function useClip(url: string | null | undefined) {
 type Props = {
   entry: Entry | null;
   entries: EntrySummary[];
+  notes: Note[];
   owner: Profile | null;
   awake: boolean;
   me: Me | null;
   onEdit: (id: number) => void;
   onPhoto: (url: string) => void;
   onSong: () => void;
-  onNotes: () => void;
   onGuestbook: () => void;
 };
 
-export function Diary({ entry, entries, owner, awake, me, onEdit, onPhoto, onSong, onNotes, onGuestbook }: Props) {
+/** The page's own reactions: counts for everyone, the reader's own choice, kept live. */
+function useEntryReactions(entry: Entry | null, me: Me | null) {
+  const [counts, setCounts] = useState(entry?.reactions ?? {});
+  const [mine, setMine] = useState<ReactionKind | null>(null);
+  useEffect(() => {
+    if (!entry) return;
+    let live = true;
+    const load: Promise<MyReactions> = me
+      ? myReactions(entry.id)
+      : fetch(`${API_URL}/entries/${entry.id}/reactions/mine`)
+          .then((r) => (r.ok ? r.json() : { entry: null, notes: {} }))
+          .catch(() => ({ entry: null, notes: {} }));
+    void load.then((m) => live && setMine(m.entry));
+    return () => {
+      live = false;
+    };
+  }, [entry, me]);
+  useLiveEvent((e) => {
+    if (e.type === "reactions" && e.target === "entry" && e.targetId === entry?.id) setCounts(e.reactions);
+  });
+  const pick = async (kind: ReactionKind | null) => {
+    if (!entry) return;
+    setCounts((c) => shift(c, mine, kind));
+    setMine(kind);
+    const res = me
+      ? await reactAsMember("entry", entry.id, kind)
+      : await apiSend<{ reactions: Entry["reactions"] }>(`/entries/${entry.id}/react`, { kind }).then((r) =>
+          r.ok ? { ok: true as const, ...r.data } : { ok: false as const },
+        );
+    if (res.ok) setCounts(res.reactions);
+  };
+  return { counts, mine, pick };
+}
+
+export function Diary({ entry, entries, notes, owner, awake, me, onEdit, onPhoto, onSong, onGuestbook }: Props) {
   const clip = useClip(entry?.song?.previewUrl);
+  const feelings = useEntryReactions(entry, me);
   if (!entry) {
     const mine = owner && me?.handle === owner.handle;
     return (
@@ -175,14 +159,16 @@ export function Diary({ entry, entries, owner, awake, me, onEdit, onPhoto, onSon
         </div>
       )}
       <div className="d-by">
-        <Link href={`/u/${entry.author.handle}`} className="d-author">
+        <DeskLink href={`/u/${entry.author.handle}`} className="d-author">
           <img src={entry.author.avatar} alt="" width={28} height={28} />
           {entry.author.name}
-        </Link>
-        {own && (
+        </DeskLink>
+        {own ? (
           <button type="button" className="btn" onClick={() => onEdit(entry.id)}>
             Edit this page
           </button>
+        ) : (
+          <Subscribe author={entry.author} />
         )}
       </div>
       <span className="d-date">
@@ -280,10 +266,31 @@ export function Diary({ entry, entries, owner, awake, me, onEdit, onPhoto, onSon
           )}
         </div>
       </div>
+      <div className="d-feel">
+        <ReactionBar
+          counts={feelings.counts}
+          mine={feelings.mine}
+          onPick={(k) => void feelings.pick(k)}
+          label="this page"
+        />
+      </div>
       <div className="d-foot">
-        <span>{older && <Link href={link(older)}>« {older.title}</Link>}</span>
+        <span>{older && <DeskLink href={link(older)}>« {older.title}</DeskLink>}</span>
         <span>
-          <button type="button" className="linkish" onClick={onNotes}>
+          <button
+            type="button"
+            className="linkish"
+            onClick={() => {
+              // Scroll inside the diary window only; scrolling the page would move the whole desktop.
+              const notes = document.getElementById("notes");
+              const box = notes?.closest<HTMLElement>(".body");
+              if (notes && box)
+                box.scrollTo({
+                  top: box.scrollTop + notes.getBoundingClientRect().top - box.getBoundingClientRect().top - 12,
+                  behavior: "smooth",
+                });
+            }}
+          >
             {entry.noteCount} notes
           </button>{" "}
           ·{" "}
@@ -293,17 +300,28 @@ export function Diary({ entry, entries, owner, awake, me, onEdit, onPhoto, onSon
           {!own && (
             <>
               {" "}
-              · <Report key={entry.id} entryId={entry.id} me={me} />
+              ·{" "}
+              <Report
+                key={entry.id}
+                me={me}
+                what="page"
+                send={(reason, turnstileToken) =>
+                  me
+                    ? reportAsMember(entry.id, reason)
+                    : apiSend(`/entries/${entry.id}/report`, { reason, turnstileToken })
+                }
+              />
             </>
           )}
           {newer && (
             <>
               {" "}
-              · <Link href={link(newer)}>{newer.title} »</Link>
+              · <DeskLink href={link(newer)}>{newer.title} »</DeskLink>
             </>
           )}
         </span>
       </div>
+      <Comments key={entry.id} entry={entry} initial={notes} me={me} />
     </div>
   );
 }

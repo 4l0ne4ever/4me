@@ -1,8 +1,8 @@
-import { type entryInput, slugify } from "@4me/shared";
+import { type entryInput, searchable, slugify } from "@4me/shared";
 import { and, eq, gt, inArray, lt, sql } from "drizzle-orm";
 import type { Context } from "hono";
 import type { z } from "zod";
-import { entries, reports, uploads, users } from "../db/schema";
+import { entries, noteReports, notes, reports, uploads, users } from "../db/schema";
 import type { AppEnv } from "../env";
 
 // Written out with explicit table names: inside the subquery an unqualified "id" would mean notes.id.
@@ -83,6 +83,7 @@ export async function entryValues(
     writtenAt,
     photos: input.photos,
     visibility: input.visibility,
+    searchText: searchable(`${input.title} ${input.body}`),
     updatedAt: new Date(),
   };
   if (input.song === null) {
@@ -138,6 +139,48 @@ export async function dropAbandonedUploads(c: Context<AppEnv>, userId: number) {
 
 export const photoKeys = (photos: { url: string }[]) =>
   photos.filter((p) => p.url.startsWith("/media/")).map((p) => p.url.slice("/media/".length));
+
+/**
+ * The top-level note a reply belongs to: replying to a reply answers its thread. Null when the note isn't a
+ * visible note on this page.
+ */
+export async function threadOf(c: Context<AppEnv>, entryId: number, parentId: number) {
+  const [parent] = await c
+    .get("db")
+    .select({ id: notes.id, parentId: notes.parentId, userId: notes.userId, name: notes.name })
+    .from(notes)
+    .where(and(eq(notes.id, parentId), eq(notes.entryId, entryId), eq(notes.status, "visible")))
+    .limit(1);
+  if (!parent) return null;
+  if (!parent.parentId) return parent;
+  return { ...parent, id: parent.parentId };
+}
+
+/** Records one report per reader per note, and hides the note once three different readers have reported it. */
+export async function fileNoteReport(
+  c: Context<AppEnv>,
+  noteId: number,
+  reporter: string,
+  reason: (typeof noteReports.$inferInsert)["reason"],
+): Promise<{ entryId: number; hidden: boolean } | null> {
+  const db = c.get("db");
+  const [note] = await db
+    .select({ id: notes.id, entryId: notes.entryId })
+    .from(notes)
+    .innerJoin(entries, eq(entries.id, notes.entryId))
+    .innerJoin(users, eq(users.id, entries.authorId))
+    .where(and(isReadable, eq(notes.id, noteId), eq(notes.status, "visible")))
+    .limit(1);
+  if (!note) return null;
+  await db.insert(noteReports).values({ noteId, reporter, reason }).onConflictDoNothing();
+  const [{ n } = { n: 0 }] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(noteReports)
+    .where(eq(noteReports.noteId, noteId));
+  const hidden = n >= REPORTS_TO_HIDE;
+  if (hidden) await db.update(notes).set({ status: "hidden" }).where(eq(notes.id, noteId));
+  return { entryId: note.entryId, hidden };
+}
 
 /** This many different readers reporting a page takes it down until the moderator has looked. */
 export const REPORTS_TO_HIDE = 3;

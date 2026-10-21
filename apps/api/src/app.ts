@@ -9,6 +9,7 @@ import { entryRoutes } from "./routes/entries";
 import { internalRoutes } from "./routes/internal";
 import { liveRoutes } from "./routes/live";
 import { mediaRoutes } from "./routes/media";
+import { searchRoutes } from "./routes/search";
 import { socialRoutes } from "./routes/social";
 
 /** The whole API, independent of where it runs: Workers + Neon in production, Node + PGlite locally and in tests. */
@@ -51,6 +52,7 @@ export function createApp(
   app.route("/entries", entryRoutes);
   app.route("/", mediaRoutes);
   app.route("/", liveRoutes);
+  app.route("/", searchRoutes);
   app.route("/", socialRoutes);
   app.route("/admin", adminRoutes);
   app.route("/internal", internalRoutes);

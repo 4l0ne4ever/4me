@@ -1,4 +1,4 @@
-import type { EntrySummary, Note, Shout } from "./schemas";
+import type { EntrySummary, Note, Reactions, Shout } from "./schemas";
 
 // What travels over the live connection. Topics a browser can listen to:
 //   entry:<id>      notes, BUZZes and how many are reading one page
@@ -6,7 +6,7 @@ import type { EntrySummary, Note, Shout } from "./schemas";
 //   tonight         new public pages, for the Tonight window
 //   user:<id>       one member's notifications; only with a ticket the web server signed for them
 
-export type NotificationKind = "note" | "pending" | "reply" | "shout" | "buzz";
+export type NotificationKind = "note" | "pending" | "reply" | "shout" | "buzz" | "reaction" | "post";
 
 export type Notification = {
   id: number;
@@ -23,6 +23,8 @@ export type Notification = {
 export type LiveEvent =
   | { type: "hello" }
   | { type: "note"; entryId: number; note: Note }
+  | { type: "note-gone"; entryId: number; noteId: number }
+  | { type: "reactions"; entryId: number; target: "entry" | "note"; targetId: number; reactions: Reactions }
   | { type: "shout"; owner: string | null; shout: Shout }
   | { type: "buzz"; entryId: number }
   | { type: "presence"; entryId: number; reading: number }

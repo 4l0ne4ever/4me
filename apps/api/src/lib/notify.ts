@@ -40,18 +40,18 @@ type NewNotification = {
 
 /**
  * Keeps a notification for a member (so they see it later) and pushes it to them if they are online.
- * A BUZZ on the same page that is still unread is not repeated.
+ * A BUZZ or a reaction on the same page that is still unread is not repeated.
  */
 export async function notify(c: Context<AppEnv>, userId: number, n: NewNotification) {
   const db = c.get("db");
-  if (n.kind === "buzz") {
+  if (n.kind === "buzz" || n.kind === "reaction") {
     const [recent] = await db
       .select({ id: notifications.id })
       .from(notifications)
       .where(
         and(
           eq(notifications.userId, userId),
-          eq(notifications.kind, "buzz"),
+          eq(notifications.kind, n.kind),
           eq(notifications.link, n.link),
           isNull(notifications.readAt),
           gt(notifications.createdAt, new Date(Date.now() - 10 * 60_000)),

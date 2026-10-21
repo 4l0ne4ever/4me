@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Desktop } from "@/components/Desktop";
+import { DeskPage } from "@/components/DeskPage";
 import { loadDesktop } from "@/lib/load";
 
 export const revalidate = 30;
@@ -8,5 +8,5 @@ export const revalidate = 30;
 export default async function Home() {
   const data = await loadDesktop();
   if (!data) notFound();
-  return <Desktop data={data} />;
+  return <DeskPage data={data} />;
 }

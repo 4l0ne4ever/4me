@@ -1,5 +1,5 @@
-import type { Almost, Blast, CatStats, Entry, EntrySummary, Note, Profile, Shout } from "@4me/shared";
-import type { DesktopData } from "@/components/Desktop";
+import type { Almost, Blast, Entry, EntrySummary, Note, Profile, Shout } from "@4me/shared";
+import type { DesktopData } from "@/components/DeskPage";
 import { apiGet } from "./api";
 
 const q = encodeURIComponent;
@@ -19,7 +19,7 @@ export async function loadDesktop({
   const owner = handle ? await apiGet<Profile>(`/profiles/${q(handle)}`, 60) : null;
   if (handle && !owner) return null;
   const who = owner?.handle;
-  const [entry, entries, recent, shouts, cat] = await Promise.all([
+  const [entry, entries, recent, shouts] = await Promise.all([
     apiGet<Entry>(
       who && slug ? `/entries/by/${q(who)}/${q(slug)}` : who ? `/entries/latest?author=${q(who)}` : "/entries/latest",
       30,
@@ -27,7 +27,6 @@ export async function loadDesktop({
     who ? apiGet<EntrySummary[]>(`/entries?author=${q(who)}&limit=30`, 60) : null,
     apiGet<EntrySummary[]>("/entries?limit=30", 30),
     apiGet<Shout[]>(who ? `/guestbook?owner=${q(who)}` : "/guestbook", 15),
-    apiGet<CatStats>("/cat", 60),
   ]);
   // Messenger, blasts and the bin belong to whoever the desktop is about: its owner, or the writer of the page open.
   const persona = who ?? entry?.author.handle;
@@ -45,6 +44,5 @@ export async function loadDesktop({
     shouts: shouts ?? [],
     blasts: blasts ?? [],
     almost: almost ?? [],
-    cat: cat ?? { pets: 0, fish: 0, plays: 0 },
   };
 }

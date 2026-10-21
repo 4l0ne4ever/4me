@@ -64,6 +64,20 @@ export function parseInline(text: string): Inline[] {
   return parts;
 }
 
+/**
+ * Text as search compares it: lower-case, Vietnamese (and other) marks removed, spaces squeezed,
+ * so "Mưa đầu mùa" and "mua dau mua" find each other.
+ */
+export function searchable(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, "d")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** First paragraph as plain text, for feeds, previews and meta descriptions. */
 export function excerpt(body: string, max = 180): string {
   const first = parseBody(body).find((b) => b.kind === "p");

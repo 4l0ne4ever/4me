@@ -2,7 +2,7 @@ import { moderationInput, userStatusInput } from "@4me/shared";
 import { desc, eq, gt, ilike, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Hono } from "hono";
-import { entries, notes, reports, shouts, users } from "../db/schema";
+import { entries, noteReports, notes, reports, shouts, users } from "../db/schema";
 import type { AppEnv } from "../env";
 import { positiveId } from "../lib/entries";
 import { sameSecret } from "../lib/guard";
@@ -45,6 +45,30 @@ export const adminRoutes = new Hono<AppEnv>()
       .orderBy(desc(sql`count(${reports.id})`), desc(sql`max(${reports.createdAt})`))
       .limit(100);
     return c.json(rows.map((r) => ({ ...r, latest: new Date(r.latest).toISOString() })));
+  })
+  /** Notes readers reported, most reported first, with the page they are on. */
+  .get("/note-reports", async (c) => {
+    const rows = await c
+      .get("db")
+      .select({
+        id: notes.id,
+        body: notes.body,
+        name: notes.name,
+        status: notes.status,
+        slug: entries.slug,
+        title: entries.title,
+        handle: writer.handle,
+        count: sql<number>`count(${noteReports.id})::int`,
+        reasons: sql<string[]>`array_agg(distinct ${noteReports.reason})`,
+      })
+      .from(noteReports)
+      .innerJoin(notes, eq(notes.id, noteReports.noteId))
+      .innerJoin(entries, eq(entries.id, notes.entryId))
+      .innerJoin(writer, eq(writer.id, entries.authorId))
+      .groupBy(notes.id, entries.id, writer.id)
+      .orderBy(desc(sql`count(${noteReports.id})`))
+      .limit(100);
+    return c.json(rows);
   })
   .get("/entries/hidden", async (c) => {
     const rows = await c
@@ -133,6 +157,8 @@ export const adminRoutes = new Hono<AppEnv>()
       .set({ status: c.req.valid("json").status })
       .where(eq(notes.id, id))
       .returning();
+    // Shown again by the moderator: its reports are settled.
+    if (row?.status === "visible") await c.get("db").delete(noteReports).where(eq(noteReports.noteId, id));
     return row ? c.json(toNote(row)) : c.json({ error: "not found" }, 404);
   })
   .get("/shouts", async (c) => {

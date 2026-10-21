@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiSend, hhmm, shortDate } from "@/lib/api";
 import { useLiveEvent } from "@/lib/live";
 import { noteAsMember } from "@/lib/member-actions";
+import { DeskLink } from "../DeskLink";
 import { Eq } from "../Icons";
 import { nudgeInk } from "../ink/Ink";
 import { useTurnstile } from "../Turnstile";
@@ -73,13 +74,19 @@ export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, 
   const add = (line: Line) => setLines((l) => [...l, line]);
   // A note can arrive twice (my own reply, and the live copy of it): it only shows once.
   const addNote = (note: Note) =>
-    setLines((l) => (l.some((x) => x.kind === "note" && x.note.id === note.id) ? l : [...l, { kind: "note", note }]));
+    setLines((l) =>
+      l.some((x) => x.kind === "note" && x.note.id === note.id)
+        ? l.map((x) => (x.kind === "note" && x.note.id === note.id ? { kind: "note", note } : x))
+        : [...l, { kind: "note", note }],
+    );
   const [reading, setReading] = useState<number | null>(null);
   const ownBuzz = useRef(0);
 
   useLiveEvent((e) => {
     if (!entry) return;
     if (e.type === "note" && e.entryId === entry.id) addNote(e.note);
+    if (e.type === "note-gone" && e.entryId === entry.id)
+      setLines((l) => l.filter((x) => x.kind !== "note" || (x.note.id !== e.noteId && x.note.parentId !== e.noteId)));
     if (e.type === "presence" && e.entryId === entry.id) setReading(e.reading);
     if (e.type === "buzz" && e.entryId === entry.id && Date.now() - ownBuzz.current > 2500) {
       buzzSound();
@@ -147,7 +154,7 @@ export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, 
           />
           <div style={{ minWidth: 0, flex: 1 }}>
             <b>
-              {persona ? <a href={`/u/${persona.handle}`}>{persona.name}</a> : "nobody yet"}{" "}
+              {persona ? <DeskLink href={`/u/${persona.handle}`}>{persona.name}</DeskLink> : "nobody yet"}{" "}
               {awake ? <span className="on-dot">(online)</span> : <span className="off-dot">(asleep)</span>}
             </b>
             {latest && (
@@ -201,9 +208,15 @@ export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, 
             l.kind === "note" ? (
               <p className="ln" key={`n${l.note.id}`}>
                 <span className="t">({hhmm(l.note.createdAt)})</span>{" "}
+                {l.note.parentId && (
+                  <span className="t" title="a reply">
+                    ↪{" "}
+                  </span>
+                )}
                 {l.note.member && <img className="av" src={l.note.member.avatar} alt="" width={16} height={16} />}
                 <span className={`n${l.note.isAuthor ? " own" : ""}`} title={l.note.member ? "member" : undefined}>
-                  {l.note.member ? <a href={`/u/${l.note.member.handle}`}>{l.note.name}</a> : l.note.name}:
+                  {l.note.member ? <DeskLink href={`/u/${l.note.member.handle}`}>{l.note.name}</DeskLink> : l.note.name}
+                  :
                 </span>{" "}
                 {l.note.body}
               </p>

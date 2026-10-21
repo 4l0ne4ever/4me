@@ -7,6 +7,7 @@ import {
   type EntrySummary,
   type Note,
   type Photo,
+  type Reactions,
   type Shout,
 } from "@4me/shared";
 import type { almost, blasts, entries, notes, shouts } from "../db/schema";
@@ -48,10 +49,11 @@ export function toSummary(row: EntryRow, author: AuthorRow, origin: string): Ent
   };
 }
 
-export function toEntry(row: EntryRow, author: AuthorRow, origin: string): Entry {
+export function toEntry(row: EntryRow, author: AuthorRow, origin: string, reactions: Reactions = {}): Entry {
   return {
     ...toSummary(row, author, origin),
     body: row.body,
+    reactions,
     photos: row.photos.map((p) => withOrigin(p, origin)),
     visibility: row.visibility,
     readCount: row.readCount,
@@ -63,13 +65,16 @@ type MemberRow = { avatar: string | null; handle: string | null } | null | undef
 const member = (userId: number | null, m: MemberRow) =>
   userId && m?.handle ? { avatar: avatarUrl(m.avatar), handle: m.handle } : null;
 
-export const toNote = (r: typeof notes.$inferSelect, m?: MemberRow): Note => ({
+export const toNote = (r: typeof notes.$inferSelect, m?: MemberRow, reactions: Reactions = {}): Note => ({
   id: r.id,
+  parentId: r.parentId,
   name: r.name,
   body: r.body,
   isAuthor: r.isAuthor,
   member: member(r.userId, m),
+  reactions,
   createdAt: r.createdAt.toISOString(),
+  editedAt: r.editedAt?.toISOString() ?? null,
 });
 export const toShout = (r: typeof shouts.$inferSelect, m?: MemberRow): Shout => ({
   id: r.id,

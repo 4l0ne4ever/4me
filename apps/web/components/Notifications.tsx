@@ -1,10 +1,10 @@
 "use client";
 
 import type { Me, Notification } from "@4me/shared";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLiveEvent } from "@/lib/live";
 import { markRead, myNotifications } from "@/lib/live-actions";
+import { useDesk } from "./DeskShell";
 import { chime } from "./ink/sounds";
 
 const OS_KEY = "4me-os-notifications";
@@ -30,7 +30,7 @@ function osAllowed(): boolean {
  * switched it on, a notification from their own computer while the tab is in the background).
  */
 export function Notifications({ me }: { me: Me }) {
-  const router = useRouter();
+  const { navigate } = useDesk();
   const [items, setItems] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -57,9 +57,9 @@ export function Notifications({ me }: { me: Me }) {
         setUnread((u) => Math.max(0, u - 1));
         void markRead([n.id]);
       }
-      router.push(n.link);
+      navigate(n.link);
     },
-    [router],
+    [navigate],
   );
 
   useLiveEvent((e) => {

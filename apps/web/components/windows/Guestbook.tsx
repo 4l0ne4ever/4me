@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiSend, hhmm } from "@/lib/api";
 import { useLiveEvent } from "@/lib/live";
 import { shoutAsMember } from "@/lib/member-actions";
+import { DeskLink } from "../DeskLink";
 import { nudgeInk } from "../ink/Ink";
 import { useTurnstile } from "../Turnstile";
 
@@ -66,7 +67,7 @@ export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | n
             <div>
               {s.member && <img className="av" src={s.member.avatar} alt="" width={16} height={16} />}
               <b title={s.member ? "member" : undefined}>
-                {s.member ? <a href={`/u/${s.member.handle}`}>{s.name}</a> : s.name}
+                {s.member ? <DeskLink href={`/u/${s.member.handle}`}>{s.name}</DeskLink> : s.name}
               </b>
               <span> · {hhmm(s.createdAt)}</span>
             </div>

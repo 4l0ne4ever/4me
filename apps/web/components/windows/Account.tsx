@@ -1,11 +1,11 @@
 "use client";
 
 import { AVATARS, type Me, type MyNote } from "@4me/shared";
-import Link from "next/link";
 import { type FormEvent, useEffect, useState, useTransition } from "react";
 import { signOut } from "@/app/welcome/actions";
 import { shortDate } from "@/lib/api";
 import { changePassword, deleteAccount, myNotes, signOutEverywhere, updateProfile } from "@/lib/member-actions";
+import { DeskLink } from "../DeskLink";
 
 type Msg = { kind: "ok" | "err"; text: string; field?: string } | null;
 
@@ -187,7 +187,7 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
             <li key={n.id}>
               <p>{n.body}</p>
               <small>
-                on <Link href={`/u/${n.handle}/${n.slug}`}>{n.title}</Link> · {shortDate(n.createdAt)}
+                on <DeskLink href={`/u/${n.handle}/${n.slug}`}>{n.title}</DeskLink> · {shortDate(n.createdAt)}
                 {n.status !== "visible" && ` · ${n.status === "pending" ? "waiting for 4me" : "hidden"}`}
               </small>
             </li>

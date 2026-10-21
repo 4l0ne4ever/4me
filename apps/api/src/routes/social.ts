@@ -1,7 +1,7 @@
 import { handle as handleSchema, type Profile, shoutInput } from "@4me/shared";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
-import { almost, blasts, catStats, entries, shouts, users } from "../db/schema";
+import { almost, blasts, catStats, entries, follows, shouts, users } from "../db/schema";
 import type { AppEnv } from "../env";
 import { isReadable } from "../lib/entries";
 import { allow, humanCheck, ipHash, looksLikeSpam } from "../lib/guard";
@@ -43,11 +43,17 @@ export const socialRoutes = new Hono<AppEnv>()
       .from(entries)
       .innerJoin(users, eq(users.id, entries.authorId))
       .where(and(isReadable, eq(entries.authorId, u.id)));
+    const [{ subs } = { subs: 0 }] = await c
+      .get("db")
+      .select({ subs: sql<number>`count(*)::int` })
+      .from(follows)
+      .where(eq(follows.followeeId, u.id));
     const profile: Profile = {
       ...toAuthor({ handle: u.handle, name: u.displayName, avatar: u.avatar }),
       bio: u.bio,
       since: u.createdAt.toISOString(),
       nights: n,
+      subscribers: subs,
     };
     c.header("Cache-Control", "public, max-age=30, s-maxage=60");
     return c.json(profile);

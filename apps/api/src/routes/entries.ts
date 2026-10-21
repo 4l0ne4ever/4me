@@ -1,13 +1,24 @@
-import { noteInput, reportInput } from "@4me/shared";
+import { noteInput, reactInput, reportInput } from "@4me/shared";
 import { and, asc, desc, eq, lt, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { entries, notes, users } from "../db/schema";
 import type { AppEnv } from "../env";
-import { authorCols, fileReport, isReadable, noteCount, origin, positiveId, readableEntry } from "../lib/entries";
+import {
+  authorCols,
+  fileNoteReport,
+  fileReport,
+  isReadable,
+  noteCount,
+  origin,
+  positiveId,
+  readableEntry,
+  threadOf,
+} from "../lib/entries";
 import { allow, humanCheck, ipHash, looksLikeSpam } from "../lib/guard";
 import { toEntry, toNote, toSummary } from "../lib/map";
 import { anonymousNameProblem } from "../lib/names";
 import { notify, publish, quote } from "../lib/notify";
+import { countsFor, mine, react } from "../lib/reactions";
 import { json } from "../lib/validate";
 
 const cache = (seconds: number) => `public, max-age=${seconds}, s-maxage=${seconds * 2}, stale-while-revalidate=300`;
@@ -43,7 +54,8 @@ export const entryRoutes = new Hono<AppEnv>()
       .limit(1);
     if (!row) return c.json({ error: "no entries yet" }, 404);
     c.header("Cache-Control", cache(30));
-    return c.json(toEntry({ ...row.e, noteCount: row.noteCount }, row.a, origin(c)));
+    const counts = (await countsFor(c, "entry", [row.e.id])).get(row.e.id);
+    return c.json(toEntry({ ...row.e, noteCount: row.noteCount }, row.a, origin(c), counts));
   })
   .get("/by/:handle/:slug", async (c) => {
     const [row] = await readable(c)
@@ -51,7 +63,8 @@ export const entryRoutes = new Hono<AppEnv>()
       .limit(1);
     if (!row) return c.json({ error: "not found" }, 404);
     c.header("Cache-Control", cache(30));
-    return c.json(toEntry({ ...row.e, noteCount: row.noteCount }, row.a, origin(c)));
+    const counts = (await countsFor(c, "entry", [row.e.id])).get(row.e.id);
+    return c.json(toEntry({ ...row.e, noteCount: row.noteCount }, row.a, origin(c), counts));
   })
   .post("/:id/read", async (c) => {
     const id = positiveId(c.req.param("id"));
@@ -100,7 +113,12 @@ export const entryRoutes = new Hono<AppEnv>()
       .orderBy(asc(notes.createdAt))
       .limit(200);
     c.header("Cache-Control", "public, max-age=10, s-maxage=10");
-    return c.json(rows.map((r) => toNote(r.n, r.m)));
+    const counts = await countsFor(
+      c,
+      "note",
+      rows.map((r) => r.n.id),
+    );
+    return c.json(rows.map((r) => toNote(r.n, r.m, counts.get(r.n.id))));
   })
   .post("/:id/notes", json(noteInput), async (c) => {
     const input = c.req.valid("json");
@@ -111,24 +129,86 @@ export const entryRoutes = new Hono<AppEnv>()
     const id = positiveId(c.req.param("id"));
     const entry = id ? await readableEntry(c, id) : null;
     if (!entry) return c.json({ error: "not found" }, 404);
+    const thread = input.parentId ? await threadOf(c, entry.id, input.parentId) : null;
+    if (input.parentId && !thread) return c.json({ error: "that note is gone" }, 404);
     const status = looksLikeSpam(input.body) ? "pending" : "visible";
     const [row] = await c
       .get("db")
       .insert(notes)
-      .values({ entryId: entry.id, name: input.name, body: input.body, status, ipHash: await ipHash(c) })
+      .values({
+        entryId: entry.id,
+        parentId: thread?.id ?? null,
+        name: input.name,
+        body: input.body,
+        status,
+        ipHash: await ipHash(c),
+      })
       .returning();
     const note = toNote(row!);
     if (status === "visible") publish(c, [`entry:${entry.id}`], { type: "note", entryId: entry.id, note });
-    await notify(c, entry.authorId, {
-      kind: status === "pending" ? "pending" : "note",
-      text:
-        status === "pending"
-          ? `A note from ${input.name} on ${quote(entry.title)} is waiting for you`
-          : `${input.name} left a note on ${quote(entry.title)}`,
-      link: `/u/${entry.handle}/${entry.slug}`,
-      actor: { name: input.name, avatar: null },
-    });
+    const link = `/u/${entry.handle}/${entry.slug}`;
+    const actor = { name: input.name, avatar: null };
+    if (thread?.userId && status === "visible")
+      await notify(c, thread.userId, {
+        kind: "reply",
+        text: `${input.name} replied to your note on ${quote(entry.title)}`,
+        link,
+        actor,
+      });
+    if (thread?.userId !== entry.authorId)
+      await notify(c, entry.authorId, {
+        kind: status === "pending" ? "pending" : "note",
+        text:
+          status === "pending"
+            ? `A note from ${input.name} on ${quote(entry.title)} is waiting for you`
+            : `${input.name} left a note on ${quote(entry.title)}`,
+        link,
+        actor,
+      });
     return c.json({ note, pending: status === "pending" }, 201);
+  })
+  /** A guest reacts to a page; members react through the web server, counted by account. */
+  .post("/:id/react", json(reactInput), async (c) => {
+    const input = c.req.valid("json");
+    if (!(await allow(c, "react", 60, 600))) return c.json({ error: "slow down a little" }, 429);
+    const id = positiveId(c.req.param("id"));
+    if (!id) return c.json({ error: "not found" }, 404);
+    const counts = await react(c, "entry", id, `ip:${await ipHash(c)}`, input.kind, {
+      name: "Someone",
+      avatar: null,
+      userId: null,
+    });
+    return counts ? c.json({ reactions: counts }) : c.json({ error: "not found" }, 404);
+  })
+  .post("/notes/:noteId/react", json(reactInput), async (c) => {
+    const input = c.req.valid("json");
+    if (!(await allow(c, "react", 60, 600))) return c.json({ error: "slow down a little" }, 429);
+    const id = positiveId(c.req.param("noteId"));
+    if (!id) return c.json({ error: "not found" }, 404);
+    const counts = await react(c, "note", id, `ip:${await ipHash(c)}`, input.kind, {
+      name: "Someone",
+      avatar: null,
+      userId: null,
+    });
+    return counts ? c.json({ reactions: counts }) : c.json({ error: "not found" }, 404);
+  })
+  /** Which reactions this guest left on a page and its notes (by their hashed IP; never anyone else's). */
+  .get("/:id/reactions/mine", async (c) => {
+    const id = positiveId(c.req.param("id"));
+    if (!id) return c.json({ entry: null, notes: {} });
+    c.header("Cache-Control", "private, no-store");
+    return c.json(await mine(c, `ip:${await ipHash(c)}`, id));
+  })
+  /** A guest reports a note; three different readers hide it until the moderator looks. */
+  .post("/notes/:noteId/report", json(reportInput), async (c) => {
+    const input = c.req.valid("json");
+    if (!(await humanCheck(c, input.turnstileToken))) return c.json({ error: "please confirm you are human" }, 403);
+    if (!(await allow(c, "report", 10, 3600))) return c.json({ error: "too many reports, try later" }, 429);
+    const id = positiveId(c.req.param("noteId"));
+    const done = id ? await fileNoteReport(c, id, `ip:${await ipHash(c)}`, input.reason) : null;
+    if (!done) return c.json({ error: "not found" }, 404);
+    if (done.hidden) publish(c, [`entry:${done.entryId}`], { type: "note-gone", entryId: done.entryId, noteId: id! });
+    return c.json({ ok: true });
   })
   /** A guest reports a page. Members report through the web server, so it counts them by account instead. */
   .post("/:id/report", json(reportInput), async (c) => {

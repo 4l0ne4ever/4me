@@ -160,5 +160,8 @@ export async function seedIfEmpty(db: DB) {
   );
 
   await db.insert(catStats).values({ id: 1, pets: 1204, fish: 318, plays: 77 }).onConflictDoNothing();
+  // Sample text is plain English, so lower-casing is all search needs.
+  await db.update(entries).set({ searchText: sql`lower(${entries.title} || ' ' || ${entries.body})` });
+  await db.update(users).set({ searchName: sql`lower(${users.displayName} || ' ' || ${users.handle})` });
   return true;
 }

@@ -83,6 +83,13 @@ export const IconTonight = ({ className }: P) => (
     <rect x="25" y="24" width="3" height="4" fill="#f0ac5c" />
   </svg>
 );
+export const IconSearch = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <circle cx="17" cy="17" r="10" fill="#cfe3f5" stroke="#3a6ea5" strokeWidth="4" />
+    <path d="M24 25l9 9" stroke="#7a3b2e" strokeWidth="5" strokeLinecap="round" />
+    <path d="M12 14a6 6 0 0 1 5-4" stroke="#fff" strokeWidth="2" fill="none" />
+  </svg>
+);
 export const IconMin = () => (
   <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
     <rect x="2" y="8" width="8" height="2" fill="currentColor" />

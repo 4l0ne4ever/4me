@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { entryInput, noteInput } from "./schemas";
-import { excerpt, isAwakeHour, parseBody, slugify } from "./text";
+import { excerpt, isAwakeHour, parseBody, searchable, slugify } from "./text";
 
 describe("isAwakeHour", () => {
   it("is awake in the evening and the small hours, asleep by day", () => {
     expect([17, 23, 0, 5].every(isAwakeHour)).toBe(true);
     expect([6, 12, 16].some(isAwakeHour)).toBe(false);
+  });
+});
+
+describe("searchable", () => {
+  it("finds Vietnamese with or without marks", () => {
+    expect(searchable("  Mưa ĐẦU   mùa ")).toBe("mua dau mua");
+    expect(searchable("Em Dạo Này")).toBe("em dao nay");
   });
 });
 

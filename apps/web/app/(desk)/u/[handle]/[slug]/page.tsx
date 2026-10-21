@@ -1,11 +1,16 @@
 import { type Entry, excerpt } from "@4me/shared";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Desktop } from "@/components/Desktop";
+import { DeskPage } from "@/components/DeskPage";
 import { apiGet } from "@/lib/api";
 import { loadDesktop } from "@/lib/load";
 
 export const revalidate = 30;
+// Built on first visit and cached like a static page (then refreshed every 30 seconds, or right after a change).
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 
 type Params = { params: Promise<{ handle: string; slug: string }> };
 
@@ -28,5 +33,5 @@ export default async function Night({ params }: Params) {
   const { handle, slug } = await params;
   const data = await loadDesktop({ handle, slug });
   if (!data?.entry) notFound();
-  return <Desktop data={data} />;
+  return <DeskPage data={data} />;
 }

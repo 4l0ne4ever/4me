@@ -81,6 +81,32 @@ Lan`, `Lan's guestbook`). The taskbar has a 2006 address bar: Back, Home (Tonigh
 what's open, `4me://lan/the-last-tram`; type a name and press Enter to go to that diary. A link with `?open=guest`
 opens a window straight away (notifications use it).
 
+Moving between pages never reloads anything: the computer (wallpaper, Ink, taskbar, open windows, the live
+connection) lives in the shared layout `app/(desk)/layout.tsx`, and each page only swaps the windows that show it
+(`DeskPage`). Links start loading when pointed at, the cursor turns into an hourglass while a page loads, and diary
+pages are built once and cached (refreshed every 30 seconds, or straight after a change).
+
+## Notes, replies and reactions
+
+Under every page: its notes, each with a *reply* (one level deep; replying to a reply answers the same thread) and
+reactions. A page and every note take one reaction per reader, from six 2006 smileys (❤️ 🤗 😂 😮 😢 🌙); picking the
+same one again takes it back. Members are counted by account, guests by hashed IP. A note's writer, or the page's
+writer, can delete it with its replies. Notes, replies, reactions and deletions reach everyone reading the page live;
+the person replied to, the page's writer and a note's writer are notified.
+
+## Subscriptions, search, editing
+
+A blog, not a social network, so the extras stay quiet:
+
+- **Subscribe** to a diary (next to its writer's name): its new public pages ring your bell and fill the
+  *Subscriptions* tab in Tonight, your reading list. Nobody is told who subscribed; a diary only shows how many.
+- **Search** (desktop icon, Start menu, or type anything that isn't a diary's address into the address bar) finds
+  diaries by name or address and public pages by their words, with or without Vietnamese accents.
+- A note's writer can **edit** it (it says "edited"; adding a link sends it back for approval) and anyone can
+  **report** a note: three different readers hide it until the moderator looks (`/admin`, Reported notes).
+- **Notepad keeps unsaved work** in the browser as you type, per page, and offers it back next time
+  ("You have unsaved changes from 21:04. Restore them · Throw them away").
+
 ## Live updates and notifications
 
 Every page keeps one WebSocket to the API (`/live`) for its topics: the open page (`entry:<id>`: notes, BUZZes and
@@ -88,8 +114,8 @@ how many are reading), the guestbook on screen (`guest:<handle>`), new public pa
 member's own notifications (`user:<id>`, only with a ten-minute ticket the web server signs). New notes and shouts
 appear without reloading, a BUZZ shakes everyone reading the page, Tonight fills in as people post.
 
-Notifications (a note or a held note on your page, a reply where you left a note, a shout in your guestbook, a
-BUZZ) are stored, so the tray's bell shows what you missed; new ones pop up as a Windows XP balloon with a chime, and,
+Notifications (a note or a held note on your page, a reply to your note, a reaction, a shout in your guestbook, a
+BUZZ, a new page in a diary you subscribed to) are stored, so the tray's bell shows what you missed; new ones pop up as a Windows XP balloon with a chime, and,
 if you switch it on in the bell menu, as a notification from your own computer while the tab is in the background.
 
 On Workers, the connections live in one Durable Object (`Hub`, SQLite-backed, so it runs on the free plan) using the
@@ -229,7 +255,6 @@ application). Authorised JavaScript origin: your `SITE_URL`. Authorised redirect
 
 ## Next
 
-- Buddies: follow people and see "my buddies' nights", like LiveJournal friends pages.
 - Song stickers on notes and guestbook shouts.
 - Live BUZZ and "reading now" between readers (Durable Objects or a small WebSocket service).
 - More of Ink: a name tag, seasonal outfits, a ball of wool that stays where you left it.

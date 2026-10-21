@@ -1,16 +1,24 @@
 "use server";
 
 import {
+  type EntrySummary,
+  editNoteInput,
   type InkState,
   inkState,
   type Me,
   type MyNote,
+  type MyReactions,
   memberNoteInput,
+  memberReactInput,
   memberShoutInput,
   type Note,
   password as passwordSchema,
   profileInput,
+  type ReactionKind,
+  type Reactions,
+  reportReason,
   type Shout,
+  type Subscription,
 } from "@4me/shared";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -20,13 +28,15 @@ import { hashPassword, verifyPassword } from "./crypto";
 
 // Everything a signed-in reader can do. Each action re-reads the session itself; nothing trusts the browser's word.
 
+/** A note on a page, or with `parentId` a reply to one of its notes. */
 export async function noteAsMember(
   entryId: number,
   body: string,
+  parentId?: number,
 ): Promise<Ok<{ note: Note; pending: boolean }> | Fail> {
   const me = await getMe();
   if (!me) return signedOut;
-  const input = memberNoteInput.safeParse({ body });
+  const input = memberNoteInput.safeParse({ body, parentId });
   if (!input.success || !Number.isInteger(entryId))
     return { ok: false, error: "write something first (500 characters at most)" };
   try {
@@ -38,6 +48,104 @@ export async function noteAsMember(
   } catch (e) {
     return fail(e);
   }
+}
+
+/** The note's writer, or the page's writer, deletes a note (and its replies). */
+export async function deleteNote(noteId: number): Promise<Ok<object> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  try {
+    await internalApi(`/users/${me.id}/notes/${noteId}`, { method: "DELETE" });
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Sets this member's reaction on a page or a note; `null` takes it back. */
+export async function reactAsMember(
+  target: "entry" | "note",
+  targetId: number,
+  kind: ReactionKind | null,
+): Promise<Ok<{ reactions: Reactions }> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  const input = memberReactInput.safeParse({ target, targetId, kind });
+  if (!input.success) return { ok: false, error: "that reaction isn't one of ours" };
+  try {
+    return {
+      ok: true,
+      ...(await internalApi<{ reactions: Reactions }>(`/users/${me.id}/react`, { method: "POST", body: input.data })),
+    };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function myReactions(entryId: number): Promise<MyReactions> {
+  const me = await getMe();
+  if (!me || !Number.isInteger(entryId)) return { entry: null, notes: {} };
+  return internalApi<MyReactions>(`/users/${me.id}/reactions?entry=${entryId}`).catch(() => ({
+    entry: null,
+    notes: {},
+  }));
+}
+
+/** The note's writer changes what it says. */
+export async function editNote(noteId: number, body: string): Promise<Ok<{ note: Note; pending: boolean }> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  const input = editNoteInput.safeParse({ body });
+  if (!input.success) return { ok: false, error: "write something (500 characters at most)" };
+  try {
+    return {
+      ok: true,
+      ...(await internalApi<{ note: Note; pending: boolean }>(`/users/${me.id}/notes/${noteId}`, {
+        method: "PATCH",
+        body: input.data,
+      })),
+    };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function reportNoteAsMember(noteId: number, reason: string): Promise<Ok<object> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  const parsed = reportReason.safeParse(reason);
+  if (!parsed.success) return { ok: false, error: "pick a reason" };
+  try {
+    await internalApi(`/users/${me.id}/reports/notes/${noteId}`, { method: "POST", body: { reason: parsed.data } });
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function mySubscriptions(): Promise<Subscription[]> {
+  const me = await getMe();
+  return me ? internalApi<Subscription[]>(`/users/${me.id}/subscriptions`).catch(() => []) : [];
+}
+
+/** Subscribes to a diary, or stops. */
+export async function setSubscribed(handle: string, on: boolean): Promise<Ok<object> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  try {
+    await internalApi(`/users/${me.id}/subscriptions/${encodeURIComponent(handle)}`, {
+      method: on ? "POST" : "DELETE",
+    });
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Pages from the diaries this member subscribed to, newest first. */
+export async function myFeed(): Promise<EntrySummary[]> {
+  const me = await getMe();
+  return me ? internalApi<EntrySummary[]>(`/users/${me.id}/feed`).catch(() => []) : [];
 }
 
 /** `owner` is the member whose guestbook it is; without it, the shared one on the front desktop. */

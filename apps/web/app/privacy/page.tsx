@@ -79,6 +79,18 @@ export default function Privacy() {
         </li>
       </ul>
 
+      <h2>Subscriptions, reactions and search</h2>
+      <ul>
+        <li>
+          Which diaries you subscribe to is yours alone: a diary only shows how many subscribers it has, never who.
+        </li>
+        <li>
+          A reaction is counted once per reader: by account when you are signed in, by the hashed IP above when not.
+          Reactions are deleted with your account.
+        </li>
+        <li>Search only ever looks through public pages and the names and addresses of active diaries.</li>
+      </ul>
+
       <h2>Live updates and notifications</h2>
       <ul>
         <li>

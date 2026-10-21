@@ -17,6 +17,7 @@ import {
   myInbox,
   saveEntry,
 } from "@/lib/writer-actions";
+import { DeskLink } from "../DeskLink";
 import { type DraftPhoto, PhotoPicker } from "../PhotoPicker";
 import { type PickedSong, SongPicker } from "../SongPicker";
 
@@ -80,6 +81,25 @@ function fromEntry(e: Entry & { songId: number | null }): Draft {
   };
 }
 
+/** Unsaved work is kept in this browser while typing, per member and per page, so it survives a closed tab. */
+const draftKey = (uid: number, id: number | null) => `4me-draft:${uid}:${id ?? "new"}`;
+type Kept = { at: number; draft: Draft };
+function readKept(key: string): Kept | null {
+  try {
+    const v = localStorage.getItem(key);
+    return v ? (JSON.parse(v) as Kept) : null;
+  } catch {
+    return null;
+  }
+}
+function forget(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // nothing kept
+  }
+}
+
 const VIS_LABEL: Record<Visibility, string> = { public: "everyone", private: "only me", draft: "draft" };
 
 function Line({ msg }: { msg: Msg }) {
@@ -134,13 +154,43 @@ export function Write({
   const [blastText, setBlastText] = useState("");
   const [binText, setBinText] = useState("");
   const set = (p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p }));
+  /** The page as it was opened; the draft is "unsaved" while it differs from this. */
+  const baseline = useRef(JSON.stringify(BLANK));
+  const [restorable, setRestorable] = useState<Kept | null>(null);
+  const key = draftKey(me.id, editing);
+
+  /** A page was opened: remember it as saved, and offer back any unsaved changes this browser kept for it. */
+  const opened = useCallback(
+    (d: Draft) => {
+      baseline.current = JSON.stringify(d);
+      setDraft(d);
+      const kept = readKept(draftKey(me.id, editing));
+      setRestorable(kept && JSON.stringify(kept.draft) !== baseline.current ? kept : null);
+    },
+    [me.id, editing],
+  );
+
+  /* keep unsaved changes as they are typed (not while an older copy is waiting to be restored or thrown away) */
+  useEffect(() => {
+    if (loading || restorable) return;
+    const now = JSON.stringify(draft);
+    const t = window.setTimeout(() => {
+      try {
+        if (now === baseline.current) localStorage.removeItem(key);
+        else localStorage.setItem(key, JSON.stringify({ at: Date.now(), draft } satisfies Kept));
+      } catch {
+        // storage off: the page still saves normally
+      }
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [draft, key, loading, restorable]);
   const markup = useMarkup(draft.body, (body) => set({ body }));
 
   /* the page being edited, or a blank one (the message stays: "Saved" must survive the reload after saving) */
   useEffect(() => {
     setTab("page");
     if (!editing) {
-      setDraft(BLANK);
+      opened(BLANK);
       return;
     }
     let live = true;
@@ -148,7 +198,7 @@ export function Write({
     void myEntry(editing).then((e) => {
       if (!live) return;
       setLoading(false);
-      if (e) setDraft(fromEntry(e));
+      if (e) opened(fromEntry(e));
       else {
         setMsg({ kind: "err", text: "That page couldn't be opened." });
         onEditing(null);
@@ -157,7 +207,7 @@ export function Write({
     return () => {
       live = false;
     };
-  }, [editing, onEditing]);
+  }, [editing, onEditing, opened]);
 
   const loadTab = useCallback((t: Tab) => {
     if (t === "mine") void myEntries().then(setMine);
@@ -206,6 +256,8 @@ export function Write({
         kind: "ok",
         text: res.entry.visibility === "public" ? "Posted. Opening your page…" : "Saved. Only you can see it.",
       });
+      forget(key);
+      baseline.current = JSON.stringify(draft);
       onEditing(res.entry.id);
       if (res.entry.visibility === "public") onSaved(res.entry);
     });
@@ -217,6 +269,7 @@ export function Write({
       const res = await deleteEntry(id);
       if (!res.ok) return setMsg({ kind: "err", text: res.error });
       setMine((m) => m?.filter((x) => x.id !== id) ?? null);
+      forget(draftKey(me.id, id));
       if (editing === id) {
         onEditing(null);
         onDeleted();
@@ -265,6 +318,33 @@ export function Write({
           onSubmit={save}
         >
           {loading && <p className="acc-dim">Opening the page…</p>}
+          {restorable && (
+            <p className="wr-kept" role="status">
+              You have unsaved changes from {hhmm(new Date(restorable.at).toISOString())},{" "}
+              {shortDate(new Date(restorable.at).toISOString())}.{" "}
+              <button
+                type="button"
+                className="linkish"
+                onClick={() => {
+                  setDraft(restorable.draft);
+                  setRestorable(null);
+                }}
+              >
+                Restore them
+              </button>{" "}
+              ·{" "}
+              <button
+                type="button"
+                className="linkish"
+                onClick={() => {
+                  forget(key);
+                  setRestorable(null);
+                }}
+              >
+                Throw them away
+              </button>
+            </p>
+          )}
           <label htmlFor="wr-title">Title</label>
           <input
             id="wr-title"
@@ -430,9 +510,9 @@ export function Write({
                 </span>
                 <span className="wr-acts">
                   {e.visibility === "public" && e.status === "visible" && (
-                    <a className="btn" href={`/u/${me.handle}/${e.slug}`}>
+                    <DeskLink className="btn" href={`/u/${me.handle}/${e.slug}`}>
                       Open
-                    </a>
+                    </DeskLink>
                   )}
                   <button
                     type="button"

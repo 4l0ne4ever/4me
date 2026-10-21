@@ -20,6 +20,17 @@ type Report = {
   reasons: string[];
   latest: string;
 };
+type NoteReport = {
+  id: number;
+  body: string;
+  name: string;
+  status: string;
+  slug: string;
+  title: string;
+  handle: string;
+  count: number;
+  reasons: string[];
+};
 type Hidden = { id: number; slug: string; title: string; handle: string; author: string; updatedAt: string };
 type Member = {
   id: number;
@@ -104,8 +115,9 @@ export default async function Admin({ searchParams }: Search) {
   if (!(await isAuthor())) return <Login failed={q.error === "password"} />;
   const query = (q.q ?? "").trim();
 
-  const [reports, hidden, members, notes, shouts] = await Promise.all([
+  const [reports, noteReports, hidden, members, notes, shouts] = await Promise.all([
     adminApi<Report[]>("/reports"),
+    adminApi<NoteReport[]>("/note-reports"),
     adminApi<Hidden[]>("/entries/hidden"),
     adminApi<Member[]>(`/users${query ? `?q=${encodeURIComponent(query)}` : ""}`),
     adminApi<HeldNote[]>("/notes?status=pending"),
@@ -148,6 +160,29 @@ export default async function Admin({ searchParams }: Search) {
                     </small>
                   </span>
                   <EntryButtons id={r.id} status={r.status} back="reports" />
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="win admin-win" id="note-reports" aria-labelledby="h-note-reports">
+            <div className="bar">
+              <b id="h-note-reports">Reported notes ({noteReports.length})</b>
+            </div>
+            <p className="admin-note">Three different readers hide a note. Show puts it back and clears its reports.</p>
+            <ul className="admin-list">
+              {noteReports.length === 0 && <li>No reported notes.</li>}
+              {noteReports.map((n) => (
+                <li key={n.id}>
+                  <span>
+                    {n.body}
+                    <small>
+                      {n.name} on <Link href={`/u/${n.handle}/${n.slug}`}>“{n.title}”</Link> · {n.count}{" "}
+                      {n.count === 1 ? "report" : "reports"} ({n.reasons.map((x) => REASON[x] ?? x).join(", ")})
+                      {n.status !== "visible" && " · hidden now"}
+                    </small>
+                  </span>
+                  <Moderate kind="note" id={n.id} />
                 </li>
               ))}
             </ul>
