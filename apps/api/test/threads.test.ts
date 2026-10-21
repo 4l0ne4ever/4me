@@ -106,6 +106,20 @@ describe("replies", () => {
   });
 });
 
+describe("the front desktop's Messenger", () => {
+  it("lists the newest notes from every page, with the page each was left on, and hears new ones live", async () => {
+    await guest("POST", `/entries/${lamps.id}/notes`, { name: "owl", body: "the front page hears this" });
+    expect(sent.some((s) => s.topics.includes("notes") && s.event.type === "note")).toBe(true);
+    const recent = (await (await call("/entries/notes/recent", { internal: false })).json()) as Array<{
+      body: string;
+      page: { slug: string; handle: string };
+    }>;
+    const last = recent.at(-1)!;
+    expect(last.body).toBe("the front page hears this");
+    expect(last.page).toMatchObject({ slug: "the-lamps-came-on-early", handle: "4me" });
+  });
+});
+
 describe("reactions", () => {
   it("counts one reaction per reader, lets them change or take it back, and tells the page", async () => {
     await guest("POST", `/entries/${lamps.id}/react`, { kind: "love" }, "10.7.0.1");

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Almost as AlmostItem, Blast, Entry, EntrySummary, Note, Profile, Shout } from "@4me/shared";
+import type { Almost as AlmostItem, Blast, Entry, EntrySummary, Note, Profile, RecentNote, Shout } from "@4me/shared";
 import { useEffect, useMemo, useState } from "react";
 import { apiSend } from "@/lib/api";
 import { DeskWindow, useDesk, WINDOWS, type WinId } from "./DeskShell";
@@ -11,6 +11,7 @@ import { Guestbook } from "./windows/Guestbook";
 import { Messenger } from "./windows/Messenger";
 import { Mixtape } from "./windows/Mixtape";
 import { Photos, type Picture } from "./windows/Photos";
+import { RecentNotes } from "./windows/RecentNotes";
 import { Tonight } from "./windows/Tonight";
 
 export type DesktopData = {
@@ -22,6 +23,8 @@ export type DesktopData = {
   /** Everyone's newest pages, for the Tonight window. */
   recent: EntrySummary[];
   notes: Note[];
+  /** The newest notes on every page: the front desktop's Messenger. */
+  recentNotes: RecentNote[];
   shouts: Shout[];
   blasts: Blast[];
   almost: AlmostItem[];
@@ -30,14 +33,13 @@ export type DesktopData = {
 /** The windows that show one page: they change when the reader goes somewhere else, the computer around them doesn't. */
 export function DeskPage({ data }: { data: DesktopData }) {
   const { entry, entries, owner } = data;
-  const { me, open, write, setCurrent, buzz, listening, awake } = useDesk();
+  const { me, open, patch, write, setCurrent, buzz, listening, awake } = useDesk();
   /**
-   * Whose things these windows show: the diary's owner. The front page belongs to nobody in particular, so its
-   * mixtape is everyone's songs and it shows no one's blast, bin or Last.fm; only Messenger, which is about the
-   * page itself, names that page's writer.
+   * Whose things these windows show: the diary's owner. The front page belongs to nobody, so it opens no one's
+   * page: its mixtape is everyone's songs, its Messenger the newest notes on every diary, its guestbook the shared
+   * one, and it shows no one's blast, bin or Last.fm.
    */
   const persona = owner;
-  const pageWriter = owner ?? entry?.author ?? null;
   const [photoView, setPhotoView] = useState<number | null>(null);
   /** The mood the archive is gathering nights by: picked there, or from a page's "Current mood". */
   const [mood, setMood] = useState<string | null>(null);
@@ -53,10 +55,12 @@ export function DeskPage({ data }: { data: DesktopData }) {
 
   useEffect(() => {
     if (entry) void apiSend(`/entries/${entry.id}/read`);
-    // The front page leads with everyone's pages; a diary leads with its page.
-    if (!owner) open("tonight");
-    else if (entry) open("diary");
-  }, [entry, owner, open]);
+    // The front page leads with everyone's pages and opens no one's; a diary leads with its page.
+    if (!owner) {
+      open("tonight");
+      patch("diary", { open: false });
+    } else if (entry) open("diary");
+  }, [entry, owner, open, patch]);
 
   useEffect(() => {
     const want = new URLSearchParams(window.location.search).get("open");
@@ -106,18 +110,22 @@ export function DeskPage({ data }: { data: DesktopData }) {
           }}
         />
       </DeskWindow>
-      <DeskWindow id="msn" title={pageWriter ? `Messenger — ${pageWriter.name}` : undefined}>
-        <Messenger
-          key={entry?.id ?? "none"}
-          entry={entry}
-          persona={pageWriter}
-          notes={data.notes}
-          blasts={data.blasts}
-          awake={awake}
-          live={listening}
-          onBuzz={() => buzz(true)}
-          me={me}
-        />
+      <DeskWindow id="msn" title={owner ? `Messenger — ${owner.name}` : "Messenger — everyone"}>
+        {owner ? (
+          <Messenger
+            key={entry?.id ?? "none"}
+            entry={entry}
+            persona={owner}
+            notes={data.notes}
+            blasts={data.blasts}
+            awake={awake}
+            live={listening}
+            onBuzz={() => buzz(true)}
+            me={me}
+          />
+        ) : (
+          <RecentNotes initial={data.recentNotes} onTonight={() => open("tonight")} />
+        )}
       </DeskWindow>
       <DeskWindow id="guest" title={owner ? `${owner.name}'s guestbook` : "Guestbook — everyone"}>
         <Guestbook key={owner?.handle ?? "_"} initial={data.shouts} me={me} owner={owner} />

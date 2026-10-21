@@ -1,5 +1,6 @@
-import { noteInput, reactInput, reportInput } from "@4me/shared";
+import { noteInput, type RecentNote, reactInput, reportInput } from "@4me/shared";
 import { and, asc, desc, eq, lt, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { type Context, Hono } from "hono";
 import { entries, notes, users } from "../db/schema";
 import type { AppEnv } from "../env";
@@ -7,6 +8,7 @@ import {
   authorCols,
   fileNoteReport,
   fileReport,
+  isOpen,
   isReadable,
   noteCount,
   origin,
@@ -34,7 +36,36 @@ function readable(c: Context<AppEnv>) {
 
 const byAuthor = (handle: string | undefined) => (handle ? eq(users.handle, handle.toLowerCase()) : undefined);
 
+const noteWriter = alias(users, "note_writer");
+
 export const entryRoutes = new Hono<AppEnv>()
+  /** The newest notes on every readable page, for the front desktop's Messenger. */
+  .get("/notes/recent", async (c) => {
+    const limit = Math.min(Math.max(Number(c.req.query("limit")) || 30, 1), 50);
+    const rows = await c
+      .get("db")
+      .select({
+        n: notes,
+        m: { avatar: noteWriter.avatar, handle: noteWriter.handle },
+        title: entries.title,
+        slug: entries.slug,
+        handle: users.handle,
+        author: users.displayName,
+      })
+      .from(notes)
+      .innerJoin(entries, eq(entries.id, notes.entryId))
+      .innerJoin(users, eq(users.id, entries.authorId))
+      .leftJoin(noteWriter, eq(noteWriter.id, notes.userId))
+      .where(and(isReadable, isOpen, eq(notes.status, "visible")))
+      .orderBy(desc(notes.createdAt))
+      .limit(limit);
+    c.header("Cache-Control", cache(10));
+    const recent: RecentNote[] = rows.reverse().map((r) => ({
+      ...toNote(r.n, r.m),
+      page: { title: r.title, slug: r.slug, handle: r.handle, author: r.author },
+    }));
+    return c.json(recent);
+  })
   .get("/", async (c) => {
     const limit = Math.min(Math.max(Number(c.req.query("limit")) || 20, 1), 50);
     const before = c.req.query("before");
@@ -145,7 +176,7 @@ export const entryRoutes = new Hono<AppEnv>()
       })
       .returning();
     const note = toNote(row!);
-    if (status === "visible") publish(c, [`entry:${entry.id}`], { type: "note", entryId: entry.id, note });
+    if (status === "visible") publish(c, [`entry:${entry.id}`, "notes"], { type: "note", entryId: entry.id, note });
     const link = `/u/${entry.handle}/${entry.slug}`;
     const actor = { name: input.name, avatar: null };
     if (thread?.userId && status === "visible")
@@ -207,7 +238,8 @@ export const entryRoutes = new Hono<AppEnv>()
     const id = positiveId(c.req.param("noteId"));
     const done = id ? await fileNoteReport(c, id, `ip:${await ipHash(c)}`, input.reason) : null;
     if (!done) return c.json({ error: "not found" }, 404);
-    if (done.hidden) publish(c, [`entry:${done.entryId}`], { type: "note-gone", entryId: done.entryId, noteId: id! });
+    if (done.hidden)
+      publish(c, [`entry:${done.entryId}`, "notes"], { type: "note-gone", entryId: done.entryId, noteId: id! });
     return c.json({ ok: true });
   })
   /** A guest reports a page. Members report through the web server, so it counts them by account instead. */

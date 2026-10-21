@@ -181,6 +181,9 @@ export type Note = {
   editedAt: string | null;
 };
 
+/** A note as the front desktop's Messenger shows it: with the page it was left on. */
+export type RecentNote = Note & { page: { title: string; slug: string; handle: string; author: string } };
+
 /** A diary a member subscribed to: whose, and when they last wrote. */
 export type Subscription = Author & { lastWroteAt: string | null };
 

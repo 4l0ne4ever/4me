@@ -439,7 +439,7 @@ export const internalRoutes = new Hono<AppEnv>()
       })
       .returning();
     const note = toNote(row!, u);
-    if (status === "visible") publish(c, [`entry:${entry.id}`], { type: "note", entryId: entry.id, note });
+    if (status === "visible") publish(c, [`entry:${entry.id}`, "notes"], { type: "note", entryId: entry.id, note });
     const link = `/u/${entry.handle}/${entry.slug}`;
     const actor = { name: u.displayName, avatar: u.avatar };
     const told = new Set<number>([u.id]);
@@ -498,7 +498,7 @@ export const internalRoutes = new Hono<AppEnv>()
     const replies = await db.select({ id: notes.id }).from(notes).where(eq(notes.parentId, noteId));
     await db.delete(notes).where(eq(notes.id, noteId));
     await dropReactions(c, "note", [noteId, ...replies.map((r) => r.id)]);
-    publish(c, [`entry:${row.entryId}`], { type: "note-gone", entryId: row.entryId, noteId });
+    publish(c, [`entry:${row.entryId}`, "notes"], { type: "note-gone", entryId: row.entryId, noteId });
     return c.json({ deleted: noteId });
   })
   /** The note's writer edits it. A link added later sends it back for approval, like a new note with one. */
@@ -524,8 +524,9 @@ export const internalRoutes = new Hono<AppEnv>()
       .returning();
     const counts = (await countsFor(c, "note", [noteId])).get(noteId);
     const note = toNote(row!, u, counts);
-    if (row!.status === "visible") publish(c, [`entry:${row!.entryId}`], { type: "note", entryId: row!.entryId, note });
-    else publish(c, [`entry:${row!.entryId}`], { type: "note-gone", entryId: row!.entryId, noteId });
+    if (row!.status === "visible")
+      publish(c, [`entry:${row!.entryId}`, "notes"], { type: "note", entryId: row!.entryId, note });
+    else publish(c, [`entry:${row!.entryId}`, "notes"], { type: "note-gone", entryId: row!.entryId, noteId });
     return c.json({ note, pending: row!.status !== "visible" });
   })
   .post("/users/:id/reports/notes/:noteId", json(z.object({ reason: reportReason })), async (c) => {
@@ -545,7 +546,7 @@ export const internalRoutes = new Hono<AppEnv>()
     const done = noteId ? await fileNoteReport(c, noteId, `u:${u.id}`, c.req.valid("json").reason) : null;
     if (!done) return c.json({ error: "not found" }, 404);
     if (done.hidden)
-      publish(c, [`entry:${done.entryId}`], { type: "note-gone", entryId: done.entryId, noteId: noteId! });
+      publish(c, [`entry:${done.entryId}`, "notes"], { type: "note-gone", entryId: done.entryId, noteId: noteId! });
     return c.json({ ok: true });
   })
 
@@ -880,7 +881,7 @@ export const internalRoutes = new Hono<AppEnv>()
       const [m] = row.userId
         ? await db.select({ avatar: users.avatar, handle: users.handle }).from(users).where(eq(users.id, row.userId))
         : [];
-      publish(c, [`entry:${row.entryId}`], { type: "note", entryId: row.entryId, note: toNote(row, m) });
+      publish(c, [`entry:${row.entryId}`, "notes"], { type: "note", entryId: row.entryId, note: toNote(row, m) });
     }
     return c.json({ ok: true });
   })

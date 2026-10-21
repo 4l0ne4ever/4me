@@ -33,5 +33,5 @@ export type LiveEvent =
   | { type: "entry"; entry: EntrySummary }
   | { type: "notify"; notification: Notification };
 
-export const PUBLIC_TOPIC = /^(entry:\d{1,10}|guest:(_|[a-z0-9][a-z0-9_]{1,19})|tonight)$/;
+export const PUBLIC_TOPIC = /^(entry:\d{1,10}|guest:(_|[a-z0-9][a-z0-9_]{1,19})|tonight|notes)$/;
 export const MAX_TOPICS = 6;

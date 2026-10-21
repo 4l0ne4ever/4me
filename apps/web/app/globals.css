@@ -3494,3 +3494,25 @@ body.busy * {
     animation: none;
   }
 }
+
+/* the front desktop's Messenger: the newest notes on every diary */
+.rn-day {
+  margin: 10px 0 4px;
+  font-size: 11px;
+  color: var(--chrome-dim);
+  text-align: center;
+}
+.rn-day:first-child {
+  margin-top: 0;
+}
+.rn-on {
+  color: var(--chrome-dim);
+}
+.chat .rn-on a {
+  color: var(--chrome-dim);
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 2px;
+}
+.chat .rn-on a:hover {
+  color: var(--chrome-ink);
+}

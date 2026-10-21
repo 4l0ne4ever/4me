@@ -242,7 +242,7 @@ function DiaryPage({
             ? mine
               ? "Your desktop is ready. Open Write to post your first night."
               : `${owner.name} hasn't written a page yet.`
-            : "The first night will appear here once someone writes it."}
+            : "The front page belongs to everyone, so no one page is open here. Pick a night from Tonight to read it."}
         </p>
       </div>
     );

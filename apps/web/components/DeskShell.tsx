@@ -556,7 +556,11 @@ export function DeskShell({ children }: { children: ReactNode }) {
   const entryId = current.entry?.id;
   const ownerHandle = current.owner?.handle;
   const topics = useMemo(
-    () => [entryId ? `entry:${entryId}` : "", `guest:${ownerHandle ?? "_"}`, "tonight"].filter(Boolean),
+    // The front desktop's Messenger follows the notes on every page.
+    () =>
+      [entryId ? `entry:${entryId}` : "", `guest:${ownerHandle ?? "_"}`, "tonight", ownerHandle ? "" : "notes"].filter(
+        Boolean,
+      ),
     [entryId, ownerHandle],
   );
   const liveState = useLiveConnection(topics, me ? liveTicket : null);
