@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { handle } from "./accounts";
 import { songPick } from "./music";
 
 const name = z
@@ -48,13 +47,16 @@ export const memberReactInput = z.object({
   targetId: z.number().int().positive(),
   kind: reactionKind.nullable(),
 });
-export const memberShoutInput = z.object({ body: z.string().trim().min(1).max(280), owner: handle.optional() });
+/** Whose guestbook: a desktop address. The API looks the member up ("4me", the first diary, is reserved but real). */
+const guestbookOwner = z.string().trim().min(1).max(24);
 
-/** `owner` signs that member's guestbook; without it, the shared one on the front desktop. */
+export const memberShoutInput = z.object({ body: z.string().trim().min(1).max(280), owner: guestbookOwner });
+
+/** A guestbook belongs to a diary: `owner` is whose guestbook is signed. */
 export const shoutInput = z.object({
   name: name.default("a stranger"),
   body: z.string().trim().min(1).max(280),
-  owner: handle.optional(),
+  owner: guestbookOwner,
   turnstileToken: z.string().max(2048).optional(),
 });
 export type ShoutInput = z.input<typeof shoutInput>;

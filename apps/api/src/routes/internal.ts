@@ -642,18 +642,17 @@ export const internalRoutes = new Hono<AppEnv>()
     if (!(await allowKey(c, `member-shout:${u.id}`, 10, 600)))
       return c.json({ error: "slow down a little, try again soon" }, 429);
     const { body, owner: ownerHandle } = c.req.valid("json");
-    const owner = ownerHandle ? await activeMember(c, ownerHandle) : null;
-    if (ownerHandle && !owner) return c.json({ error: "not found" }, 404);
-    const status = owner?.id !== u.id && looksLikeSpam(body) ? "pending" : "visible";
+    const owner = await activeMember(c, ownerHandle);
+    if (!owner) return c.json({ error: "not found" }, 404);
+    const status = owner.id !== u.id && looksLikeSpam(body) ? "pending" : "visible";
     const [row] = await c
       .get("db")
       .insert(shouts)
-      .values({ ownerId: owner?.id ?? null, userId: u.id, name: u.displayName, body, status })
+      .values({ ownerId: owner.id, userId: u.id, name: u.displayName, body, status })
       .returning();
     const shout = toShout(row!, u);
-    if (status === "visible")
-      publish(c, [`guest:${owner?.handle ?? "_"}`], { type: "shout", owner: owner?.handle ?? null, shout });
-    if (owner && owner.id !== u.id)
+    if (status === "visible") publish(c, [`guest:${owner.handle}`], { type: "shout", owner: owner.handle, shout });
+    if (owner.id !== u.id)
       await notify(c, owner.id, {
         kind: "shout",
         text: `${u.displayName} signed your guestbook${status === "pending" ? " (waiting for approval)" : ""}`,

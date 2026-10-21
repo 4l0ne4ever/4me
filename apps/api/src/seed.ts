@@ -131,10 +131,14 @@ export async function seedIfEmpty(db: DB) {
   ]);
 
   await db.insert(shouts).values([
-    { name: "grey_cloud_92", body: "read the bus 18 one on a night shift. felt like someone was sitting with me :-)" },
-    { name: "hanh.", body: "first hit counter since 2007. visitor four thousand something <3" },
-    { name: "wren", body: "your cat walked across my screen and i laughed out loud" },
-    { name: "m.", body: "leaving the light on for whoever reads this at 3 am" },
+    {
+      ownerId: author!.id,
+      name: "grey_cloud_92",
+      body: "read the bus 18 one on a night shift. felt like someone was sitting with me :-)",
+    },
+    { ownerId: author!.id, name: "hanh.", body: "first hit counter since 2007. visitor four thousand something <3" },
+    { ownerId: author!.id, name: "wren", body: "your cat walked across my screen and i laughed out loud" },
+    { ownerId: author!.id, name: "m.", body: "leaving the light on for whoever reads this at 3 am" },
     { ownerId: lan!.id, name: "hanh.", body: "the tram one. yes. exactly that." },
   ]);
 

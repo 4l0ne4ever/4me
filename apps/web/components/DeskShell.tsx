@@ -263,17 +263,16 @@ export function DeskShell({ children }: { children: ReactNode }) {
   const path = usePathname() ?? "/";
   const router = useRouter();
   const [wins, setWins] = useState<Record<WinId, WinState>>(() => ({
-    // The front page opens on everyone's newest pages; a diary opens on its page.
-    // The front page is everyone's: tonight's pages, the shared guestbook and tonight's songs. A diary opens on its
-    // page and its Messenger.
+    // The front page is everyone's: tonight's pages, the newest notes on all of them and tonight's songs. A diary
+    // opens on its page and its Messenger.
     tonight: { open: path === "/", min: false, z: 14 },
     diary: { open: path !== "/", min: false, z: 13 },
-    msn: { open: path !== "/", min: false, z: 12 },
+    msn: { open: true, min: false, z: 12 },
     amp: { open: true, min: false, z: 11 },
     write: { open: false, min: false, z: 10 },
     search: { open: false, min: false, z: 10 },
     archive: { open: false, min: false, z: 10 },
-    guest: { open: path === "/", min: false, z: 10 },
+    guest: { open: false, min: false, z: 10 },
     photos: { open: false, min: false, z: 10 },
     almost: { open: false, min: false, z: 10 },
     display: { open: false, min: false, z: 10 },
@@ -558,15 +557,13 @@ export function DeskShell({ children }: { children: ReactNode }) {
     window.setTimeout(() => setShaking(false), 650);
   }, []);
 
-  /* live: the page on screen, the guestbook on screen, new pages, and (signed in) my notifications */
+  /* live: the page on screen, the diary's guestbook (or, on the front, every note), new pages, and my notifications */
   const entryId = current.entry?.id;
   const ownerHandle = current.owner?.handle;
   const topics = useMemo(
     // The front desktop's Messenger follows the notes on every page.
     () =>
-      [entryId ? `entry:${entryId}` : "", `guest:${ownerHandle ?? "_"}`, "tonight", ownerHandle ? "" : "notes"].filter(
-        Boolean,
-      ),
+      [entryId ? `entry:${entryId}` : "", ownerHandle ? `guest:${ownerHandle}` : "notes", "tonight"].filter(Boolean),
     [entryId, ownerHandle],
   );
   const liveState = useLiveConnection(topics, me ? liveTicket : null);

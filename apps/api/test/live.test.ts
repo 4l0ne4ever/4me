@@ -145,8 +145,6 @@ describe("live updates and notifications", () => {
     await send("POST", "/guestbook", { name: "moth", body: "hi lan", owner: "lan" }, false);
     expect(of("shout")[0]).toMatchObject({ topics: ["guest:lan"], event: { owner: "lan" } });
     expect(of("notify")[0]).toMatchObject({ topics: [`user:${lan.id}`] });
-    await send("POST", "/guestbook", { name: "moth", body: "hi all" }, false);
-    expect(of("shout")[1]?.topics).toEqual(["guest:_"]);
   });
 
   it("announces a new public page on Tonight, but not a private one", async () => {

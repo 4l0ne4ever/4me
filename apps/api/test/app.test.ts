@@ -102,19 +102,21 @@ describe("notes and guestbooks", () => {
     expect((await post(`/entries/${lamps}/notes`, { body: "" })).status).toBe(400);
   });
 
-  it("keeps each member's guestbook apart from the shared one", async () => {
+  it("keeps a guestbook per diary, and none that belongs to nobody", async () => {
     await post("/guestbook", { body: "for lan only", owner: "lan" });
     const lans = (await (await call("/guestbook?owner=lan")).json()) as Array<{ body: string }>;
-    const shared = (await (await call("/guestbook")).json()) as Array<{ body: string }>;
+    const mine = (await (await call("/guestbook?owner=4me")).json()) as Array<{ body: string }>;
     expect(lans.map((s) => s.body)).toContain("for lan only");
-    expect(shared.map((s) => s.body)).not.toContain("for lan only");
+    expect(mine.map((s) => s.body)).not.toContain("for lan only");
+    expect(await (await call("/guestbook")).json()).toEqual([]);
+    expect((await post("/guestbook", { body: "hello?" })).status).toBe(400);
     expect((await post("/guestbook", { body: "hello?", owner: "nobody" })).status).toBe(404);
   });
 
   it("rate-limits one visitor", async () => {
     const statuses: number[] = [];
     for (let i = 0; i < 6; i++)
-      statuses.push((await post("/guestbook", { body: `shout ${i}` }, { ip: "10.9.9.9" })).status);
+      statuses.push((await post("/guestbook", { body: `shout ${i}`, owner: "lan" }, { ip: "10.9.9.9" })).status);
     expect(statuses.slice(0, 5).every((s) => s === 201)).toBe(true);
     expect(statuses[5]).toBe(429);
   });

@@ -11,8 +11,32 @@ import { useTurnstile } from "../Turnstile";
 
 const EMOTICONS = [":-)", ":-(", "<3", ";-)", "zzz", "^_^"];
 
-/** The shared guestbook on the front desktop, or a member's own one on theirs. */
+/**
+ * A diary's guestbook: words for its writer, not for any one page (those are notes). The front desktop belongs to
+ * nobody, so it has no guestbook of its own; it says where to find them.
+ */
 export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | null; owner: Profile | null }) {
+  if (!owner) return <NoGuestbook me={me} />;
+  return <Signing initial={initial} me={me} owner={owner} />;
+}
+
+function NoGuestbook({ me }: { me: Me | null }) {
+  return (
+    <div className="body shouts gb-none">
+      <p>
+        Every diary keeps its own guestbook, for words to its writer rather than to one page. Open someone&apos;s diary,
+        from Tonight or Search, to sign theirs.
+      </p>
+      {me && (
+        <p>
+          <DeskLink href={`/u/${me.handle}?open=guest`}>Read your own guestbook</DeskLink>
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Signing({ initial, me, owner }: { initial: Shout[]; me: Me | null; owner: Profile }) {
   const [shouts, setShouts] = useState(initial);
   const [name, setName] = useState("");
   const [text, setText] = useState("");
@@ -21,10 +45,10 @@ export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | n
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const human = useTurnstile();
-  useFresh<Shout[]>(`${API_URL}/guestbook${owner ? `?owner=${encodeURIComponent(owner.handle)}` : ""}`, setShouts);
+  useFresh<Shout[]>(`${API_URL}/guestbook?owner=${encodeURIComponent(owner.handle)}`, setShouts);
   const addShout = (shout: Shout) => setShouts((s) => (s.some((x) => x.id === shout.id) ? s : [...s, shout]));
   useLiveEvent((e) => {
-    if (e.type === "shout" && e.owner === (owner?.handle ?? null)) addShout(e.shout);
+    if (e.type === "shout" && e.owner === owner.handle) addShout(e.shout);
   });
 
   useEffect(() => {
@@ -37,7 +61,7 @@ export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | n
     setBusy(true);
     setNote(null);
     const res = me
-      ? await shoutAsMember(text, owner?.handle).then((r) =>
+      ? await shoutAsMember(text, owner.handle).then((r) =>
           r.ok
             ? { ok: true as const, data: { shout: r.shout, pending: r.pending } }
             : { ok: false as const, error: r.error },
@@ -45,7 +69,7 @@ export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | n
       : await apiSend<{ shout: Shout; pending: boolean }>("/guestbook", {
           name,
           body: text,
-          owner: owner?.handle,
+          owner: owner.handle,
           turnstileToken: human.token,
         });
     setBusy(false);
@@ -61,7 +85,7 @@ export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | n
     <>
       <div className="body shouts" ref={list} aria-live="polite">
         {shouts.length === 0 && (
-          <p className="shout">Nobody has signed {owner ? `${owner.name}'s guestbook` : "yet"}. Be the first.</p>
+          <p className="shout">Nobody has signed {owner.name}&apos;s guestbook yet. Be the first.</p>
         )}
         {shouts.map((s) => (
           <div className="shout" key={s.id}>

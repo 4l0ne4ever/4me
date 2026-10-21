@@ -1,5 +1,5 @@
 import { handle as handleSchema, type Profile, shoutInput } from "@4me/shared";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { almost, blasts, catStats, entries, follows, shouts, users } from "../db/schema";
 import type { AppEnv } from "../env";
@@ -58,18 +58,20 @@ export const socialRoutes = new Hono<AppEnv>()
     c.header("Cache-Control", "public, max-age=30, s-maxage=60");
     return c.json(profile);
   })
-  /** `?owner=<handle>` is that member's guestbook; without it, the shared one on the front desktop. */
+  /**
+   * `?owner=<handle>` is that member's guestbook. Every guestbook belongs to a diary; the old shared one (shouts with
+   * no owner) is no longer shown.
+   */
   .get("/guestbook", async (c) => {
     const limit = Math.min(Math.max(Number(c.req.query("limit")) || 40, 1), 100);
-    const ownerHandle = c.req.query("owner");
-    const owner = ownerHandle ? await activeMember(c, ownerHandle) : null;
-    if (ownerHandle && !owner) return c.json([]);
+    const owner = await activeMember(c, c.req.query("owner"));
+    if (!owner) return c.json([]);
     const rows = await c
       .get("db")
       .select({ s: shouts, m: { avatar: users.avatar, handle: users.handle } })
       .from(shouts)
       .leftJoin(users, eq(users.id, shouts.userId))
-      .where(and(eq(shouts.status, "visible"), owner ? eq(shouts.ownerId, owner.id) : isNull(shouts.ownerId)))
+      .where(and(eq(shouts.status, "visible"), eq(shouts.ownerId, owner.id)))
       .orderBy(desc(shouts.createdAt))
       .limit(limit);
     c.header("Cache-Control", "public, max-age=10, s-maxage=10");
@@ -81,24 +83,22 @@ export const socialRoutes = new Hono<AppEnv>()
     if (!(await allow(c, "shout", 5, 600))) return c.json({ error: "slow down a little, try again soon" }, 429);
     const nameProblem = await anonymousNameProblem(c, input.name);
     if (nameProblem) return c.json({ error: nameProblem }, 409);
-    const owner = input.owner ? await activeMember(c, input.owner) : null;
-    if (input.owner && !owner) return c.json({ error: "not found" }, 404);
+    const owner = await activeMember(c, input.owner);
+    if (!owner) return c.json({ error: "not found" }, 404);
     const status = looksLikeSpam(input.body) ? "pending" : "visible";
     const [row] = await c
       .get("db")
       .insert(shouts)
-      .values({ ownerId: owner?.id ?? null, name: input.name, body: input.body, status, ipHash: await ipHash(c) })
+      .values({ ownerId: owner.id, name: input.name, body: input.body, status, ipHash: await ipHash(c) })
       .returning();
     const shout = toShout(row!);
-    if (status === "visible")
-      publish(c, [`guest:${owner?.handle ?? "_"}`], { type: "shout", owner: owner?.handle ?? null, shout });
-    if (owner)
-      await notify(c, owner.id, {
-        kind: "shout",
-        text: `${input.name} signed your guestbook${status === "pending" ? " (waiting for approval)" : ""}`,
-        link: `/u/${owner.handle}?open=guest`,
-        actor: { name: input.name, avatar: null },
-      });
+    if (status === "visible") publish(c, [`guest:${owner.handle}`], { type: "shout", owner: owner.handle, shout });
+    await notify(c, owner.id, {
+      kind: "shout",
+      text: `${input.name} signed your guestbook${status === "pending" ? " (waiting for approval)" : ""}`,
+      link: `/u/${owner.handle}?open=guest`,
+      actor: { name: input.name, avatar: null },
+    });
     return c.json({ shout, pending: status === "pending" }, 201);
   })
   .get("/blasts", async (c) => {

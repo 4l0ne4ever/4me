@@ -7,7 +7,7 @@ const q = encodeURIComponent;
 /**
  * Everything a desktop shows, fetched in parallel; any piece that fails falls back to empty.
  * Without a handle it is the front desktop: everyone's pages, the newest notes on all of them and the shared
- * guestbook, with no one page open (the front page belongs to nobody).
+ * no guestbook (each diary keeps its own), and no one page open: the front page belongs to nobody.
  * With one it is that member's desktop, or null when there is no such member.
  */
 export async function loadDesktop({
@@ -24,7 +24,7 @@ export async function loadDesktop({
     who ? apiGet<Entry>(slug ? `/entries/by/${q(who)}/${q(slug)}` : `/entries/latest?author=${q(who)}`, 30) : null,
     who ? apiGet<EntrySummary[]>(`/entries?author=${q(who)}&limit=30`, 60) : null,
     apiGet<EntrySummary[]>("/entries?limit=30", 30),
-    apiGet<Shout[]>(who ? `/guestbook?owner=${q(who)}` : "/guestbook", 15),
+    who ? apiGet<Shout[]>(`/guestbook?owner=${q(who)}`, 15) : null,
     who ? null : apiGet<RecentNote[]>("/entries/notes/recent", 10),
   ]);
   // Blasts and the bin belong to a diary's owner. The front page is everyone's, so it shows nobody's.

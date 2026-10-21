@@ -269,7 +269,7 @@ export default async function Admin({ searchParams }: Search) {
                   <span>
                     {s.body}
                     <small>
-                      {s.name} in {s.owner ? `/u/${s.owner}'s guestbook` : "the shared guestbook"}
+                      {s.name} in {s.owner ? `/u/${s.owner}'s guestbook` : "the old shared guestbook (no longer shown)"}
                     </small>
                   </span>
                   <Moderate kind="shout" id={s.id} />

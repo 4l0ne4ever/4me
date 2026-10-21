@@ -152,7 +152,7 @@ export async function myFeed(): Promise<EntrySummary[]> {
 /** `owner` is the member whose guestbook it is; without it, the shared one on the front desktop. */
 export async function shoutAsMember(
   body: string,
-  owner?: string,
+  owner: string,
 ): Promise<Ok<{ shout: Shout; pending: boolean }> | Fail> {
   const me = await getMe();
   if (!me) return signedOut;

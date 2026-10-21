@@ -127,7 +127,7 @@ export function DeskPage({ data }: { data: DesktopData }) {
           <RecentNotes initial={data.recentNotes} onTonight={() => open("tonight")} />
         )}
       </DeskWindow>
-      <DeskWindow id="guest" title={owner ? `${owner.name}'s guestbook` : "Guestbook — everyone"}>
+      <DeskWindow id="guest" title={owner ? `${owner.name}'s guestbook` : "Guestbooks"}>
         <Guestbook key={owner?.handle ?? "_"} initial={data.shouts} me={me} owner={owner} />
       </DeskWindow>
       <DeskWindow id="amp" title={whose ? `${whose} mixtape.m3u` : "mixtape.m3u — tonight's songs"}>

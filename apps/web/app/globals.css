@@ -3516,3 +3516,13 @@ body.busy * {
 .chat .rn-on a:hover {
   color: var(--chrome-ink);
 }
+
+/* the front desktop has no guestbook: where to find them */
+.gb-none {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  line-height: 1.5;
+  color: var(--chrome-ink);
+}

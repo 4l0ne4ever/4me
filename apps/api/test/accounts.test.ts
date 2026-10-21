@@ -106,7 +106,7 @@ describe("accounts", () => {
   });
 
   it("stops anonymous readers from writing under a member's name", async () => {
-    const res = await post("/guestbook", { name: "wren", body: "it's me, honest" }, { internal: false });
+    const res = await post("/guestbook", { name: "wren", body: "it's me, honest", owner: "lan" }, { internal: false });
     expect(res.status).toBe(409);
   });
 
@@ -224,10 +224,10 @@ describe("leaving", () => {
   it("deletes the account and unsigns their notes", async () => {
     const res = await post("/internal/users", { email: "bye@example.com", displayName: "Leaver", passwordHash: HASH });
     const { id } = (await res.json()) as { id: number };
-    await post(`/internal/users/${id}/shouts`, { body: "goodbye" });
+    await post(`/internal/users/${id}/shouts`, { body: "goodbye", owner: "lan" });
     expect((await call(`/internal/users/${id}`, { method: "DELETE" })).status).toBe(200);
     expect((await call(`/internal/users/${id}`)).status).toBe(404);
-    const shouts = (await (await call("/guestbook", { internal: false })).json()) as Array<{
+    const shouts = (await (await call("/guestbook?owner=lan", { internal: false })).json()) as Array<{
       name: string;
       body: string;
       member: unknown;
