@@ -2,7 +2,7 @@
 
 import { avatarUrl, type Me, type Profile, type Shout } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { API_URL, apiSend, hhmm } from "@/lib/api";
+import { API_URL, apiSend, stamp } from "@/lib/api";
 import { useFresh, useLiveEvent } from "@/lib/live";
 import { shoutAsMember } from "@/lib/member-actions";
 import { DeskLink } from "../DeskLink";
@@ -70,7 +70,7 @@ export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | n
               <b title={s.member ? "member" : undefined}>
                 {s.member ? <DeskLink href={`/u/${s.member.handle}`}>{s.name}</DeskLink> : s.name}
               </b>
-              <span> · {hhmm(s.createdAt)}</span>
+              <span> · {stamp(s.createdAt)}</span>
             </div>
             <p>{s.body}</p>
           </div>

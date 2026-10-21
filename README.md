@@ -172,8 +172,13 @@ Per visitor, Ink has two needs that drift over time, kept in the visitor's brows
 Every pet, fish and game is also counted for everyone on the API (`/cat`).
 
 - Click to pet. Press and drag across her to stroke her (purrs after a few strokes).
-- Right-click, long-press, or Shift+F10 opens her menu: give a fish (a bowl appears, she runs to it and eats),
+- Right-click, long-press, or Shift+F10 opens her menu: give a fish (a bowl drops in front of her and she eats it),
   play with the yarn (she chases it three times), pet, call her over. The Start menu has the same actions.
+- Right-click the empty desktop → *Drop a fish here*: the bowl falls from that point onto whatever is below it (a
+  window, a roof across the street, or the taskbar), and she finds her way there.
+- She walks about, and now and then climbs up the side of a window or a house to sit on top, walk along it, or
+  nap there. Drag the window and she rides along; close or minimise it and she drops to whatever is below. Every
+  surface comes from the page itself (`components/ink/world.ts`); on phones she keeps to the taskbar.
 - A reader's note or shout earns her a snack. A BUZZ makes her jump.
 - She sleeps by day (the diary is awake from 17:00 to 06:00 in the reader's own time), begs at the Start button
   when hungry, and asks for attention when lonely.

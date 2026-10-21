@@ -34,6 +34,13 @@
 .ink.flip canvas {
   transform: scaleX(-1);
 }
+/* climbing a wall: upright, paws to the wall */
+.ink[data-climb="left"] canvas {
+  transform: rotate(-90deg);
+}
+.ink[data-climb="right"] canvas {
+  transform: scaleX(-1) rotate(-90deg);
+}
 .ink[data-mode="jump"] .ink-btn {
   animation: ink-hop 0.45s cubic-bezier(0.3, 1.6, 0.6, 1) 2;
 }
@@ -168,26 +175,6 @@
     rotate: 360deg;
   }
 }
-.ink-fish {
-  position: fixed;
-  z-index: 111;
-  width: 24px;
-  height: 15px;
-  pointer-events: none;
-  animation: ink-drop 600ms cubic-bezier(0.55, 0, 1, 0.45) both;
-}
-@keyframes ink-drop {
-  from {
-    transform: translateY(-160px) rotate(-30deg);
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-  }
-  to {
-    transform: translateY(0) rotate(0);
-  }
-}
 .ink-menu {
   position: fixed;
   z-index: 150;
@@ -282,4 +269,22 @@
   .ink[data-mode="held"] .ink-btn {
     animation: none;
   }
+}
+
+/* a bowl of fish dropped on the desktop: it falls onto a window, a roof or the taskbar */
+.ink-food {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 24px;
+  will-change: transform;
+}
+.ink-food canvas {
+  width: 24px;
+  height: 9px;
+}
+.ink-food canvas.ink-food-fish {
+  width: 16px;
+  height: 10px;
+  margin-bottom: -3px;
 }

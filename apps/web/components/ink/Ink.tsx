@@ -16,6 +16,7 @@ import { IconHeart } from "../Icons";
 import * as N from "./needs";
 import * as Sound from "./sounds";
 import { BOWL, FISH, FRAMES, type FrameName, H, paint, W, YARN } from "./sprites";
+import { CLIMB_INSET, findPlat, GROUND, landing, type Plat, plan, readPlatforms, type Step } from "./world";
 import "./ink.css";
 
 const SCALE = 3;
@@ -23,13 +24,20 @@ const CAT_W = W * SCALE;
 /** In the eating frame the bowl starts 15 pixels into the sprite. */
 const BOWL_OFFSET = 15 * SCALE;
 
-type Mode = "walk" | "run" | "sit" | "groom" | "happy" | "sleep" | "eat" | "crouch" | "jump" | "held" | "fall";
-type Task =
-  | { kind: "feed"; bowlX: number }
-  | { kind: "play"; kicks: number }
-  | { kind: "call" }
-  | { kind: "beg" }
-  | null;
+type Mode =
+  | "walk"
+  | "run"
+  | "sit"
+  | "groom"
+  | "happy"
+  | "sleep"
+  | "eat"
+  | "crouch"
+  | "jump"
+  | "held"
+  | "fall"
+  | "climb";
+type Task = { kind: "feed" } | { kind: "play"; kicks: number } | { kind: "call" } | { kind: "beg" } | null;
 type Pop = { id: number; kind: "heart" | "fish"; dx: number };
 type Press = {
   sx: number;
@@ -45,6 +53,11 @@ type Press = {
   carry: { dx: number; dy: number; ground: number } | null;
 };
 
+/** A bowl with a fish, dropped somewhere on the desktop: where it is, and the surface it landed on (null while falling). */
+type Food = { x: number; y: number; vy: number; on: string | null; platLeft: number };
+/** Where she is going, and how. */
+type Goal = { on: string; x: number; mode: Mode };
+
 /** Pixels per second squared when she drops. */
 const GRAVITY = 2600;
 
@@ -53,6 +66,11 @@ export type InkEvent = "buzz" | "note" | "call" | "feed" | "play";
 /** Let the rest of the desktop poke Ink: a buzz startles her, a note earns her a snack. */
 export function nudgeInk(event: InkEvent) {
   window.dispatchEvent(new CustomEvent<InkEvent>("ink", { detail: event }));
+}
+
+/** Drops a bowl of fish at this point on the screen: it falls onto whatever is below, and Ink goes to it. */
+export function feedInkAt(x: number, y: number) {
+  window.dispatchEvent(new CustomEvent("ink-feed", { detail: { x, y } }));
 }
 
 function Sprite({ rows, className }: { rows: readonly string[]; className?: string }) {
@@ -75,8 +93,11 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   const [bubble, setBubble] = useState<string | null>(null);
   const [pops, setPops] = useState<Pop[]>([]);
   const [menuLeft, setMenuLeft] = useState<number | null>(null);
-  const [bowl, setBowl] = useState<{ x: number; visible: boolean } | null>(null);
-  const [fishAt, setFishAt] = useState<number | null>(null);
+  const [menuLift, setMenuLift] = useState(0);
+  const [food, setFood] = useState(false);
+  const foodRef = useRef<Food | null>(null);
+  const foodEl = useRef<HTMLDivElement>(null);
+  const goRef = useRef<(on: string, x: number, speed?: number, mode?: Mode) => void>(() => undefined);
   const [yarnX, setYarnX] = useState<number | null>(null);
   const [needs, setNeeds] = useState<N.Needs>(() => N.fresh(0));
   const [sound, setSound] = useState(true);
@@ -102,6 +123,12 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     blinkUntil: 0,
     frame: "" as FrameName | "",
     press: null as Press | null,
+    /** The surface she stands on (null in the air), and where it was last frame, so she rides along with it. */
+    on: GROUND as string | null,
+    platLeft: 0,
+    route: [] as Step[],
+    goal: null as Goal | null,
+    climb: null as { id: string; side: "left" | "right" } | null,
   });
 
   useEffect(() => {
@@ -166,16 +193,6 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     if (root.current) root.current.dataset.mode = mode;
   }, []);
 
-  const walkTo = useCallback(
-    (x: number, speed = 40, mode: Mode = "walk") => {
-      const s = st.current;
-      s.target = Math.max(8, Math.min(window.innerWidth - CAT_W - 8, x));
-      s.speed = speed;
-      setMode(mode);
-    },
-    [setMode],
-  );
-
   const approach = (x: number) => {
     const s = st.current;
     return x > s.x ? x - CAT_W + 10 : x + 14;
@@ -207,21 +224,35 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     [pop, saveNeeds, setMode],
   );
 
+  /** A bowl of fish dropped from a point on the screen; she goes wherever it lands. */
+  const dropFood = useCallback(
+    (cx: number, cy: number) => {
+      setMenuLeft(null);
+      if (!awakeRef.current) return say("zzz… (smells fish)");
+      if (N.isFull(needsRef.current)) return say("full. maybe later.");
+      if (foodRef.current) return say("one fish at a time.");
+      const taskTop = document.querySelector(".task")?.getBoundingClientRect().top ?? window.innerHeight - 48;
+      foodRef.current = {
+        x: Math.max(BOWL_OFFSET + 4, Math.min(window.innerWidth - 30, cx - 12)),
+        y: Math.max(0, taskTop - cy),
+        vy: 0,
+        on: null,
+        platLeft: 0,
+      };
+      setFood(true);
+      st.current.task = { kind: "feed" };
+      Sound.mrrp();
+      say("!! fish !!", 1200);
+    },
+    [say],
+  );
+
+  /** From her menu: the bowl drops just in front of her, on whatever she is standing on. */
   const feedNow = useCallback(() => {
-    setMenuLeft(null);
     const s = st.current;
-    if (!awakeRef.current) return say("zzz… (smells fish)");
-    if (N.isFull(needsRef.current)) return say("full. maybe later.");
-    if (s.task?.kind === "feed") return;
-    const x = Math.max(BOWL_OFFSET + 12, Math.min(window.innerWidth - 40, s.x + (s.dir > 0 ? 110 : -50)));
-    setBowl({ x, visible: true });
-    setFishAt(x);
-    window.setTimeout(() => setFishAt(null), 700);
-    s.task = { kind: "feed", bowlX: x };
-    Sound.mrrp();
-    say("!! fish !!", 1200);
-    walkTo(x - BOWL_OFFSET, 120, "run");
-  }, [say, walkTo]);
+    const taskTop = document.querySelector(".task")?.getBoundingClientRect().top ?? window.innerHeight - 48;
+    dropFood(s.x + (s.dir > 0 ? CAT_W + 50 : -40), taskTop - s.y - 140);
+  }, [dropFood]);
 
   const playNow = useCallback(() => {
     setMenuLeft(null);
@@ -240,8 +271,8 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     setMenuLeft(null);
     if (!awakeRef.current) return say("zzz… not now.");
     st.current.task = { kind: "call" };
-    walkTo(window.innerWidth / 2 - CAT_W / 2, 120, "run");
-  }, [say, walkTo]);
+    goRef.current(GROUND, window.innerWidth / 2 - CAT_W / 2, 120, "run");
+  }, [say]);
 
   const snack = useCallback(() => {
     if (!awakeRef.current) return say("zzz… (smells fish)");
@@ -269,13 +300,65 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     saveNeeds(N.load(safeGet(STORE), Date.now()));
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const ctx = canvas.current?.getContext("2d");
+    const width = () => window.innerWidth;
+    const surfaces = () => readPlatforms(CAT_W);
+
+    /** Keeps her feet on the surface she is on: whole, over its span. */
+    const clampTo = (x: number) => {
+      const p = s.on && s.on !== GROUND ? findPlat(surfaces(), s.on, width()) : null;
+      if (!p) return Math.max(8, Math.min(width() - CAT_W - 8, x));
+      return Math.max(p.left - CAT_W / 2 + 4, Math.min(p.right - CAT_W / 2 - 4, x));
+    };
+
+    /** Starts the next leg of the trip, or, with none left, does whatever she went there for. */
+    const nextStep = () => {
+      const step = s.route.shift();
+      if (!step) {
+        s.goal = null;
+        return arrive();
+      }
+      if (step.kind === "walk") {
+        s.target = clampTo(step.x);
+        return setMode(s.goal?.mode ?? "walk");
+      }
+      s.on = null;
+      if (step.kind === "drop") {
+        s.vy = -300; // a little hop off the edge
+        return setMode("fall");
+      }
+      s.climb = { id: step.id, side: step.side };
+      setMode("climb");
+    };
+
+    /** Sets off for a spot on a surface, by whatever way gets there. */
+    const go = (on: string, x: number, speed = 40, mode: Mode = "walk") => {
+      s.goal = { on, x, mode };
+      s.speed = speed;
+      s.route = s.on ? plan({ on: s.on, x: s.x }, { on, x }, surfaces(), width(), CAT_W) : [{ kind: "walk", x }];
+      nextStep();
+    };
+    goRef.current = go;
+
+    /** Heads for the fish if it has landed somewhere. */
+    const goEat = () => {
+      const f = foodRef.current;
+      if (f?.on) go(f.on, f.x - BOWL_OFFSET, 120, "run");
+    };
 
     const arrive = () => {
       const task = s.task;
       if (task?.kind === "feed") {
+        const f = foodRef.current;
+        if (!f) {
+          s.task = null;
+          return setMode("sit", 1500);
+        }
+        // The fish can ride off on a window, or fall, while she walks: then she follows it.
+        if (f.on !== s.on || Math.abs(s.x - (f.x - BOWL_OFFSET)) > 8) return f.on ? goEat() : setMode("sit", 400);
         s.dir = 1;
-        s.x = task.bowlX - BOWL_OFFSET;
-        setBowl({ x: task.bowlX, visible: false });
+        s.x = f.x - BOWL_OFFSET;
+        foodRef.current = null;
+        setFood(false);
         setMode("eat", 2600);
         Sound.crunch(9);
         return;
@@ -299,13 +382,13 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
       const task = s.task;
       if (task?.kind === "feed" && s.mode === "eat") {
         s.task = null;
-        setBowl(null);
         saveNeeds(N.feed(needsRef.current));
         pop("heart", 2);
         say("nom nom. thank you.");
         void report("feed");
         return setMode("groom", 1800);
       }
+      if (task?.kind === "feed") return goEat();
       if (task?.kind === "play" && s.mode === "crouch") {
         if (task.kicks >= 3) {
           s.task = null;
@@ -320,20 +403,20 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
         const yarn = yarnRef.current ?? s.x;
         if (task.kicks > 0) {
           const away = yarn + (Math.random() < 0.5 ? -1 : 1) * (140 + Math.random() * 160);
-          const nx = Math.max(20, Math.min(window.innerWidth - 40, away));
+          const nx = Math.max(20, Math.min(width() - 40, away));
           yarnRef.current = nx;
           setYarnX(nx);
         }
         task.kicks++;
         if (task.kicks > 1) Sound.mrrp();
-        return walkTo(approach(yarnRef.current ?? yarn), 140, "run");
+        return go(GROUND, approach(yarnRef.current ?? yarn), 140, "run");
       }
       if (s.mode !== "sit") return setMode("sit", 1500 + Math.random() * 2500);
       const mood = N.moodOf(needsRef.current);
       const r = Math.random();
       if ((mood === "hungry" || mood === "starving") && r < 0.35) {
         s.task = { kind: "beg" };
-        return walkTo(70);
+        return go(GROUND, 70);
       }
       if (mood === "lonely" && r < 0.3) {
         setMode("sit", 3500);
@@ -341,12 +424,40 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
       }
       if (r < 0.2) return setMode("groom", 2200);
       if (r < 0.8) {
-        const max = window.innerWidth - CAT_W - 10;
-        let t = 10 + Math.random() * (max - 10);
-        if (Math.abs(t - s.x) < 120) t = s.x > max / 2 ? s.x - 180 : s.x + 180;
-        return walkTo(t);
+        const up = surfaces();
+        // Now and then she climbs onto a window or a roof, and from up there, now and then, she hops down again.
+        if (s.on === GROUND && up.length > 0 && Math.random() < 0.35) {
+          const p = up[Math.floor(Math.random() * up.length)]!;
+          return go(p.id, p.left + Math.random() * Math.max(0, p.right - p.left - CAT_W));
+        }
+        if (s.on !== GROUND && Math.random() < 0.3) return go(GROUND, 10 + Math.random() * (width() - CAT_W - 20));
+        const here = s.on ? findPlat(up, s.on, width()) : null;
+        const lo = here && here.id !== GROUND ? here.left : 10;
+        const hi = here && here.id !== GROUND ? here.right - CAT_W : width() - CAT_W - 10;
+        let t = lo + Math.random() * Math.max(0, hi - lo);
+        if (Math.abs(t - s.x) < 60 && hi - lo > 200) t = s.x > (lo + hi) / 2 ? s.x - 140 : s.x + 140;
+        return go(s.on ?? GROUND, t);
       }
       setMode("sit", 3000);
+    };
+
+    /** She has come down onto a surface: carry on with the trip, or shake it off. */
+    const land = (p: Plat, speed: number) => {
+      s.y = p.y;
+      s.vy = 0;
+      s.on = p.id;
+      s.platLeft = p.left;
+      if (s.goal) {
+        Sound.thud();
+        s.route = plan({ on: p.id, x: s.x }, s.goal, surfaces(), width(), CAT_W);
+        return nextStep();
+      }
+      const hard = speed > 900;
+      Sound.thud();
+      setMode("crouch", hard ? 700 : 400);
+      if (hard) say(awakeRef.current ? "!!" : "…mrr. zzz", 1200);
+      // A fish is still waiting somewhere: she remembers it.
+      if (foodRef.current && awakeRef.current) s.task = { kind: "feed" };
     };
 
     const draw = (f: FrameName) => {
@@ -361,24 +472,65 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     const tick = (t: number) => {
       const dt = Math.min(0.05, (t - last) / 1000);
       last = t;
+      const up = surfaces();
       const carried = s.mode === "held" || s.mode === "fall";
       if (!awakeRef.current) {
-        if (s.mode !== "sleep" && !s.task && !carried && t > s.until) setMode("sleep");
+        if (s.mode !== "sleep" && !s.task && !carried && s.mode !== "climb" && t > s.until) setMode("sleep");
       } else if (s.mode === "sleep") {
         setMode("sit", 1500);
         say("*yawn*");
       }
 
+      // Standing on a window: she rides along when it is dragged, and drops when it closes or slides away.
+      if (s.on && s.on !== GROUND && s.mode !== "held") {
+        const p = findPlat(up, s.on, width());
+        const cx = s.x + CAT_W / 2;
+        if (!p || cx < p.left - 6 || cx > p.right + 6) {
+          s.on = null;
+          s.vy = 0;
+          s.route = [];
+          setMode("fall");
+        } else {
+          const d = p.left - s.platLeft;
+          s.x += d;
+          s.target += d;
+          s.platLeft = p.left;
+          s.y = p.y;
+        }
+      }
+
       if (s.mode === "fall") {
+        const from = s.y;
         s.vy += GRAVITY * dt;
         s.y -= s.vy * dt;
-        if (s.y <= 0 || reduce.matches) {
-          const hard = s.vy > 900;
-          s.y = 0;
+        const cx = s.x + CAT_W / 2;
+        const hit = reduce.matches
+          ? landing(up, cx, from, Number.NEGATIVE_INFINITY, width())
+          : s.vy > 0
+            ? landing(up, cx, from, s.y, width())
+            : null;
+        if (hit) land(hit, s.vy);
+      } else if (s.mode === "climb" && s.climb) {
+        const p = findPlat(up, s.climb.id, width());
+        if (!p) {
+          s.climb = null;
           s.vy = 0;
-          Sound.thud();
-          setMode("crouch", hard ? 700 : 400);
-          if (hard) say(awakeRef.current ? "!!" : "…mrr. zzz", 1200);
+          setMode("fall");
+        } else {
+          s.x = s.climb.side === "left" ? p.left - CLIMB_INSET.left : p.right - CLIMB_INSET.right;
+          // A leap up to the bottom of the wall, then paw over paw.
+          const speed = s.y < (p.bottom ?? 0) ? 560 : 130;
+          s.y = reduce.matches ? p.y : Math.min(p.y, s.y + speed * dt);
+          if (s.y >= p.y) {
+            const side = s.climb.side;
+            s.climb = null;
+            s.on = p.id;
+            s.platLeft = p.left;
+            s.x = side === "left" ? p.left - CAT_W / 2 + 12 : p.right - CAT_W / 2 - 12;
+            s.target = s.x;
+            s.dir = side === "left" ? 1 : -1;
+            nextStep();
+          }
         }
       } else if (s.mode === "held") {
         // follows the pointer; nothing else to do
@@ -388,15 +540,44 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
         const step = reduce.matches ? Math.abs(d) : s.speed * dt;
         if (Math.abs(d) <= step) {
           s.x = s.target;
-          arrive();
+          nextStep();
         } else s.x += step * s.dir;
       } else if (s.mode !== "sleep" && t > s.until) idleDone();
+
+      // The fish falls too, lands on whatever is under it, and rides along with it.
+      const f = foodRef.current;
+      if (f) {
+        if (!f.on) {
+          const from = f.y;
+          f.vy += GRAVITY * dt;
+          f.y -= f.vy * dt;
+          const hit = landing(up, f.x + 12, from, reduce.matches ? Number.NEGATIVE_INFINITY : f.y, width());
+          if (hit) {
+            f.on = hit.id;
+            f.y = hit.y;
+            f.vy = 0;
+            f.platLeft = hit.left;
+            if (s.task?.kind === "feed" && s.mode !== "held" && s.mode !== "eat") goEat();
+          }
+        } else if (f.on !== GROUND) {
+          const p = findPlat(up, f.on, width());
+          if (!p) {
+            f.on = null;
+          } else {
+            f.x += p.left - f.platLeft;
+            f.platLeft = p.left;
+            f.y = p.y;
+          }
+        }
+        if (foodEl.current) foodEl.current.style.transform = `translate(${f.x.toFixed(1)}px, ${(-f.y).toFixed(1)}px)`;
+      }
 
       let frame: FrameName;
       if (s.mode === "held") frame = "happy";
       else if (s.mode === "fall") frame = "crouch";
-      else if (s.mode === "walk" || s.mode === "run") {
-        frame = Math.floor(t / (s.mode === "run" ? 90 : 190)) % 2 ? "walkB" : "walkA";
+      else if (s.mode === "walk" || s.mode === "run" || s.mode === "climb") {
+        const pace = s.mode === "run" ? 90 : s.mode === "climb" ? 140 : 190;
+        frame = Math.floor(t / pace) % 2 ? "walkB" : "walkA";
       } else if (s.mode === "sit" || s.mode === "jump") {
         if (t > s.nextBlink) {
           s.blinkUntil = t + 140;
@@ -409,6 +590,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
       if (root.current) {
         root.current.style.transform = `translate(${s.x.toFixed(1)}px, ${(-s.y).toFixed(1)}px)`;
         root.current.classList.toggle("flip", s.dir < 0);
+        root.current.dataset.climb = s.climb?.side ?? "";
       }
       raf = requestAnimationFrame(tick);
     };
@@ -422,11 +604,17 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
       else if (kind === "feed") feedNow();
       else if (kind === "play") playNow();
     };
+    const onFeedAt = (e: Event) => {
+      const { x, y } = (e as CustomEvent<{ x: number; y: number }>).detail;
+      dropFood(x, y);
+    };
     window.addEventListener("ink", onEvent);
+    window.addEventListener("ink-feed", onFeedAt);
     const decayTimer = window.setInterval(() => saveNeeds(N.decay(needsRef.current, Date.now())), 60_000);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("ink", onEvent);
+      window.removeEventListener("ink-feed", onFeedAt);
       window.clearInterval(decayTimer);
     };
   }, []);
@@ -448,7 +636,10 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   }, [menuLeft]);
 
   /* ---------- hands on Ink ---------- */
-  const openMenu = () => setMenuLeft(Math.max(8, Math.min(window.innerWidth - 248, st.current.x - 88)));
+  const openMenu = () => {
+    setMenuLift(st.current.y);
+    setMenuLeft(Math.max(8, Math.min(window.innerWidth - 248, st.current.x - 88)));
+  };
 
   /** Lifts her off the taskbar: whatever she was doing stops, and she hangs from the pointer. */
   const pickUp = (e: PointerEvent<HTMLButtonElement>, p: Press) => {
@@ -457,7 +648,10 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     window.clearTimeout(p.timer);
     p.carry = { dx: e.clientX - s.x, dy: box.bottom - e.clientY, ground: box.bottom + s.y };
     s.task = null;
-    setBowl(null);
+    s.on = null;
+    s.goal = null;
+    s.route = [];
+    s.climb = null;
     yarnRef.current = null;
     setYarnX(null);
     setMenuLeft(null);
@@ -594,14 +788,14 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
         )}
       </div>
 
-      {bowl?.visible && (
-        <div className="ink-prop ink-bowl" style={{ transform: `translateX(${bowl.x}px)` }}>
+      {food && foodRef.current && (
+        <div
+          ref={foodEl}
+          className="ink-prop ink-food"
+          style={{ transform: `translate(${foodRef.current.x}px, ${-foodRef.current.y}px)` }}
+        >
+          <Sprite rows={FISH} className="ink-food-fish" />
           <Sprite rows={BOWL} />
-        </div>
-      )}
-      {fishAt !== null && (
-        <div className="ink-fish" style={{ left: fishAt, bottom: "calc(var(--task-h) + 6px)" }}>
-          <Sprite rows={FISH} />
         </div>
       )}
       {yarnX !== null && (
@@ -611,7 +805,12 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
       )}
 
       {menuLeft !== null && (
-        <div className="ink-menu" style={{ left: menuLeft }} role="menu" aria-label="Ink">
+        <div
+          className="ink-menu"
+          style={{ left: menuLeft, bottom: `calc(var(--task-h) + 52px + ${Math.round(menuLift)}px)` }}
+          role="menu"
+          aria-label="Ink"
+        >
           <header>
             <b>Ink</b>
             <span>{moodText}</span>

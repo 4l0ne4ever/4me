@@ -51,6 +51,10 @@ export const shortDate = (iso: string) => short.format(new Date(iso));
 /** "2026-10-21" in the diary's time, for "is this tonight?" */
 export const dayOf = (iso: string | Date) => day.format(typeof iso === "string" ? new Date(iso) : iso);
 
+/** A time for a line in a guestbook or chat: just the hour today, with the day before that ("20 Oct, 16:34"). */
+export const stamp = (iso: string) =>
+  dayOf(iso) === dayOf(new Date()) ? hhmm(iso) : `${shortDate(iso)}, ${hhmm(iso)}`;
+
 /** The taskbar clock is the reader's own. */
 export function clockTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;

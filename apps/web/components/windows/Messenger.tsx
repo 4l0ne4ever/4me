@@ -2,7 +2,7 @@
 
 import { type Author, avatarUrl, type Blast, type Entry, type Me, type Note, type NowPlaying } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { API_URL, apiSend, hhmm, shortDate } from "@/lib/api";
+import { API_URL, apiSend, hhmm, shortDate, stamp } from "@/lib/api";
 import { useFresh, useLiveEvent } from "@/lib/live";
 import { noteAsMember } from "@/lib/member-actions";
 import { DeskLink } from "../DeskLink";
@@ -217,7 +217,7 @@ export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, 
           {lines.map((l, i) =>
             l.kind === "note" ? (
               <p className="ln" key={`n${l.note.id}`}>
-                <span className="t">({hhmm(l.note.createdAt)})</span>{" "}
+                <span className="t">({stamp(l.note.createdAt)})</span>{" "}
                 {l.note.parentId && (
                   <span className="t" title="a reply">
                     ↪{" "}

@@ -100,7 +100,8 @@ function House({ h }: { h: House }) {
   const top = GROUND - h.floors * FLOOR;
   return (
     <g>
-      <rect x={h.x} y={top} width={h.w} height={GROUND - top} fill={SHADES[h.shade]} />
+      {/* data-roof: Ink can climb up and sit here */}
+      <rect x={h.x} y={top} width={h.w} height={GROUND - top} fill={SHADES[h.shade]} data-roof={h.x} />
       {/* the sky catching the house's left edge, and the shadow where it meets the next */}
       <rect x={h.x} y={top - 3} width={0.6} height={GROUND - top + 3} className="sk-edge" />
       <rect x={h.x + h.w - 1.2} y={top} width={1.2} height={GROUND - top} className="sk-seam" />

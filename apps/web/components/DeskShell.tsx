@@ -48,7 +48,7 @@ import {
   IconTonight,
   IconWrite,
 } from "./Icons";
-import { Ink, nudgeInk } from "./ink/Ink";
+import { feedInkAt, Ink, nudgeInk } from "./ink/Ink";
 import { Notifications } from "./Notifications";
 import { Skyline } from "./Skyline";
 import { type Pos, Window } from "./Window";
@@ -296,7 +296,8 @@ export function DeskShell({ children }: { children: ReactNode }) {
   const [listening, setListening] = useState<NowPlaying | null>(null);
   const [wallPref, setWallPref] = useState<WallpaperPref>(DEFAULT_PREF);
   const [uploadUrl, setUploadUrl] = useState<string | null>(null);
-  const [deskMenu, setDeskMenu] = useState<{ x: number; y: number } | null>(null);
+  /** The desktop's right-click menu: where it opens, and the point that was clicked (a fish drops there). */
+  const [deskMenu, setDeskMenu] = useState<{ x: number; y: number; at: { x: number; y: number } } | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [current, setCurrent] = useState<Current>({ entry: null, owner: null, persona: null });
@@ -447,9 +448,14 @@ export function DeskShell({ children }: { children: ReactNode }) {
   }, [deskMenu]);
 
   const onDeskContext = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if ((e.target as Element).closest(".win, .icon, button, a, input, textarea, select")) return;
+    // The street across the way is part of the desktop too (a fish can land on a roof).
+    if ((e.target as Element).closest(".win, .icon, button:not(.sk-hit), a, input, textarea, select")) return;
     e.preventDefault();
-    setDeskMenu({ x: Math.min(e.clientX, window.innerWidth - 210), y: Math.min(e.clientY, window.innerHeight - 140) });
+    setDeskMenu({
+      x: Math.min(e.clientX, window.innerWidth - 210),
+      y: Math.min(e.clientY, window.innerHeight - 180),
+      at: { x: e.clientX, y: e.clientY },
+    });
   };
 
   useEffect(() => {
@@ -812,6 +818,16 @@ export function DeskShell({ children }: { children: ReactNode }) {
               }}
             >
               Refresh
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setDeskMenu(null);
+                feedInkAt(deskMenu.at.x, deskMenu.at.y);
+              }}
+            >
+              Drop a fish here
             </button>
             <button
               type="button"
