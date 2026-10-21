@@ -11,7 +11,7 @@ import {
   type InboxNote,
   type MyEntry,
   reportReason,
-  signUploadTicket,
+  signTicket,
 } from "@4me/shared";
 import { revalidatePath } from "next/cache";
 import { type Fail, fail, type Ok, signedOut } from "./action-result";
@@ -42,7 +42,7 @@ export async function uploadTicket(): Promise<Ok<{ ticket: string }> | Fail> {
   const me = await getMe();
   if (!me) return signedOut;
   if (me.suspended) return suspended;
-  return { ok: true, ticket: await signUploadTicket(me.id, process.env.ADMIN_TOKEN ?? "") };
+  return { ok: true, ticket: await signTicket("upload", me.id, process.env.ADMIN_TOKEN ?? "") };
 }
 
 export async function myEntries(): Promise<MyEntry[]> {

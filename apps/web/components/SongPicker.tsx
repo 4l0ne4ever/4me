@@ -1,8 +1,7 @@
 "use client";
 
-import type { SongResult } from "@4me/shared";
+import { type SongResult, searchSongs } from "@4me/shared";
 import { useEffect, useRef, useState } from "react";
-import { API_URL } from "@/lib/api";
 import { IconPause, IconPlay } from "./Icons";
 
 /** The song on a page being written. `id` is null for an older song that was not picked from the search. */
@@ -12,6 +11,7 @@ export type PickedSong = {
   artist: string;
   coverUrl: string | null;
   previewUrl: string | null;
+  url: string;
 };
 
 /** One shared player for every 30-second preview in the picker, so only one ever plays. */
@@ -68,14 +68,8 @@ export function SongPicker({
     const t = window.setTimeout(async () => {
       setState("loading");
       try {
-        const res = await fetch(`${API_URL}/music/search?q=${encodeURIComponent(term)}`, { signal: ctl.signal });
-        const data = (await res.json()) as SongResult[] | { error: string };
-        if (!res.ok || !Array.isArray(data)) {
-          setError("error" in data ? data.error : "the search isn't answering");
-          setState("error");
-          return;
-        }
-        setResults(data.slice(0, 8));
+        // Straight from this browser to Apple's music search (Apple turns many cloud servers away).
+        setResults((await searchSongs(term, ctl.signal)).slice(0, 8));
         setState("idle");
       } catch (e) {
         if ((e as Error).name !== "AbortError") {
@@ -149,6 +143,7 @@ export function SongPicker({
                     artist: r.artist,
                     coverUrl: r.coverUrl,
                     previewUrl: r.previewUrl,
+                    url: r.url,
                   });
                   setQ("");
                 }}

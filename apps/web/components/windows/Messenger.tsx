@@ -3,6 +3,7 @@
 import { type Author, avatarUrl, type Blast, type Entry, type Me, type Note, type NowPlaying } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiSend, hhmm, shortDate } from "@/lib/api";
+import { useLiveEvent } from "@/lib/live";
 import { noteAsMember } from "@/lib/member-actions";
 import { Eq } from "../Icons";
 import { nudgeInk } from "../ink/Ink";
@@ -70,6 +71,22 @@ export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, 
   }, [lines]);
 
   const add = (line: Line) => setLines((l) => [...l, line]);
+  // A note can arrive twice (my own reply, and the live copy of it): it only shows once.
+  const addNote = (note: Note) =>
+    setLines((l) => (l.some((x) => x.kind === "note" && x.note.id === note.id) ? l : [...l, { kind: "note", note }]));
+  const [reading, setReading] = useState<number | null>(null);
+  const ownBuzz = useRef(0);
+
+  useLiveEvent((e) => {
+    if (!entry) return;
+    if (e.type === "note" && e.entryId === entry.id) addNote(e.note);
+    if (e.type === "presence" && e.entryId === entry.id) setReading(e.reading);
+    if (e.type === "buzz" && e.entryId === entry.id && Date.now() - ownBuzz.current > 2500) {
+      buzzSound();
+      nudgeInk("buzz");
+      add({ kind: "sys", buzz: true, text: "Someone just sent a BUZZ!!!", at: new Date().toISOString() });
+    }
+  });
 
   const send = async (e: FormEvent) => {
     e.preventDefault();
@@ -98,12 +115,13 @@ export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, 
         text: `your note is waiting for ${entry.author.name} to read it first.`,
         at: new Date().toISOString(),
       });
-    else add({ kind: "note", note: res.data.note });
+    else addNote(res.data.note);
     nudgeInk("note");
   };
 
   const buzz = async () => {
     if (!entry) return;
+    ownBuzz.current = Date.now();
     buzzSound();
     onBuzz();
     nudgeInk("buzz");
@@ -174,7 +192,10 @@ export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, 
             </ul>
           </details>
         )}
-        <p className="chat-hd">{entry ? `Notes on “${entry.title}”` : "No page yet"}</p>
+        <p className="chat-hd">
+          {entry ? `Notes on “${entry.title}”` : "No page yet"}
+          {reading !== null && reading > 1 && <span className="reading"> · {reading} reading now</span>}
+        </p>
         <div className="chat" ref={chat} aria-live="polite">
           {lines.map((l, i) =>
             l.kind === "note" ? (

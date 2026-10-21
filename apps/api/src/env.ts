@@ -1,3 +1,4 @@
+import type { LiveEvent } from "@4me/shared";
 import type { DB } from "./db/types";
 import type { MediaStore } from "./lib/media";
 
@@ -19,7 +20,21 @@ export type Bindings = {
   S3_REGION?: string;
   S3_ACCESS_KEY_ID?: string;
   S3_SECRET_ACCESS_KEY?: string;
+  /** The Durable Object that holds everyone's live connections (Workers only). */
+  HUB?: DurableObjectNamespace;
 };
 
+/**
+ * Live updates. `publish` sends an event to everyone listening to any of the topics; `connect` hands a browser's
+ * WebSocket upgrade to wherever the connections live (on Workers, the Hub Durable Object).
+ */
+export interface Live {
+  publish(topics: string[], event: LiveEvent): Promise<void> | void;
+  connect?(req: Request, topics: string[]): Promise<Response>;
+}
+
 /** `clientIp` is set only for calls from the web server, which forwards the reader's real address. */
-export type AppEnv = { Bindings: Bindings; Variables: { db: DB; media: MediaStore | null; clientIp?: string } };
+export type AppEnv = {
+  Bindings: Bindings;
+  Variables: { db: DB; media: MediaStore | null; live: Live | null; clientIp?: string };
+};

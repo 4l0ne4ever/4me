@@ -3,11 +3,14 @@ import { PGlite } from "@electric-sql/pglite";
 import { serve } from "@hono/node-server";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
+import { WebSocketServer } from "ws";
 import { createApp } from "./app";
 import * as schema from "./db/schema";
 import type { DB } from "./db/types";
 import type { Bindings } from "./env";
 import { memoryStore, s3Store } from "./lib/media";
+import { MemoryHub } from "./live/memory";
+import { vetTopics } from "./live/vet";
 import { seedIfEmpty } from "./seed";
 
 try {
@@ -36,10 +39,34 @@ const env: Bindings = {
 
 // Photos stay in memory unless a bucket is configured in .env; they are gone when the dev server restarts.
 const media = s3Store(env) ?? memoryStore();
+// Live updates in this process; production uses the Hub Durable Object with the same rules.
+const hub = new MemoryHub();
 const app = createApp(
   () => db,
   () => media,
+  () => hub,
 );
 const port = Number(process.env.PORT ?? 8787);
-serve({ fetch: (req) => app.fetch(req, env), port });
+const server = serve({ fetch: (req) => app.fetch(req, env), port });
+
+const wss = new WebSocketServer({ noServer: true });
+server.on("upgrade", async (req, socket, head) => {
+  const url = new URL(req.url ?? "/", `http://localhost:${port}`);
+  const origin = req.headers.origin ?? "";
+  const topics =
+    url.pathname === "/live" && env.WEB_ORIGIN.split(",").includes(origin)
+      ? await vetTopics(url, env.ADMIN_TOKEN)
+      : null;
+  if (!topics) {
+    socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
+    return;
+  }
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    hub.add(ws, topics);
+    ws.on("message", (m) => {
+      if (m.toString() === "ping") ws.send("pong");
+    });
+    ws.on("close", () => hub.remove(ws));
+  });
+});
 console.log(`4me api on http://localhost:${port}`);

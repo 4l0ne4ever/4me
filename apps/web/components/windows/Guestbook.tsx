@@ -3,6 +3,7 @@
 import { avatarUrl, type Me, type Profile, type Shout } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { apiSend, hhmm } from "@/lib/api";
+import { useLiveEvent } from "@/lib/live";
 import { shoutAsMember } from "@/lib/member-actions";
 import { nudgeInk } from "../ink/Ink";
 import { useTurnstile } from "../Turnstile";
@@ -19,6 +20,10 @@ export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | n
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const human = useTurnstile();
+  const addShout = (shout: Shout) => setShouts((s) => (s.some((x) => x.id === shout.id) ? s : [...s, shout]));
+  useLiveEvent((e) => {
+    if (e.type === "shout" && e.owner === (owner?.handle ?? null)) addShout(e.shout);
+  });
 
   useEffect(() => {
     if (shouts.length) list.current?.scrollTo({ top: 1e6 });
@@ -46,7 +51,7 @@ export function Guestbook({ initial, me, owner }: { initial: Shout[]; me: Me | n
     if (!res.ok) return setNote(res.error);
     setText("");
     if (res.data.pending) setNote("thanks. your shout shows up once it has been checked.");
-    else setShouts((s) => [...s, res.data.shout]);
+    else addShout(res.data.shout);
     nudgeInk("note");
   };
 

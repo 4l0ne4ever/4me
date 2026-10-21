@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { handle } from "./accounts";
+import { songPick } from "./music";
 
 const name = z
   .string()
@@ -43,8 +44,8 @@ export const visibility = z.enum(["public", "private", "draft"]);
 export type Visibility = z.infer<typeof visibility>;
 
 /**
- * A member writes a night. The song is picked from the music search by its id and the server looks up the rest;
- * null removes the song, and leaving it out keeps the one already on the page.
+ * A member writes a night. The song is the one picked in the music search; null removes it, and leaving it out
+ * keeps the one already on the page.
  */
 export const entryInput = z.object({
   slug: z
@@ -58,7 +59,7 @@ export const entryInput = z.object({
   mood: z.string().trim().max(40).default(""),
   weather: z.string().trim().max(60).default(""),
   writtenAt: z.iso.datetime({ offset: true }).optional(),
-  songId: z.number().int().positive().max(1e12).nullable().optional(),
+  song: songPick.nullable().optional(),
   photos: z.array(uploadedPhoto).max(12).default([]),
   visibility: visibility.default("public"),
 });

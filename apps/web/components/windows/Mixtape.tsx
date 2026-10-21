@@ -1,8 +1,7 @@
 "use client";
 
-import type { Author, EntrySummary, NowPlaying, Song, SongResult } from "@4me/shared";
+import { type Author, type EntrySummary, type NowPlaying, type Song, searchSongs } from "@4me/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { API_URL } from "@/lib/api";
 import { IconNext, IconPause, IconPlay, IconPrev } from "../Icons";
 
 /** `live` marks what the writer is playing on Last.fm right now; its preview is found when it is played. */
@@ -95,10 +94,7 @@ export function Mixtape({
   useEffect(() => {
     if (!looking || !track) return;
     const ctl = new AbortController();
-    fetch(`${API_URL}/music/search?q=${encodeURIComponent(`${track.artist} ${track.title}`.slice(0, 80))}`, {
-      signal: ctl.signal,
-    })
-      .then((r) => (r.ok ? (r.json() as Promise<SongResult[]>) : []))
+    searchSongs(`${track.artist} ${track.title}`, ctl.signal)
       .then((hits) => {
         const url = hits.find((h) => h.previewUrl)?.previewUrl ?? null;
         setFound({ key: `${track.artist}|${track.title}`, url });

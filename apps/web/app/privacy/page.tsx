@@ -70,12 +70,28 @@ export default function Privacy() {
           where they were taken) is removed, in your browser and again on our server.
         </li>
         <li>
-          When you search for a song, the words you type are sent to Apple&apos;s music search through our server, not
-          from your browser. Playing a 30-second preview loads it from Apple&apos;s servers.
+          When you search for a song, your browser sends the words you type straight to Apple&apos;s music search, and
+          playing a 30-second preview loads it from Apple&apos;s servers.
         </li>
         <li>
           If you add a Last.fm username, what you listen to on Last.fm shows on your desktop. Leave it empty and nothing
           is fetched.
+        </li>
+      </ul>
+
+      <h2>Live updates and notifications</h2>
+      <ul>
+        <li>
+          While a page is open, it keeps a connection to our server so new notes, shouts and BUZZes appear by
+          themselves. It carries only what is already public, plus, when you are signed in, your own notifications.
+        </li>
+        <li>
+          Notifications (a note on your page, a shout in your guestbook, a BUZZ, a reply) are kept for two months so you
+          can see what you missed, and deleted with your account.
+        </li>
+        <li>
+          Notifications from your computer itself are off unless you switch them on in the bell menu and your browser
+          asks you to allow them.
         </li>
       </ul>
 

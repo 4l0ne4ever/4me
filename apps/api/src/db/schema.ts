@@ -188,6 +188,25 @@ export const uploads = pgTable(
   (t) => [index("uploads_user_idx").on(t.userId, t.createdAt)],
 );
 
+/** What happened on a member's pages while they were away (and as it happens): notes, shouts, BUZZes, replies. */
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<"note" | "pending" | "reply" | "shout" | "buzz">().notNull(),
+    text: text("text").notNull(),
+    link: text("link").notNull(),
+    actorName: text("actor_name"),
+    actorAvatar: text("actor_avatar"),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("notifications_user_created_idx").on(t.userId, t.createdAt)],
+);
+
 export const catStats = pgTable("cat_stats", {
   id: integer("id").primaryKey().default(1),
   pets: bigint("pets", { mode: "number" }).notNull().default(0),

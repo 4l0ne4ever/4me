@@ -15,7 +15,7 @@ import {
   type Profile,
   type Shout,
 } from "@4me/shared";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
@@ -27,8 +27,11 @@ import {
 } from "react";
 import { signOut } from "@/app/welcome/actions";
 import { API_URL, apiSend, hhmm } from "@/lib/api";
+import { useLiveConnection, useLiveEvent } from "@/lib/live";
+import { liveTicket } from "@/lib/live-actions";
 import { DEFAULT_PREF, PREF_KEY, parsePref, resolveBackground, type WallpaperPref } from "@/lib/wallpaper";
 import { deleteUpload, loadUpload, saveUpload } from "@/lib/wallpaper-store";
+import { AddressBar } from "./AddressBar";
 import {
   IconBin,
   IconDiary,
@@ -42,6 +45,7 @@ import {
   IconWrite,
 } from "./Icons";
 import { Ink, nudgeInk } from "./ink/Ink";
+import { Notifications } from "./Notifications";
 import { type Pos, Window } from "./Window";
 import { Account } from "./windows/Account";
 import { Almost } from "./windows/Almost";
@@ -212,7 +216,7 @@ export function Desktop({ data }: { data: DesktopData }) {
   const [me, setMe] = useState<Me | null>(null);
   /** The page open in Notepad: null for a new one. */
   const [editing, setEditing] = useState<number | null>(null);
-  const [path, setPath] = useState("/");
+  const path = usePathname() ?? "/";
   const startBtn = useRef<HTMLButtonElement>(null);
   const startMenu = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -288,7 +292,6 @@ export function Desktop({ data }: { data: DesktopData }) {
 
   /* who is signed in: asked after the page renders, so the page itself can be cached for everyone */
   useEffect(() => {
-    setPath(window.location.pathname);
     fetch("/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((v: Me | null) => setMe(v))
@@ -418,12 +421,29 @@ export function Desktop({ data }: { data: DesktopData }) {
     else raise(id);
   };
 
+  const ownBuzz = useRef(0);
   const buzz = () => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     setShaking(false);
     window.requestAnimationFrame(() => setShaking(true));
     window.setTimeout(() => setShaking(false), 650);
   };
+
+  /* live: this page's notes and BUZZes, this guestbook, new pages, and (signed in) my notifications */
+  const topics = useMemo(
+    () => [entry ? `entry:${entry.id}` : "", `guest:${owner?.handle ?? "_"}`, "tonight"].filter(Boolean),
+    [entry, owner],
+  );
+  const liveState = useLiveConnection(topics, me ? liveTicket : null);
+  useLiveEvent((e) => {
+    // A BUZZ from someone else reading the same page shakes this screen too (my own already did).
+    if (e.type === "buzz" && e.entryId === entry?.id && Date.now() - ownBuzz.current > 2500) buzz();
+  });
+
+  useEffect(() => {
+    const want = new URLSearchParams(window.location.search).get("open");
+    if (want && want in WINDOWS && want !== "account") open(want as WinId);
+  }, [open]);
 
   const write = (id: number | null) => {
     setEditing(id);
@@ -437,7 +457,7 @@ export function Desktop({ data }: { data: DesktopData }) {
   };
 
   const content: Record<WinId, ReactNode> = {
-    tonight: <Tonight recent={data.recent} me={me} onWrite={() => write(null)} />,
+    tonight: <Tonight key={data.recent[0]?.id ?? 0} recent={data.recent} me={me} onWrite={() => write(null)} />,
     diary: (
       <Diary
         entry={entry}
@@ -454,17 +474,21 @@ export function Desktop({ data }: { data: DesktopData }) {
     ),
     msn: (
       <Messenger
+        key={entry?.id ?? "none"}
         entry={entry}
         persona={persona}
         notes={data.notes}
         blasts={data.blasts}
         awake={awake}
         live={live}
-        onBuzz={buzz}
+        onBuzz={() => {
+          ownBuzz.current = Date.now();
+          buzz();
+        }}
         me={me}
       />
     ),
-    guest: <Guestbook initial={data.shouts} me={me} owner={owner} />,
+    guest: <Guestbook key={owner?.handle ?? "_"} initial={data.shouts} me={me} owner={owner} />,
     amp: <Mixtape entries={entries} currentId={entry?.id} live={live} persona={persona} />,
     photos: <Photos pictures={pictures} view={photoView} onView={setPhotoView} />,
     almost: <Almost items={data.almost} persona={persona} />,
@@ -512,6 +536,19 @@ export function Desktop({ data }: { data: DesktopData }) {
 
   const visible = (Object.keys(WINDOWS) as WinId[]).filter((id) => wins[id].open);
 
+  /** Every window says whose it is: you are always on your own computer, reading someone's diary. */
+  const whose = persona && persona.handle !== me?.handle ? `${persona.name}'s` : persona ? "My" : null;
+  const titleOf = (id: WinId): string => {
+    if (id === "diary" && entry) return `${entry.author.name} — ${entry.title}.doc`;
+    if (id === "msn" && persona) return `Messenger — ${persona.name}`;
+    if (id === "guest") return owner ? `${owner.name}'s guestbook` : "Guestbook — everyone";
+    if (id === "amp" && whose) return `${whose} mixtape.m3u`;
+    if (id === "photos" && whose) return `${whose} pictures`;
+    if (id === "almost" && whose) return `${whose} almost posted`;
+    if (id === "write" && editing) return "Notepad — editing a page";
+    return WINDOWS[id].title;
+  };
+
   return (
     <>
       {/* biome-ignore lint/a11y/noStaticElementInteractions: right-click on empty desktop; the same actions are in the Start menu */}
@@ -520,15 +557,30 @@ export function Desktop({ data }: { data: DesktopData }) {
           <div className={`paint ${paintClass}`} style={paintStyle(background)} />
         </div>
         <nav className="icons" aria-label="Desktop">
-          {ICON_ORDER.map(([id, label]) => (
-            <button key={id} type="button" className="icon" onClick={() => open(id)}>
-              {WINDOWS[id].icon()}
-              {label}
-            </button>
-          ))}
+          {ICON_ORDER.map(([id, label]) =>
+            id === "diary" ? (
+              <span key={id} className="icon-pair">
+                <a className="icon" href={me ? `/u/${me.handle}` : "/welcome?start=register"}>
+                  <img className="icon-av" src={me ? avatarUrl(me.avatar) : "/photos/pic-229.jpg"} alt="" />
+                  {me ? "My diary" : "Start a diary"}
+                </a>
+                {entry && (
+                  <button type="button" className="icon" onClick={() => open("diary")}>
+                    {WINDOWS.diary.icon()}
+                    {entry.author.handle === me?.handle ? "This page" : `${entry.author.name}'s diary`}
+                  </button>
+                )}
+              </span>
+            ) : (
+              <button key={id} type="button" className="icon" onClick={() => open(id)}>
+                {WINDOWS[id].icon()}
+                {label}
+              </button>
+            ),
+          )}
           <button type="button" className="icon" onClick={() => write(null)}>
             {WINDOWS.write.icon()}
-            Write
+            Notepad
           </button>
         </nav>
         {visible.map((id) =>
@@ -536,15 +588,7 @@ export function Desktop({ data }: { data: DesktopData }) {
             <Window
               key={id}
               id={`win-${id}`}
-              title={
-                id === "diary" && entry
-                  ? `${entry.author.name} — ${entry.title}.doc`
-                  : id === "write" && editing
-                    ? "Notepad — editing a page"
-                    : id === "guest" && owner
-                      ? `${owner.name}'s guestbook`
-                      : WINDOWS[id].title
-              }
+              title={titleOf(id)}
               icon={WINDOWS[id].icon()}
               className={WINDOWS[id].className}
               focused={focus === id}
@@ -589,15 +633,15 @@ export function Desktop({ data }: { data: DesktopData }) {
               <li>
                 <a href={`/u/${me.handle}`} role="menuitem">
                   <img className="sm-av" src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
-                  My desktop
+                  My diary
                 </a>
               </li>
             )}
-            {owner && (
+            {(owner || path !== "/") && (
               <li>
                 <a href="/" role="menuitem">
                   {WINDOWS.tonight.icon()}
-                  Front desktop
+                  Home: tonight&apos;s pages
                 </a>
               </li>
             )}
@@ -728,6 +772,7 @@ export function Desktop({ data }: { data: DesktopData }) {
         >
           4me
         </button>
+        <AddressBar path={path} />
         <div className="tasks">
           {visible.map((id) => (
             <button
@@ -742,6 +787,13 @@ export function Desktop({ data }: { data: DesktopData }) {
           ))}
         </div>
         <div className="tray">
+          {me && <Notifications me={me} />}
+          <span
+            className={`net net-${liveState}`}
+            title={liveState === "live" ? "Live: new notes appear by themselves" : "Reconnecting…"}
+            role="img"
+            aria-label={liveState === "live" ? "Live updates on" : "Reconnecting"}
+          />
           <span className="hearts" title="Times readers have petted Ink">
             <IconHeart />
             {cat.pets.toLocaleString("en")}

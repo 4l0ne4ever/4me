@@ -165,3 +165,22 @@ export function thud() {
   o.start(t);
   o.stop(t + 0.22);
 }
+
+/** The notification "ding": two soft bell tones, like a balloon popping up in the tray. */
+export function chime() {
+  const a = audio();
+  if (!a) return;
+  for (const [i, f] of [880, 1320].entries()) {
+    const t = a.currentTime + i * 0.12;
+    const o = a.createOscillator();
+    o.type = "sine";
+    o.frequency.value = f;
+    const level = a.createGain();
+    level.gain.setValueAtTime(0.0001, t);
+    level.gain.exponentialRampToValueAtTime(0.12, t + 0.01);
+    level.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+    o.connect(level).connect(a.destination);
+    o.start(t);
+    o.stop(t + 0.65);
+  }
+}

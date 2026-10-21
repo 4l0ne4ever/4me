@@ -69,6 +69,7 @@ function fromEntry(e: Entry & { songId: number | null }): Draft {
           artist: e.song.artist,
           coverUrl: e.song.coverUrl,
           previewUrl: e.song.previewUrl,
+          url: e.song.url,
         }
       : null,
     // Only uploaded photos can be saved again; the path is what the API stored.
@@ -186,7 +187,18 @@ export function Write({
         slug: draft.slug || undefined,
         visibility: draft.visibility,
         // An older song that was not picked from the search stays as it is.
-        songId: draft.song ? (draft.song.id ?? undefined) : null,
+        song: draft.song
+          ? draft.song.id
+            ? {
+                id: draft.song.id,
+                title: draft.song.title,
+                artist: draft.song.artist,
+                coverUrl: draft.song.coverUrl,
+                previewUrl: draft.song.previewUrl,
+                url: draft.song.url,
+              }
+            : undefined
+          : null,
         photos: draft.photos.map((p) => ({ url: p.path, caption: p.caption })),
       });
       if (!res.ok) return setMsg({ kind: "err", text: res.error, field: res.field });

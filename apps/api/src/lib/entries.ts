@@ -4,7 +4,6 @@ import type { Context } from "hono";
 import type { z } from "zod";
 import { entries, reports, uploads, users } from "../db/schema";
 import type { AppEnv } from "../env";
-import { lookupSong } from "./music";
 
 // Written out with explicit table names: inside the subquery an unqualified "id" would mean notes.id.
 export const noteCount = sql<number>`(select count(*)::int from "notes" n where n."entry_id" = "entries"."id" and n."status" = 'visible')`;
@@ -26,11 +25,17 @@ export function isUniqueViolation(e: unknown): boolean {
   return err?.code === "23505" || err?.cause?.code === "23505";
 }
 
-/** A public page by id, with its author, or null. */
+/** A public page by id, with its author and address, or null. */
 export async function readableEntry(c: Context<AppEnv>, id: number) {
   const [row] = await c
     .get("db")
-    .select({ id: entries.id, authorId: entries.authorId })
+    .select({
+      id: entries.id,
+      authorId: entries.authorId,
+      slug: entries.slug,
+      title: entries.title,
+      handle: users.handle,
+    })
     .from(entries)
     .innerJoin(users, eq(users.id, entries.authorId))
     .where(and(isReadable, eq(entries.id, id)))
@@ -44,18 +49,18 @@ export const positiveId = (raw: string | undefined) => {
 };
 
 type EntryInput = z.output<typeof entryInput>;
-type Existing = { songId: number | null; slug: string } | undefined;
+type Existing = { slug: string } | undefined;
 
 /**
- * The columns for a member's page. Photos must be their own uploads; the song is looked up again by its id
- * (unless it is the one already on the page). Returns a reason instead when something is not acceptable.
+ * The columns for a member's page. Photos must be their own uploads; leaving the song out keeps the one already on
+ * the page. Returns a reason instead when something is not acceptable.
  */
 export async function entryValues(
   c: Context<AppEnv>,
   authorId: number,
   input: EntryInput,
   existing?: Existing,
-): Promise<{ values: Omit<typeof entries.$inferInsert, "authorId"> } | { problem: string; status: 400 | 502 }> {
+): Promise<{ values: Omit<typeof entries.$inferInsert, "authorId"> } | { problem: string; status: 400 }> {
   const prefix = `/media/u/${authorId}/`;
   const keys = input.photos.map((p) => p.url.slice("/media/".length));
   if (input.photos.some((p) => !p.url.startsWith(prefix))) return { problem: "those photos aren't yours", status: 400 };
@@ -80,9 +85,7 @@ export async function entryValues(
     visibility: input.visibility,
     updatedAt: new Date(),
   };
-  if (input.songId === undefined) {
-    // Keeps the song already on the page.
-  } else if (input.songId === null) {
+  if (input.song === null) {
     Object.assign(values, {
       songId: null,
       songTitle: null,
@@ -92,22 +95,16 @@ export async function entryValues(
       songCoverUrl: null,
       songPreviewUrl: null,
     });
-  } else if (input.songId !== existing?.songId) {
-    let found: Awaited<ReturnType<typeof lookupSong>> = null;
-    try {
-      found = await lookupSong(input.songId);
-    } catch {
-      return { problem: "the music search isn't answering, try again in a moment", status: 502 };
-    }
-    if (!found) return { problem: "that song isn't available any more, pick another", status: 400 };
+  } else if (input.song) {
+    // Picked in the reader's browser from Apple's search; the schema already checked every link is Apple's.
     Object.assign(values, {
-      songId: found.id,
-      songTitle: found.title,
-      songArtist: found.artist,
-      songUrl: found.url || null,
+      songId: input.song.id,
+      songTitle: input.song.title,
+      songArtist: input.song.artist,
+      songUrl: input.song.url || null,
       songEmbedUrl: null,
-      songCoverUrl: found.coverUrl,
-      songPreviewUrl: found.previewUrl,
+      songCoverUrl: input.song.coverUrl,
+      songPreviewUrl: input.song.previewUrl,
     });
   }
   return { values };

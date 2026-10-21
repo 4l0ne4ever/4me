@@ -19,11 +19,22 @@ import {
   profileInput,
   reportReason,
 } from "@4me/shared";
-import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
-import { almost, blasts, entries, notes, oauthAccounts, passwordResets, shouts, uploads, users } from "../db/schema";
+import {
+  almost,
+  blasts,
+  entries,
+  notes,
+  notifications,
+  oauthAccounts,
+  passwordResets,
+  shouts,
+  uploads,
+  users,
+} from "../db/schema";
 import type { AppEnv } from "../env";
 import {
   authorCols,
@@ -38,7 +49,8 @@ import {
   readableEntry,
 } from "../lib/entries";
 import { allow, allowKey, humanCheck, isReservedName, looksLikeSpam, sameSecret, sha256 } from "../lib/guard";
-import { toAlmost, toBlast, toEntry, toNote, toShout } from "../lib/map";
+import { toAlmost, toBlast, toEntry, toNote, toShout, toSummary } from "../lib/map";
+import { notify, publish, quote, recentNotifications } from "../lib/notify";
 import { json } from "../lib/validate";
 import { activeMember } from "./social";
 
@@ -393,7 +405,37 @@ export const internalRoutes = new Hono<AppEnv>()
       .insert(notes)
       .values({ entryId: entry.id, userId: u.id, name: u.displayName, body, status, isAuthor })
       .returning();
-    return c.json({ note: toNote(row!, u), pending: status === "pending" }, 201);
+    const note = toNote(row!, u);
+    if (status === "visible") publish(c, [`entry:${entry.id}`], { type: "note", entryId: entry.id, note });
+    const link = `/u/${entry.handle}/${entry.slug}`;
+    const actor = { name: u.displayName, avatar: u.avatar };
+    if (isAuthor) {
+      // The writer answered on their own page: everyone signed in who left a note there hears about it.
+      const others = await c
+        .get("db")
+        .selectDistinct({ userId: notes.userId })
+        .from(notes)
+        .where(and(eq(notes.entryId, entry.id), ne(notes.userId, u.id), eq(notes.status, "visible")));
+      for (const o of others.slice(0, 50))
+        if (o.userId)
+          await notify(c, o.userId, {
+            kind: "reply",
+            text: `${u.displayName} replied on ${quote(entry.title)}`,
+            link,
+            actor,
+          });
+    } else {
+      await notify(c, entry.authorId, {
+        kind: status === "pending" ? "pending" : "note",
+        text:
+          status === "pending"
+            ? `A note from ${u.displayName} on ${quote(entry.title)} is waiting for you`
+            : `${u.displayName} left a note on ${quote(entry.title)}`,
+        link,
+        actor,
+      });
+    }
+    return c.json({ note, pending: status === "pending" }, 201);
   })
   .post("/users/:id/shouts", json(memberShoutInput), async (c) => {
     const u = await writer(c);
@@ -409,7 +451,17 @@ export const internalRoutes = new Hono<AppEnv>()
       .insert(shouts)
       .values({ ownerId: owner?.id ?? null, userId: u.id, name: u.displayName, body, status })
       .returning();
-    return c.json({ shout: toShout(row!, u), pending: status === "pending" }, 201);
+    const shout = toShout(row!, u);
+    if (status === "visible")
+      publish(c, [`guest:${owner?.handle ?? "_"}`], { type: "shout", owner: owner?.handle ?? null, shout });
+    if (owner && owner.id !== u.id)
+      await notify(c, owner.id, {
+        kind: "shout",
+        text: `${u.displayName} signed your guestbook${status === "pending" ? " (waiting for approval)" : ""}`,
+        link: `/u/${owner.handle}?open=guest`,
+        actor: { name: u.displayName, avatar: u.avatar },
+      });
+    return c.json({ shout, pending: status === "pending" }, 201);
   })
   .post("/users/:id/reports/:entryId", json(z.object({ reason: reportReason })), async (c) => {
     const u = await loadUser(c, c.req.param("id"));
@@ -464,7 +516,10 @@ export const internalRoutes = new Hono<AppEnv>()
         .insert(entries)
         .values({ ...made.values, authorId: u.id })
         .returning();
-      return c.json(toEntry(row!, { handle: u.handle, name: u.displayName, avatar: u.avatar }, origin(c)), 201);
+      const author = { handle: u.handle, name: u.displayName, avatar: u.avatar };
+      if (row!.visibility === "public")
+        publish(c, ["tonight"], { type: "entry", entry: toSummary(row!, author, origin(c)) });
+      return c.json(toEntry(row!, author, origin(c)), 201);
     } catch (e) {
       if (isUniqueViolation(e)) return c.json({ error: "you already have a page at that address", field: "slug" }, 409);
       throw e;
@@ -593,12 +648,54 @@ export const internalRoutes = new Hono<AppEnv>()
       .where(and(eq(notes.id, noteId), eq(entries.authorId, id)))
       .limit(1);
     if (!mine) return c.json({ error: "not found" }, 404);
-    await db
+    const [row] = await db
       .update(notes)
       .set({ status: c.req.valid("json").status })
-      .where(eq(notes.id, noteId));
+      .where(eq(notes.id, noteId))
+      .returning();
+    // A note just let through appears for everyone reading the page.
+    if (row?.status === "visible") {
+      const [m] = row.userId
+        ? await db.select({ avatar: users.avatar, handle: users.handle }).from(users).where(eq(users.id, row.userId))
+        : [];
+      publish(c, [`entry:${row.entryId}`], { type: "note", entryId: row.entryId, note: toNote(row, m) });
+    }
     return c.json({ ok: true });
   })
+
+  /* ---------- notifications ---------- */
+  .get("/users/:id/notifications", async (c) => {
+    const id = userId(c.req.param("id"));
+    if (!id) return c.json({ items: [], unread: 0 });
+    const [{ n } = { n: 0 }] = await c
+      .get("db")
+      .select({ n: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(and(eq(notifications.userId, id), isNull(notifications.readAt)));
+    return c.json({ items: await recentNotifications(c, id), unread: n });
+  })
+  /** Marks the given notifications read, or all of them when no ids are given. */
+  .post(
+    "/users/:id/notifications/read",
+    json(z.object({ ids: z.array(z.number().int().positive()).max(100).optional() })),
+    async (c) => {
+      const id = userId(c.req.param("id"));
+      if (!id) return c.json({ error: "not found" }, 404);
+      const { ids } = c.req.valid("json");
+      await c
+        .get("db")
+        .update(notifications)
+        .set({ readAt: new Date() })
+        .where(
+          and(
+            eq(notifications.userId, id),
+            isNull(notifications.readAt),
+            ids?.length ? inArray(notifications.id, ids) : undefined,
+          ),
+        );
+      return c.json({ ok: true });
+    },
+  )
 
   /* ---------- forgotten passwords ---------- */
   .post("/resets", json(z.object({ email })), async (c) => {

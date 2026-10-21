@@ -1,9 +1,9 @@
-import { signUploadTicket } from "@4me/shared";
+import { signTicket } from "@4me/shared";
 import { PGlite } from "@electric-sql/pglite";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import * as schema from "../src/db/schema";
 import type { DB } from "../src/db/types";
@@ -45,7 +45,7 @@ function jpegWithExif(): Uint8Array {
 }
 
 function ticket(uid: number, secret = env.ADMIN_TOKEN, now = Date.now()) {
-  return signUploadTicket(uid, secret, now);
+  return signTicket("upload", uid, secret, now);
 }
 
 const upload = async (t: string | Promise<string>, body: Uint8Array = jpegWithExif(), type = "image/jpeg") =>
@@ -58,27 +58,6 @@ const upload = async (t: string | Promise<string>, body: Uint8Array = jpegWithEx
     },
     env,
   );
-
-/** The iTunes API, answered locally. */
-function fakeItunes() {
-  return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-    const url = String(input);
-    const track = {
-      kind: "song",
-      trackId: 42,
-      trackName: "Em Dạo Này",
-      artistName: "Ngọt",
-      collectionName: "3",
-      artworkUrl100: "https://is1-ssl.mzstatic.com/image/thumb/a/100x100bb.jpg",
-      previewUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview/a.m4a",
-      trackViewUrl: "https://music.apple.com/vn/album/x?i=42",
-    };
-    if (url.includes("/search?"))
-      return Response.json({ results: [track, { ...track, trackId: 43, previewUrl: "https://evil.example/a.m4a" }] });
-    if (url.includes("/lookup?id=42")) return Response.json({ results: [track] });
-    return Response.json({ results: [] });
-  });
-}
 
 let mai: { id: number; handle: string };
 let khoa: { id: number; handle: string };
@@ -99,8 +78,6 @@ beforeAll(async () => {
     await send("POST", "/internal/users", { email: "khoa@example.com", displayName: "Khoa", passwordHash: HASH })
   ).json()) as typeof khoa;
 });
-
-afterEach(() => vi.restoreAllMocks());
 
 describe("writing pages", () => {
   let first: { id: number; slug: string };
@@ -170,29 +147,37 @@ describe("writing pages", () => {
   });
 });
 
-describe("music", () => {
-  it("searches, and never passes on audio from anywhere but Apple", async () => {
-    fakeItunes();
-    const hits = (await (await call("/music/search?q=ngot", { internal: false })).json()) as Array<{
-      id: number;
-      previewUrl: string | null;
-      coverUrl: string;
-    }>;
-    expect(hits[0]).toMatchObject({ id: 42, coverUrl: expect.stringContaining("600x600bb") });
-    expect(hits[1]?.previewUrl).toBeNull();
+describe("songs", () => {
+  const song = {
+    id: 42,
+    title: "Em Dạo Này",
+    artist: "Ngọt",
+    coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/a/600x600bb.jpg",
+    previewUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview/a.m4a",
+    url: "https://music.apple.com/vn/album/x?i=42",
+  };
+
+  it("stores the song picked in the browser, and keeps it when a later save leaves it out", async () => {
+    const res = await send("POST", `/internal/users/${mai.id}/entries`, { ...page, title: "with a song", song });
+    expect(res.status).toBe(201);
+    const entry = (await res.json()) as { id: number; song: { title: string; previewUrl: string } };
+    expect(entry.song).toMatchObject({ title: "Em Dạo Này", previewUrl: song.previewUrl });
+    const again = await send("PUT", `/internal/users/${mai.id}/entries/${entry.id}`, { ...page, title: "renamed" });
+    expect(((await again.json()) as { song: unknown }).song).toMatchObject({ title: "Em Dạo Này" });
+    const cleared = await send("PUT", `/internal/users/${mai.id}/entries/${entry.id}`, { ...page, song: null });
+    expect(((await cleared.json()) as { song: unknown }).song).toBeNull();
   });
 
-  it("looks a picked song up again by its id and stores its preview", async () => {
-    fakeItunes();
-    const res = await send("POST", `/internal/users/${mai.id}/entries`, { ...page, title: "with a song", songId: 42 });
-    expect(res.status).toBe(201);
-    const entry = (await res.json()) as { song: { title: string; previewUrl: string } };
-    expect(entry.song).toMatchObject({
-      title: "Em Dạo Này",
-      previewUrl: expect.stringContaining("audio-ssl.itunes.apple.com"),
-    });
-    const missing = await send("POST", `/internal/users/${mai.id}/entries`, { ...page, title: "lost", songId: 7 });
-    expect(missing.status).toBe(400);
+  it("refuses audio or pictures from anywhere but Apple", async () => {
+    for (const bad of [
+      { ...song, previewUrl: "https://evil.example/a.m4a" },
+      { ...song, coverUrl: "http://is1-ssl.mzstatic.com/a.jpg" },
+      { ...song, url: "javascript:alert(1)" },
+      { ...song, previewUrl: "https://apple.com.evil.example/a.m4a" },
+    ]) {
+      const res = await send("POST", `/internal/users/${mai.id}/entries`, { ...page, title: "bad song", song: bad });
+      expect(res.status).toBe(400);
+    }
   });
 });
 

@@ -2266,3 +2266,277 @@ body.daytime .tray .state-dot {
     align-items: stretch;
   }
 }
+
+/* the address bar: back, home, and where you are (4me://lan/the-last-tram) */
+.addr {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 38px;
+  flex: 0 1 380px;
+  min-width: 0;
+}
+.addr-btn,
+.addr-go {
+  height: 32px;
+  min-width: 32px;
+  display: grid;
+  place-items: center;
+  background: var(--chrome);
+  border: 1px solid var(--chrome-edge);
+  color: var(--chrome-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  padding: 0 6px;
+}
+.addr-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.addr-btn:hover,
+.addr-go:hover {
+  background: var(--chrome-hi);
+}
+.addr-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  background: var(--field);
+  border: 1px solid var(--chrome-edge);
+  color: var(--chrome-ink);
+  font: 13px var(--ui);
+}
+.addr-input.bad {
+  border-color: var(--buzz);
+}
+
+/* the tray: live dot, bell, balloons */
+.net {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--away);
+  flex-shrink: 0;
+}
+.net-live {
+  background: var(--ok);
+}
+.net-offline {
+  background: var(--buzz);
+}
+.bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--chrome-ink);
+  cursor: pointer;
+}
+.bell:hover,
+.bell[aria-expanded="true"] {
+  border-color: var(--chrome-edge);
+  background: var(--chrome);
+}
+.bell svg {
+  width: 18px;
+  height: 18px;
+}
+.bell-n {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--buzz);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+/* a Windows XP balloon: pale yellow, a tail pointing at the tray */
+.balloon {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: calc(var(--task-h) + 12px);
+  z-index: 130;
+  width: min(330px, calc(100vw - 24px));
+  background: #ffffe1;
+  color: #1a1612;
+  border: 1px solid #1a1612;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  display: flex;
+  animation: rise 220ms ease both;
+}
+.balloon::after {
+  content: "";
+  position: absolute;
+  right: 120px;
+  bottom: -9px;
+  border: 9px solid transparent;
+  border-bottom: 0;
+  border-top-color: #ffffe1;
+  filter: drop-shadow(0 1px 0 #1a1612);
+}
+.balloon-body {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 6px 10px 12px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: 13px / 1.4 var(--ui);
+  text-align: left;
+  cursor: pointer;
+}
+.balloon-body img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.balloon-body b {
+  display: block;
+  margin-bottom: 2px;
+}
+.balloon-x {
+  align-self: flex-start;
+  width: 28px;
+  height: 28px;
+  margin: 4px;
+  background: none;
+  border: 0;
+  font-size: 18px;
+  cursor: pointer;
+  color: inherit;
+}
+.notif {
+  position: fixed;
+  right: max(8px, env(safe-area-inset-right, 0px));
+  bottom: calc(var(--task-h) + 6px);
+  z-index: 130;
+  width: min(360px, calc(100vw - 16px));
+  max-height: min(480px, calc(100svh - var(--task-h) - 24px));
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  color: var(--chrome-ink);
+  border: 1px solid var(--chrome-edge);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  font-size: 13px;
+}
+.notif header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--chrome-hi);
+}
+.notif ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+}
+.notif li button {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--chrome-edge);
+  color: var(--chrome-dim);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.notif li.unread button {
+  color: var(--chrome-ink);
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+.notif li button:hover {
+  background: var(--chrome);
+}
+.notif li img {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.notif li small {
+  display: block;
+  margin-top: 2px;
+  color: var(--chrome-dim);
+  font-size: 12px;
+}
+.notif-dot {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  background: var(--chrome-hi);
+}
+.notif-empty {
+  padding: 14px 12px;
+  color: var(--chrome-dim);
+}
+.notif-os {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-top: 1px solid var(--chrome-edge);
+  color: var(--chrome-dim);
+  font-size: 12px;
+}
+
+/* desktop icons: my diary and the one being read */
+.icon-pair {
+  display: contents;
+}
+a.icon {
+  text-decoration: none;
+}
+.icon-av {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border: 2px solid #f6f1e6;
+}
+.reading {
+  color: var(--ok);
+}
+.tn-new {
+  background: color-mix(in srgb, var(--ok) 8%, transparent);
+}
+.tn-badge {
+  align-self: flex-start;
+  padding: 0 6px;
+  font-size: 11px;
+  background: var(--ok);
+  color: #06210f;
+}
+
+@media (max-width: 899px) {
+  .addr {
+    flex: 1;
+  }
+  .addr-go {
+    display: none;
+  }
+  .tray .hearts,
+  .tray > span:not(.net):not(.clock) {
+    display: none;
+  }
+}

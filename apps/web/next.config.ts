@@ -14,6 +14,7 @@ for (const name of ["NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_API_URL"]) {
 }
 
 const apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787").origin;
+const liveOrigin = apiOrigin.replace(/^http/, "ws");
 const https = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
 
 // Scripts keep 'unsafe-inline' because Next.js inlines its bootstrap; React escapes everything it renders,
@@ -27,7 +28,8 @@ const csp = [
   "font-src 'self'",
   // The 30-second song previews come from Apple's servers.
   "media-src 'self' blob: https://*.apple.com https://*.mzstatic.com",
-  `connect-src 'self' ${apiOrigin} https://challenges.cloudflare.com${dev ? " ws:" : ""}`,
+  // The API, its live WebSocket, Turnstile, and Apple's music search (asked straight from the browser).
+  `connect-src 'self' ${apiOrigin} ${liveOrigin} https://challenges.cloudflare.com https://itunes.apple.com${dev ? " ws:" : ""}`,
   "frame-src https://open.spotify.com https://www.youtube-nocookie.com https://w.soundcloud.com https://challenges.cloudflare.com",
   "object-src 'none'",
   "base-uri 'self'",

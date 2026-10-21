@@ -52,9 +52,11 @@ Any member opens **Write** (desktop icon or Start menu). The Notepad has four ta
 
 The Diary shows *Edit this page* to its writer and *report* to everyone else.
 
-**Songs** come from the iTunes Search API (free, no key). The search box asks the API (`/music/search`), which asks
-Apple; a picked song is looked up again by its id before it is stored, and only Apple's own audio and image hosts are
-ever saved. Songs play their 30-second preview on the page; the Mixtape links to the whole song on Spotify.
+**Songs** come from the iTunes Search API (free, no key). The reader's browser asks Apple directly (Apple allows it
+from any site, and turns many cloud servers away, Cloudflare's included); the API only checks that every link of a
+picked song is one of Apple's own (`*.apple.com`, `*.mzstatic.com`) before storing it. Songs play their 30-second
+preview on the page; the Mixtape links to the whole song on Spotify, and plays a preview of what the writer is
+listening to on Last.fm.
 
 **Photos** are shrunk in the browser to 2048 px JPEG (which also applies their rotation and drops EXIF and GPS),
 then sent straight to the API with a ten-minute upload ticket signed by the web server. The API checks it is a JPEG,
@@ -70,6 +72,29 @@ The body uses a small markup that never produces raw HTML:
 | `_words_` | italic |
 | `> it will rain again tomorrow.` | a handwritten note in amber |
 | `[photo 2]` | the second photo, inline |
+
+## One computer, everyone's diaries
+
+Whoever is reading is always on their own computer: their wallpaper, skin, Ink, Notepad and notifications. Opening
+someone's diary opens *their* windows on it, each titled with their name (`Lan — The last tram.doc`, `Messenger —
+Lan`, `Lan's guestbook`). The taskbar has a 2006 address bar: Back, Home (Tonight, the front page) and the address of
+what's open, `4me://lan/the-last-tram`; type a name and press Enter to go to that diary. A link with `?open=guest`
+opens a window straight away (notifications use it).
+
+## Live updates and notifications
+
+Every page keeps one WebSocket to the API (`/live`) for its topics: the open page (`entry:<id>`: notes, BUZZes and
+how many are reading), the guestbook on screen (`guest:<handle>`), new public pages (`tonight`) and, signed in, the
+member's own notifications (`user:<id>`, only with a ten-minute ticket the web server signs). New notes and shouts
+appear without reloading, a BUZZ shakes everyone reading the page, Tonight fills in as people post.
+
+Notifications (a note or a held note on your page, a reply where you left a note, a shout in your guestbook, a
+BUZZ) are stored, so the tray's bell shows what you missed; new ones pop up as a Windows XP balloon with a chime, and,
+if you switch it on in the bell menu, as a notification from your own computer while the tab is in the background.
+
+On Workers, the connections live in one Durable Object (`Hub`, SQLite-backed, so it runs on the free plan) using the
+hibernation API: it sleeps when nothing is happening and answers pings without waking. Locally, `pnpm dev` keeps them
+in the Node process with the same rules.
 
 ## Moderation
 
@@ -204,7 +229,7 @@ application). Authorised JavaScript origin: your `SITE_URL`. Authorised redirect
 
 ## Next
 
-- Friends lists and a "my friends' nights" view, like LiveJournal.
+- Buddies: follow people and see "my buddies' nights", like LiveJournal friends pages.
 - Song stickers on notes and guestbook shouts.
 - Live BUZZ and "reading now" between readers (Durable Objects or a small WebSocket service).
 - More of Ink: a name tag, seasonal outfits, a ball of wool that stays where you left it.

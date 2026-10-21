@@ -1,4 +1,4 @@
-import { readUploadTicket } from "@4me/shared";
+import { readTicket } from "@4me/shared";
 import { eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { uploads, users } from "../db/schema";
@@ -25,7 +25,7 @@ export const mediaRoutes = new Hono<AppEnv>()
   .post("/uploads", async (c) => {
     const store = c.get("media");
     if (!store) return c.json({ error: "photo uploads aren't switched on yet" }, 503);
-    const uid = await readUploadTicket(c.req.header("x-upload-ticket") ?? "", c.env.ADMIN_TOKEN);
+    const uid = await readTicket("upload", c.req.header("x-upload-ticket") ?? "", c.env.ADMIN_TOKEN);
     if (!uid) return c.json({ error: "sign in again to upload photos" }, 401);
     const [u] = await c.get("db").select({ status: users.status }).from(users).where(eq(users.id, uid)).limit(1);
     if (!u) return c.json({ error: "sign in again to upload photos" }, 401);

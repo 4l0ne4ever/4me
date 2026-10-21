@@ -8,6 +8,7 @@ import { allow, humanCheck, ipHash, looksLikeSpam } from "../lib/guard";
 import { toAlmost, toAuthor, toBlast, toShout } from "../lib/map";
 import { nowPlaying } from "../lib/music";
 import { anonymousNameProblem } from "../lib/names";
+import { notify, publish } from "../lib/notify";
 import { json } from "../lib/validate";
 
 const catActions = { pet: catStats.pets, feed: catStats.fish, play: catStats.plays } as const;
@@ -82,7 +83,17 @@ export const socialRoutes = new Hono<AppEnv>()
       .insert(shouts)
       .values({ ownerId: owner?.id ?? null, name: input.name, body: input.body, status, ipHash: await ipHash(c) })
       .returning();
-    return c.json({ shout: toShout(row!), pending: status === "pending" }, 201);
+    const shout = toShout(row!);
+    if (status === "visible")
+      publish(c, [`guest:${owner?.handle ?? "_"}`], { type: "shout", owner: owner?.handle ?? null, shout });
+    if (owner)
+      await notify(c, owner.id, {
+        kind: "shout",
+        text: `${input.name} signed your guestbook${status === "pending" ? " (waiting for approval)" : ""}`,
+        link: `/u/${owner.handle}?open=guest`,
+        actor: { name: input.name, avatar: null },
+      });
+    return c.json({ shout, pending: status === "pending" }, 201);
   })
   .get("/blasts", async (c) => {
     const limit = Math.min(Math.max(Number(c.req.query("limit")) || 6, 1), 30);

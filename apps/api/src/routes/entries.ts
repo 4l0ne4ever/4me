@@ -7,6 +7,7 @@ import { authorCols, fileReport, isReadable, noteCount, origin, positiveId, read
 import { allow, humanCheck, ipHash, looksLikeSpam } from "../lib/guard";
 import { toEntry, toNote, toSummary } from "../lib/map";
 import { anonymousNameProblem } from "../lib/names";
+import { notify, publish, quote } from "../lib/notify";
 import { json } from "../lib/validate";
 
 const cache = (seconds: number) => `public, max-age=${seconds}, s-maxage=${seconds * 2}, stale-while-revalidate=300`;
@@ -78,6 +79,12 @@ export const entryRoutes = new Hono<AppEnv>()
       .set({ buzzCount: sql`${entries.buzzCount} + 1` })
       .where(eq(entries.id, entry.id))
       .returning({ buzzCount: entries.buzzCount });
+    publish(c, [`entry:${entry.id}`], { type: "buzz", entryId: entry.id });
+    await notify(c, entry.authorId, {
+      kind: "buzz",
+      text: `Someone BUZZed ${quote(entry.title)}!`,
+      link: `/u/${entry.handle}/${entry.slug}`,
+    });
     return c.json(row);
   })
   .get("/:id/notes", async (c) => {
@@ -110,7 +117,18 @@ export const entryRoutes = new Hono<AppEnv>()
       .insert(notes)
       .values({ entryId: entry.id, name: input.name, body: input.body, status, ipHash: await ipHash(c) })
       .returning();
-    return c.json({ note: toNote(row!), pending: status === "pending" }, 201);
+    const note = toNote(row!);
+    if (status === "visible") publish(c, [`entry:${entry.id}`], { type: "note", entryId: entry.id, note });
+    await notify(c, entry.authorId, {
+      kind: status === "pending" ? "pending" : "note",
+      text:
+        status === "pending"
+          ? `A note from ${input.name} on ${quote(entry.title)} is waiting for you`
+          : `${input.name} left a note on ${quote(entry.title)}`,
+      link: `/u/${entry.handle}/${entry.slug}`,
+      actor: { name: input.name, avatar: null },
+    });
+    return c.json({ note, pending: status === "pending" }, 201);
   })
   /** A guest reports a page. Members report through the web server, so it counts them by account instead. */
   .post("/:id/report", json(reportInput), async (c) => {
