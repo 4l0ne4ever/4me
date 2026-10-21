@@ -70,12 +70,9 @@ describe("which topics a browser may listen to", () => {
   const url = (q: string) => new URL(`https://api.example/live?${q}`);
 
   it("allows public pages, guestbooks and tonight", async () => {
-    expect(await vetTopics(url("t=entry:12&t=guest:lan&t=guest:_&t=tonight"), "s")).toEqual([
-      "entry:12",
-      "guest:lan",
-      "guest:_",
-      "tonight",
-    ]);
+    expect(await vetTopics(url("t=entry:12&t=guest:lan&t=tonight"), "s")).toEqual(["entry:12", "guest:lan", "tonight"]);
+    // There is no shared guestbook any more.
+    expect(await vetTopics(url("t=guest:_"), "s")).toBeNull();
   });
 
   it("adds a member's own notifications only with a ticket signed for them", async () => {
@@ -121,7 +118,7 @@ describe("the in-process hub", () => {
 describe("live updates and notifications", () => {
   it("shows a guest's note to everyone on the page and tells the writer", async () => {
     await send("POST", `/entries/${lamps.id}/notes`, { name: "moth", body: "still here" }, false);
-    expect(of("note")[0]).toMatchObject({ topics: [`entry:${lamps.id}`, "notes"], event: { note: { name: "moth" } } });
+    expect(of("note")[0]).toMatchObject({ topics: [`entry:${lamps.id}`], event: { note: { name: "moth" } } });
     expect(of("notify")[0]).toMatchObject({
       topics: [`user:${lamps.authorId}`],
       event: { notification: { kind: "note", text: "moth left a note on “The lamps came on before I got home”" } },

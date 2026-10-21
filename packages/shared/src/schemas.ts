@@ -183,9 +183,6 @@ export type Note = {
   editedAt: string | null;
 };
 
-/** A note as the front desktop's Messenger shows it: with the page it was left on. */
-export type RecentNote = Note & { page: { title: string; slug: string; handle: string; author: string } };
-
 /** A diary a member subscribed to: whose, and when they last wrote. */
 export type Subscription = Author & { lastWroteAt: string | null };
 
@@ -248,4 +245,40 @@ export type DiaryExport = {
   blasts: Array<{ body: string; at: string }>;
   almost: Array<{ body: string; at: string }>;
   guestbook: Array<{ name: string; body: string; at: string }>;
+};
+
+/* ---------- private messages ---------- */
+
+/** Who to talk to: up to 11 others (a group holds 12), and a name if it is a group. */
+export const startChatInput = z.object({
+  with: z.array(z.string().trim().min(1).max(24)).min(1).max(11),
+  title: z.string().trim().max(40).optional(),
+});
+export const chatMessageInput = z.object({ body: z.string().trim().min(1).max(1000) });
+export const addToChatInput = z.object({ with: z.array(z.string().trim().min(1).max(24)).min(1).max(11) });
+/** Block (or, with `on: false`, unblock) a member from messaging you. */
+export const blockInput = z.object({ handle: z.string().trim().min(1).max(24), on: z.boolean() });
+
+export type ChatMessage = {
+  id: number;
+  conversationId: number;
+  /** Null for a system line, or once the writer deleted their account. */
+  from: Author | null;
+  kind: "text" | "buzz" | "system";
+  body: string;
+  createdAt: string;
+};
+
+export type Conversation = {
+  id: number;
+  /** A group's name (null for two people, who are named by the other person). */
+  title: string | null;
+  group: boolean;
+  /** Everyone in it, the reader included. */
+  members: Author[];
+  last: ChatMessage | null;
+  unread: number;
+  lastMessageAt: string;
+  /** Between two people: the reader has blocked the other one. */
+  blocked: boolean;
 };

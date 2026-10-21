@@ -3,9 +3,12 @@
 Night diaries on a 2006 desktop. Anyone with an account keeps one: a page after dark, with the mood, the weather,
 a song picked from the music search (it plays a 30-second preview, like a song sticker) and photos from their phone.
 Each writer has a desktop of their own at `/u/<handle>`; the front desktop belongs to nobody: it opens no one's
-page, and shows everyone's newest pages in a *Tonight* window, the newest notes on every diary in its Messenger
-(live, from `GET /entries/notes/recent` and the `notes` topic). Guestbooks belong to diaries: each writer has one
-for words to them rather than to one page (those are notes); the front desktop has none. Readers leave notes in a Messenger window, BUZZ the writer, sign guestbooks, flip through the
+page, and shows everyone's newest pages in a *Tonight* window. Guestbooks belong to diaries: each writer has one
+for words to them rather than to one page (those are notes, under each page); the front desktop has none.
+**Messenger** is private messages between members, one to one or in groups of up to twelve, like Yahoo Messenger:
+live, with a ding, a balloon and an unread count on the taskbar, BUZZ!!! that shakes the other screen, and blocking.
+On someone's diary it also shows their status at the top (blast, song, online or asleep). Readers leave notes, BUZZ
+the writer, sign guestbooks, flip through the
 photos, peek at the lines that were *almost* posted, and look after **Ink**, the black cat who lives on the taskbar.
 Guests can read and leave notes; logging on at the XP-style Welcome screen (email and password, or Google) keeps a
 name, a picture and Ink on every device, and opens the Notepad to write.

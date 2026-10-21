@@ -144,7 +144,7 @@ describe("editing and reporting notes", () => {
     );
     expect(res.note).toMatchObject({ body: "fixed", editedAt: expect.any(String) });
     expect(of("note")[0]).toMatchObject({
-      topics: [`entry:${lampsId}`, "notes"],
+      topics: [`entry:${lampsId}`],
       event: { note: { id: noteId, body: "fixed" } },
     });
   });

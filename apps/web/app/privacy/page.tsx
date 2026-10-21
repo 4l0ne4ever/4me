@@ -115,6 +115,15 @@ export default function Privacy() {
         </li>
       </ul>
 
+      <h2>Private messages</h2>
+      <p>
+        Messages you send in Messenger are kept in our database so the people in the conversation can read them later.
+        Only they can read them through the site; the moderator has no screen for them. They are not end-to-end
+        encrypted. If you block someone, neither of you can message the other until you unblock them; they aren&apos;t
+        told. Leaving a group removes you from it. When you delete your account you leave every conversation, and the
+        messages you sent stay for the others, signed &ldquo;a former reader&rdquo;.
+      </p>
+
       <h2>Where it lives</h2>
       <ul>
         <li>The site runs on Vercel and the API on Cloudflare. The database is Neon Postgres in Singapore.</li>

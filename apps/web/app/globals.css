@@ -3526,3 +3526,297 @@ body.busy * {
   line-height: 1.5;
   color: var(--chrome-ink);
 }
+
+/* Messenger: the diary writer's status on top, the reader's private conversations below */
+.body.msn {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.buddy {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--chrome-edge);
+}
+.buddy-acts {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+.buddy-acts .btn {
+  min-height: 34px;
+}
+.msn-said {
+  padding: 0 12px 10px;
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.msn-guest {
+  padding: 14px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--chrome-dim);
+}
+.chats {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.chats-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.chats-hd .btn {
+  min-height: 32px;
+}
+.chat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.chat-list button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: none;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--chrome-edge) 60%, transparent);
+  color: var(--chrome-ink);
+  font: 13px var(--ui);
+  text-align: left;
+  cursor: pointer;
+}
+.chat-list button:hover,
+.chat-list button:focus-visible {
+  background: color-mix(in srgb, var(--chrome-hi) 55%, transparent);
+}
+.cl-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cl-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cl-top b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 400;
+}
+.cl-top small {
+  flex-shrink: 0;
+  color: var(--chrome-dim);
+  font-size: 11px;
+}
+.cl-last {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--chrome-dim);
+}
+.chat-list .unread b {
+  font-weight: 700;
+}
+.chat-list .unread .cl-last {
+  color: var(--chrome-ink);
+}
+.cl-n,
+.chat-badge,
+.chat-n {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--buzz);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.chat-n {
+  margin-left: 6px;
+}
+.icon {
+  position: relative;
+}
+.chat-badge {
+  position: absolute;
+  top: 2px;
+  right: 18px;
+}
+.faces {
+  position: relative;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+.faces img,
+.face-none {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  display: block;
+  border: 1px solid var(--chrome-edge);
+  background: var(--field);
+}
+.faces.two img {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+}
+.faces.two img:first-child {
+  top: 0;
+  left: 0;
+}
+.faces.two img:last-child {
+  right: 0;
+  bottom: 0;
+  box-shadow: -2px -2px 0 var(--chrome);
+}
+.talk {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.talk-hd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--chrome-edge);
+  font-size: 13px;
+}
+.talk-back {
+  min-height: 32px;
+  width: 32px;
+  padding: 0;
+  font-size: 18px;
+}
+.talk-hd .faces,
+.talk-hd .faces img,
+.talk-hd .face-none {
+  width: 28px;
+  height: 28px;
+}
+.talk-hd .faces.two img {
+  width: 20px;
+  height: 20px;
+}
+.talk-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.talk-who small {
+  color: var(--chrome-dim);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.talk-lines {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.talk-more {
+  align-self: center;
+  font-size: 12px;
+}
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 12px 12px;
+  font-size: 13px;
+}
+.people > .btn {
+  align-self: flex-start;
+}
+.people-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.people-box .field {
+  flex: 1 1 140px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 6px;
+  border: 1px solid var(--chrome-edge);
+  background: var(--chrome-hi);
+}
+.chip img {
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
+}
+.chip button {
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: 0;
+  color: var(--chrome-dim);
+  font-size: 16px;
+  cursor: pointer;
+}
+.chip button:hover {
+  color: var(--chrome-ink);
+}
+.people-found {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--chrome-edge);
+  background: var(--field);
+}
+.people-found button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: none;
+  border: 0;
+  color: var(--chrome-ink);
+  font: 13px var(--ui);
+  text-align: left;
+  cursor: pointer;
+}
+.people-found button:hover,
+.people-found button:focus-visible {
+  background: var(--chrome-hi);
+}
+.people-found img {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+}
+.people-found span {
+  display: flex;
+  flex-direction: column;
+}
+.people-found small {
+  color: var(--chrome-dim);
+  font-size: 11px;
+}

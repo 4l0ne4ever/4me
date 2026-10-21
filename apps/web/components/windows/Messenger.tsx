@@ -1,16 +1,15 @@
 "use client";
 
-import { type Author, avatarUrl, type Blast, type Entry, type Me, type Note, type NowPlaying } from "@4me/shared";
-import { type FormEvent, useEffect, useRef, useState } from "react";
-import { API_URL, apiSend, hhmm, shortDate, stamp } from "@/lib/api";
-import { useFresh, useLiveEvent } from "@/lib/live";
-import { noteAsMember } from "@/lib/member-actions";
+import type { Author, Blast, ChatMessage, Conversation, Entry, Me, NowPlaying, SearchResults } from "@4me/shared";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { API_URL, apiSend, shortDate, stamp } from "@/lib/api";
+import { addToChat, blockMember, buzzChat, chatHistory, leaveChat, sendChat } from "@/lib/chat-actions";
+import { useLiveEvent } from "@/lib/live";
+import { chatName, useChat } from "../chat/ChatState";
 import { DeskLink } from "../DeskLink";
+import { useConfirm } from "../Dialog";
 import { Eq } from "../Icons";
 import { nudgeInk } from "../ink/Ink";
-import { useTurnstile } from "../Turnstile";
-
-type Line = { kind: "note"; note: Note } | { kind: "sys"; text: string; at: string; buzz?: boolean };
 
 function ago(iso: string): string {
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -43,9 +42,8 @@ function buzzSound() {
 
 type Props = {
   entry: Entry | null;
-  /** Whose Messenger this is: the desktop's owner, or the writer of the page that is open. */
+  /** The diary's writer, on their desktop: their status at the top. None on the front desktop. */
   persona: Author | null;
-  notes: Note[];
   blasts: Blast[];
   awake: boolean;
   live: NowPlaying | null;
@@ -53,254 +51,538 @@ type Props = {
   me: Me | null;
 };
 
-export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, me }: Props) {
-  const [lines, setLines] = useState<Line[]>(() => notes.map((note) => ({ kind: "note", note })));
-  const [text, setText] = useState("");
-  const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const chat = useRef<HTMLDivElement>(null);
-  const human = useTurnstile();
-  const [latest, ...older] = blasts;
-  const regulars = [...new Set(notes.filter((n) => !n.isAuthor).map((n) => n.name))].slice(-4).reverse();
-
-  // follow new lines as they arrive, but open on the top so the blast is the first thing read
-  const seen = useRef(lines.length);
-  useEffect(() => {
-    if (lines.length > seen.current) chat.current?.parentElement?.scrollTo({ top: 1e6, behavior: "smooth" });
-    seen.current = lines.length;
-  }, [lines]);
-
-  const add = (line: Line) => setLines((l) => [...l, line]);
-  // A note can arrive twice (my own reply, and the live copy of it): it only shows once.
-  const addNote = (note: Note) =>
-    setLines((l) =>
-      l.some((x) => x.kind === "note" && x.note.id === note.id)
-        ? l.map((x) => (x.kind === "note" && x.note.id === note.id ? { kind: "note", note } : x))
-        : [...l, { kind: "note", note }],
-    );
-  const [reading, setReading] = useState<number | null>(null);
-  useFresh<Note[]>(entry && !entry.sealedUntil ? `${API_URL}/entries/${entry.id}/notes` : null, (fresh) =>
-    setLines((l) => {
-      // The fresh list is the truth for notes; the system lines (BUZZes, "waiting for…") stay in place.
-      const sys = l.filter((x) => x.kind === "sys");
-      return [...fresh.map((note) => ({ kind: "note" as const, note })), ...sys];
-    }),
+/**
+ * Messenger, like the ones from 2006: on someone's diary, their status at the top (blast, song, online or asleep, a
+ * BUZZ for the page); below, the reader's own private conversations, with one person or a group.
+ * Notes on a page are written under the page itself.
+ */
+export function Messenger({ entry, persona, blasts, awake, live, onBuzz, me }: Props) {
+  return (
+    <div className="body msn">
+      {persona && (
+        <Buddy entry={entry} persona={persona} blasts={blasts} awake={awake} live={live} onBuzz={onBuzz} me={me} />
+      )}
+      {me ? (
+        <Chats me={me} />
+      ) : (
+        <p className="msn-guest">
+          <a href="/welcome">Log on</a> to send private messages to other writers and start group chats.
+        </p>
+      )}
+    </div>
   );
-  // "5 minutes ago" depends on the moment it is drawn, so only the browser says it (after the page has hydrated).
+}
+
+/* ---------- the diary's writer, at the top ---------- */
+
+function Buddy({ entry, persona, blasts, awake, live, onBuzz, me }: Props & { persona: Author }) {
+  const { talkTo, chats, active } = useChat();
+  const [latest, ...older] = blasts;
+  // Already talking with them below: no need to offer it again.
+  const open = chats?.find((c) => c.id === active);
+  const talking = Boolean(open && !open.group && open.members.some((m) => m.handle === persona.handle));
   const [mounted, setMounted] = useState(false);
+  const [said, setSaid] = useState<string | null>(null);
   useEffect(() => setMounted(true), []);
-  const ownBuzz = useRef(0);
-
-  useLiveEvent((e) => {
-    if (!entry) return;
-    if (e.type === "note" && e.entryId === entry.id) addNote(e.note);
-    if (e.type === "note-gone" && e.entryId === entry.id)
-      setLines((l) => l.filter((x) => x.kind !== "note" || (x.note.id !== e.noteId && x.note.parentId !== e.noteId)));
-    if (e.type === "presence" && e.entryId === entry.id) setReading(e.reading);
-    if (e.type === "buzz" && e.entryId === entry.id && Date.now() - ownBuzz.current > 2500) {
-      buzzSound();
-      nudgeInk("buzz");
-      add({ kind: "sys", buzz: true, text: "Someone just sent a BUZZ!!!", at: new Date().toISOString() });
-    }
-  });
-
-  const send = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!entry || !text.trim() || busy) return;
-    setBusy(true);
-    setError(null);
-    // Members write through the web server under their own name; guests go straight to the API.
-    const res = me
-      ? await noteAsMember(entry.id, text).then((r) =>
-          r.ok
-            ? { ok: true as const, data: { note: r.note, pending: r.pending } }
-            : { ok: false as const, error: r.error },
-        )
-      : await apiSend<{ note: Note; pending: boolean }>(`/entries/${entry.id}/notes`, {
-          name,
-          body: text,
-          turnstileToken: human.token,
-        });
-    setBusy(false);
-    if (!me) human.reset();
-    if (!res.ok) return setError(res.error);
-    setText("");
-    if (res.data.pending)
-      add({
-        kind: "sys",
-        text: `your note is waiting for ${entry.author.name} to read it first.`,
-        at: new Date().toISOString(),
-      });
-    else addNote(res.data.note);
-    nudgeInk("note");
-  };
+  const song = live ?? (entry?.song ? { artist: entry.song.artist, title: entry.song.title, live: false } : null);
+  const self = me?.handle === persona.handle;
 
   const buzz = async () => {
     if (!entry) return;
-    ownBuzz.current = Date.now();
     buzzSound();
     onBuzz();
     nudgeInk("buzz");
     const res = await apiSend<{ buzzCount: number }>(`/entries/${entry.id}/buzz`);
-    add(
-      res.ok
-        ? { kind: "sys", buzz: true, text: "You have just sent a BUZZ!!!", at: new Date().toISOString() }
-        : { kind: "sys", text: res.error, at: new Date().toISOString() },
-    );
+    setSaid(res.ok ? `You shook ${persona.name}'s diary.` : res.error);
   };
 
-  const song = live ?? (entry?.song ? { artist: entry.song.artist, title: entry.song.title, live: false } : null);
-
   return (
-    <>
-      <div className="body">
-        <div className="me">
-          <img
-            src={persona?.avatar ?? "/photos/pic-1014.jpg"}
-            alt={persona ? `${persona.name}'s picture` : ""}
-            width={56}
-            height={56}
-          />
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <b>
-              {persona ? <DeskLink href={`/u/${persona.handle}`}>{persona.name}</DeskLink> : "nobody yet"}{" "}
-              {awake ? <span className="on-dot">(online)</span> : <span className="off-dot">(asleep)</span>}
-            </b>
-            {latest && (
-              <div className="blast">
-                <q>{latest.body}</q>
-                <small>Blast · {mounted ? ago(latest.createdAt) : shortDate(latest.createdAt)}</small>
-              </div>
-            )}
-            {song && (
-              <span className="np">
-                <Eq />
-                <span>
-                  {song.live ? "now: " : ""}
-                  {song.artist} – {song.title}
-                </span>
+    <section className="buddy" aria-label={`${persona.name}'s status`}>
+      <div className="me">
+        <img src={persona.avatar} alt="" width={56} height={56} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <b>
+            <DeskLink href={`/u/${persona.handle}`}>{persona.name}</DeskLink>{" "}
+            {awake ? <span className="on-dot">(online)</span> : <span className="off-dot">(asleep)</span>}
+          </b>
+          {latest && (
+            <div className="blast">
+              <q>{latest.body}</q>
+              <small>Blast · {mounted ? ago(latest.createdAt) : shortDate(latest.createdAt)}</small>
+            </div>
+          )}
+          {song && (
+            <span className="np">
+              <Eq />
+              <span>
+                {song.live ? "now: " : ""}
+                {song.artist} – {song.title}
               </span>
-            )}
-          </div>
-        </div>
-        {older.length > 0 && (
-          <details className="fold">
-            <summary>Older blasts</summary>
-            <ul>
-              {older.map((b) => (
-                <li key={b.id}>
-                  {b.body} <span>· {shortDate(b.createdAt)}</span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-        {regulars.length > 0 && (
-          <details className="fold" open>
-            <summary>Recently here ({regulars.length})</summary>
-            <ul>
-              {regulars.map((r) => (
-                <li key={r}>
-                  <span className="dot" />
-                  {r}
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-        <p className="chat-hd">
-          {entry ? `Notes on “${entry.title}”` : "No page yet"}
-          {reading !== null && reading > 1 && <span className="reading"> · {reading} reading now</span>}
-        </p>
-        <div className="chat" ref={chat} aria-live="polite">
-          {lines.map((l, i) =>
-            l.kind === "note" ? (
-              <p className="ln" key={`n${l.note.id}`}>
-                <span className="t">({stamp(l.note.createdAt)})</span>{" "}
-                {l.note.parentId && (
-                  <span className="t" title="a reply">
-                    ↪{" "}
-                  </span>
-                )}
-                {l.note.member && <img className="av" src={l.note.member.avatar} alt="" width={16} height={16} />}
-                <span className={`n${l.note.isAuthor ? " own" : ""}`} title={l.note.member ? "member" : undefined}>
-                  {l.note.member ? <DeskLink href={`/u/${l.note.member.handle}`}>{l.note.name}</DeskLink> : l.note.name}
-                  :
-                </span>{" "}
-                {l.note.body}
-              </p>
-            ) : (
-              // biome-ignore lint/suspicious/noArrayIndexKey: system lines are append-only
-              <p className="ln" key={`s${i}`}>
-                <span className="t">({hhmm(l.at)})</span> <span className={l.buzz ? "buzz" : "sys"}>{l.text}</span>
-              </p>
-            ),
+            </span>
           )}
         </div>
+      </div>
+      {older.length > 0 && (
+        <details className="fold">
+          <summary>Older blasts</summary>
+          <ul>
+            {older.map((b) => (
+              <li key={b.id}>
+                {b.body} <span>· {shortDate(b.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      <div className="buddy-acts">
+        {me && !self && !talking && (
+          <button type="button" className="btn" onClick={async () => setSaid(await talkTo([persona.handle]))}>
+            Send a message
+          </button>
+        )}
+        {entry && !entry.sealedUntil && (
+          <button type="button" className="btn buzz" onClick={buzz} title={`Shake ${persona.name}'s diary`}>
+            BUZZ!
+          </button>
+        )}
+      </div>
+      {said && (
+        <p className="msn-said" role="status">
+          {said}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/* ---------- the reader's conversations ---------- */
+
+function Chats({ me }: { me: Me }) {
+  const { chats, active, setActive } = useChat();
+  const [composing, setComposing] = useState(false);
+  if (active) return <Talk key={active} me={me} id={active} onBack={() => setActive(null)} />;
+  if (composing) return <NewChat onDone={() => setComposing(false)} />;
+  return (
+    <section className="chats" aria-label="Conversations">
+      <header className="chats-hd">
+        <b>Conversations</b>
+        <button type="button" className="btn" onClick={() => setComposing(true)}>
+          New message
+        </button>
+      </header>
+      {chats === null && <p className="msn-guest">Loading…</p>}
+      {chats?.length === 0 && (
+        <p className="msn-guest">No conversations yet. Press New message to write to someone, or to a few people.</p>
+      )}
+      <ul className="chat-list">
+        {chats?.map((c) => (
+          <li key={c.id}>
+            <button type="button" className={c.unread ? "unread" : undefined} onClick={() => setActive(c.id)}>
+              <Faces chat={c} me={me} />
+              <span className="cl-main">
+                <span className="cl-top">
+                  <b>{chatName(c, me)}</b>
+                  {c.last && <small>{stamp(c.last.createdAt)}</small>}
+                </span>
+                <span className="cl-last">
+                  {c.last ? preview(c.last, me, c.group) : c.group ? `${c.members.length} people` : "Say hello."}
+                </span>
+              </span>
+              {c.unread > 0 && (
+                <span className="cl-n" title={`${c.unread} unread`}>
+                  {c.unread > 9 ? "9+" : c.unread}
+                </span>
+              )}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function preview(m: ChatMessage, me: Me, group: boolean): string {
+  if (m.kind === "system") return m.body;
+  const who = m.from?.handle === me.handle ? "You" : group ? (m.from?.name ?? "a former reader") : null;
+  const text = m.kind === "buzz" ? "BUZZ!!!" : m.body;
+  return who ? `${who}: ${text}` : text;
+}
+
+/** One face for two people, two overlapping for a group. */
+function Faces({ chat, me }: { chat: Conversation; me: Me }) {
+  const others = chat.members.filter((m) => m.handle !== me.handle).slice(0, 2);
+  return (
+    <span className={`faces${others.length > 1 ? " two" : ""}`} aria-hidden="true">
+      {others.length === 0 && <span className="face-none" />}
+      {others.map((o) => (
+        <img key={o.handle} src={o.avatar} alt="" width={36} height={36} />
+      ))}
+    </span>
+  );
+}
+
+/* ---------- one conversation ---------- */
+
+function Talk({ me, id, onBack }: { me: Me; id: number; onBack: () => void }) {
+  const { chats, upsert, remove, markRead } = useChat();
+  const confirm = useConfirm();
+  const chat = chats?.find((c) => c.id === id) ?? null;
+  const [lines, setLines] = useState<ChatMessage[] | null>(null);
+  const [more, setMore] = useState(false);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+
+  const add = useCallback(
+    (m: ChatMessage) => setLines((l) => (l ? (l.some((x) => x.id === m.id) ? l : [...l, m]) : [m])),
+    [],
+  );
+
+  useEffect(() => {
+    let alive = true;
+    void chatHistory(id).then((h) => {
+      if (!alive) return;
+      setLines(h);
+      setMore(h.length >= 50);
+    });
+    markRead(id);
+    return () => {
+      alive = false;
+    };
+  }, [id, markRead]);
+
+  useLiveEvent((e) => {
+    if (e.type === "hello") void chatHistory(id).then(setLines);
+    if (e.type === "message" && e.message.conversationId === id) add(e.message);
+  });
+
+  const count = useRef(0);
+  useEffect(() => {
+    const n = lines?.length ?? 0;
+    if (n !== count.current) box.current?.scrollTo({ top: 1e6, behavior: count.current ? "smooth" : "auto" });
+    count.current = n;
+  }, [lines]);
+
+  if (!chat) return null;
+  const other = chat.group ? null : (chat.members.find((m) => m.handle !== me.handle) ?? null);
+
+  const send = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!text.trim() || busy) return;
+    setBusy(true);
+    setError(null);
+    const res = await sendChat(id, text);
+    setBusy(false);
+    if (!res.ok) return setError(res.error);
+    setText("");
+    add(res.message);
+    input.current?.focus();
+  };
+
+  const buzz = async () => {
+    buzzSound();
+    nudgeInk("buzz");
+    const res = await buzzChat(id);
+    if (res.ok) add(res.message);
+    else setError(res.error);
+  };
+
+  const older = async () => {
+    const first = lines?.[0];
+    if (!first) return;
+    const h = await chatHistory(id, first.id);
+    setMore(h.length >= 50);
+    setLines((l) => [...h, ...(l ?? [])]);
+  };
+
+  const leave = async () => {
+    const ok = await confirm({
+      title: "Leave group",
+      text: `Leave “${chatName(chat, me)}”? You won't see its messages any more, unless someone adds you again.`,
+      ok: "Leave",
+      danger: true,
+    });
+    if (!ok) return;
+    const res = await leaveChat(id);
+    if (res.ok) remove(id);
+    else setError(res.error);
+  };
+
+  const block = async (on: boolean) => {
+    if (!other) return;
+    if (on) {
+      const ok = await confirm({
+        title: `Block ${other.name}`,
+        text: `${other.name} won't be able to message you, start a conversation with you or add you to a group (and you won't be able to message them) until you unblock them. They aren't told.`,
+        ok: "Block",
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    const res = await blockMember(other.handle, on);
+    if (res.ok) upsert({ ...chat, blocked: on });
+    else setError(res.error);
+  };
+
+  return (
+    <section className="talk" aria-label={`Conversation: ${chatName(chat, me)}`}>
+      <header className="talk-hd">
+        <button type="button" className="btn talk-back" onClick={onBack} aria-label="All conversations">
+          ‹
+        </button>
+        <Faces chat={chat} me={me} />
+        <span className="talk-who">
+          {other ? <DeskLink href={`/u/${other.handle}`}>{other.name}</DeskLink> : <b>{chatName(chat, me)}</b>}
+          {chat.group && <small>{chat.members.map((m) => (m.handle === me.handle ? "you" : m.name)).join(", ")}</small>}
+        </span>
+        {chat.group ? (
+          <>
+            <button type="button" className="linkish" onClick={() => setAdding((a) => !a)}>
+              Add people
+            </button>
+            <button type="button" className="linkish" onClick={() => void leave()}>
+              Leave
+            </button>
+          </>
+        ) : (
+          other && (
+            <button type="button" className="linkish" onClick={() => void block(!chat.blocked)}>
+              {chat.blocked ? "Unblock" : "Block"}
+            </button>
+          )
+        )}
+      </header>
+      {adding && (
+        <People
+          label="Add to the group"
+          action="Add"
+          exclude={chat.members.map((m) => m.handle)}
+          onPick={async (handles) => {
+            const res = await addToChat(id, handles);
+            if (!res.ok) return res.error;
+            upsert(res.chat);
+            setAdding(false);
+            return null;
+          }}
+        />
+      )}
+      <div className="chat talk-lines" ref={box} aria-live="polite">
+        {more && (
+          <button type="button" className="linkish talk-more" onClick={() => void older()}>
+            Earlier messages
+          </button>
+        )}
+        {lines === null && <p className="ln sys">Opening…</p>}
+        {lines?.length === 0 && <p className="ln sys">Nothing said yet.</p>}
+        {lines?.map((m) =>
+          m.kind === "system" ? (
+            <p className="ln" key={m.id}>
+              <span className="sys">{m.body}</span>
+            </p>
+          ) : (
+            <p className="ln" key={m.id}>
+              <span className="t">({stamp(m.createdAt)})</span>{" "}
+              <span className={`n${m.from?.handle === me.handle ? " own" : ""}`}>
+                {m.from?.name ?? "a former reader"}:
+              </span>{" "}
+              {m.kind === "buzz" ? <span className="buzz">BUZZ!!!</span> : m.body}
+            </p>
+          ),
+        )}
       </div>
       {error && (
         <p className="err" role="alert">
           {error}
         </p>
       )}
-      {!me && human.widget}
-      {!me && (
+      {chat.blocked ? (
         <p className="compose-hint">
-          Writing as a guest. <a href="/welcome">Log on</a> to keep your name.
+          You blocked {other?.name}.{" "}
+          <button type="button" className="linkish" onClick={() => void block(false)}>
+            Unblock
+          </button>{" "}
+          to talk again.
+        </p>
+      ) : (
+        <form className="compose" onSubmit={send}>
+          <label htmlFor="talk-text" className="sr">
+            Message
+          </label>
+          <input
+            id="talk-text"
+            ref={input}
+            className="field"
+            placeholder="type a message…"
+            maxLength={1000}
+            autoComplete="off"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <button className="btn" type="submit" disabled={busy || !text.trim()}>
+            Send
+          </button>
+          <button className="btn buzz" type="button" onClick={() => void buzz()} title="Shake their screen">
+            BUZZ!
+          </button>
+        </form>
+      )}
+    </section>
+  );
+}
+
+/* ---------- starting one ---------- */
+
+function NewChat({ onDone }: { onDone: () => void }) {
+  const { talkTo } = useChat();
+  return (
+    <section className="chats" aria-label="New message">
+      <header className="chats-hd">
+        <b>New message</b>
+        <button type="button" className="linkish" onClick={onDone}>
+          Cancel
+        </button>
+      </header>
+      <People
+        label="To"
+        action="Start"
+        group
+        onPick={async (handles, title) => {
+          const error = await talkTo(handles, title);
+          if (!error) onDone();
+          return error;
+        }}
+      />
+    </section>
+  );
+}
+
+/** Pick members by name: search as you type, pick one or more, then act. With `group`, two or more get a name. */
+function People({
+  label,
+  action,
+  group,
+  exclude = [],
+  onPick,
+}: {
+  label: string;
+  action: string;
+  group?: boolean;
+  exclude?: string[];
+  onPick: (handles: string[], title?: string) => Promise<string | null>;
+}) {
+  const [q, setQ] = useState("");
+  const [found, setFound] = useState<SearchResults["people"]>([]);
+  const [picked, setPicked] = useState<SearchResults["people"]>([]);
+  const [title, setTitle] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) return setFound([]);
+    const ctl = new AbortController();
+    const t = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(term)}`, { signal: ctl.signal });
+        if (res.ok) setFound(((await res.json()) as SearchResults).people);
+      } catch {
+        // keep the last suggestions
+      }
+    }, 250);
+    return () => {
+      window.clearTimeout(t);
+      ctl.abort();
+    };
+  }, [q]);
+
+  const shown = found.filter((p) => !picked.some((x) => x.handle === p.handle) && !exclude.includes(p.handle));
+
+  const go = async (e: FormEvent) => {
+    e.preventDefault();
+    if (picked.length === 0 || busy) return;
+    setBusy(true);
+    setError(
+      await onPick(
+        picked.map((p) => p.handle),
+        picked.length > 1 ? title.trim() || undefined : undefined,
+      ),
+    );
+    setBusy(false);
+  };
+
+  return (
+    <form className="people" onSubmit={go}>
+      <label htmlFor="people-q">{label}</label>
+      <div className="people-box">
+        {picked.map((p) => (
+          <span key={p.handle} className="chip">
+            <img src={p.avatar} alt="" width={18} height={18} />
+            {p.name}
+            <button
+              type="button"
+              aria-label={`Remove ${p.name}`}
+              onClick={() => setPicked((l) => l.filter((x) => x.handle !== p.handle))}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          id="people-q"
+          className="field"
+          placeholder={picked.length ? "add someone else…" : "a name or desktop address…"}
+          value={q}
+          autoComplete="off"
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </div>
+      {shown.length > 0 && (
+        <ul className="people-found">
+          {shown.slice(0, 6).map((p) => (
+            <li key={p.handle}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPicked((l) => (l.length >= 11 ? l : [...l, p]));
+                  setQ("");
+                  setFound([]);
+                }}
+              >
+                <img src={p.avatar} alt="" width={28} height={28} />
+                <span>
+                  <b>{p.name}</b>
+                  <small>4me://{p.handle}</small>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {group && picked.length > 1 && (
+        <>
+          <label htmlFor="people-title">Group name (optional)</label>
+          <input
+            id="people-title"
+            className="field"
+            maxLength={40}
+            placeholder="night shift"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </>
+      )}
+      {error && (
+        <p className="err" role="alert">
+          {error}
         </p>
       )}
-      <form className="compose" onSubmit={send}>
-        {me ? (
-          <span className="as-me" title={`Writing as ${me.displayName}`}>
-            <img src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
-            <span className="sr">Writing as {me.displayName}</span>
-          </span>
-        ) : (
-          <>
-            <label htmlFor="note-name" className="sr">
-              Your name
-            </label>
-            <input
-              id="note-name"
-              className="field"
-              style={{ flex: "0 0 84px" }}
-              placeholder="name"
-              maxLength={32}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </>
-        )}
-        <label htmlFor="note-text" className="sr">
-          Leave a note on this page
-        </label>
-        <input
-          id="note-text"
-          className="field"
-          placeholder="leave a note…"
-          maxLength={500}
-          autoComplete="off"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <button
-          className="btn"
-          type="submit"
-          disabled={busy || !entry || Boolean(entry.sealedUntil) || (!me && human.needed && !human.token)}
-        >
-          Send
-        </button>
-        <button
-          className="btn buzz"
-          type="button"
-          onClick={buzz}
-          disabled={!entry || Boolean(entry.sealedUntil)}
-          title={entry ? `Shake ${entry.author.name}'s diary` : "Shake the diary"}
-        >
-          BUZZ!
-        </button>
-      </form>
-    </>
+      <button className="btn" type="submit" disabled={busy || picked.length === 0}>
+        {action}
+        {group && picked.length > 1 ? " group" : ""}
+      </button>
+    </form>
   );
 }

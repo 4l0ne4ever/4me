@@ -129,6 +129,9 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     route: [] as Step[],
     goal: null as Goal | null,
     climb: null as { id: string; side: "left" | "right" } | null,
+    /** Sideways speed while leaping off a surface, and the surface she leapt from (she can't land back on it). */
+    vx: 0,
+    leaving: null as string | null,
   });
 
   useEffect(() => {
@@ -321,11 +324,18 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
         s.target = clampTo(step.x);
         return setMode(s.goal?.mode ?? "walk");
       }
-      s.on = null;
       if (step.kind === "drop") {
-        s.vy = -300; // a little hop off the edge
+        // A leap out past the edge and down, in an arc.
+        const here = s.on ? findPlat(surfaces(), s.on, width()) : null;
+        const out = here && s.x + CAT_W / 2 < (here.left + here.right) / 2 ? -1 : 1;
+        s.leaving = s.on;
+        s.on = null;
+        s.dir = out;
+        s.vx = out * 190;
+        s.vy = -420;
         return setMode("fall");
       }
+      s.on = null;
       s.climb = { id: step.id, side: step.side };
       setMode("climb");
     };
@@ -379,6 +389,10 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     };
 
     const idleDone = () => {
+      if (s.goal && s.mode === "crouch") {
+        s.route = plan({ on: s.on ?? GROUND, x: s.x }, s.goal, surfaces(), width(), CAT_W);
+        return nextStep();
+      }
       const task = s.task;
       if (task?.kind === "feed" && s.mode === "eat") {
         s.task = null;
@@ -445,12 +459,14 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     const land = (p: Plat, speed: number) => {
       s.y = p.y;
       s.vy = 0;
+      s.vx = 0;
+      s.leaving = null;
       s.on = p.id;
       s.platLeft = p.left;
       if (s.goal) {
+        // Paws down, a beat to steady herself, then on her way (idleDone picks the trip up again).
         Sound.thud();
-        s.route = plan({ on: p.id, x: s.x }, s.goal, surfaces(), width(), CAT_W);
-        return nextStep();
+        return setMode("crouch", speed > 900 ? 320 : 180);
       }
       const hard = speed > 900;
       Sound.thud();
@@ -503,11 +519,13 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
         const from = s.y;
         s.vy += GRAVITY * dt;
         s.y -= s.vy * dt;
+        s.x = Math.max(0, Math.min(width() - CAT_W, s.x + s.vx * dt));
         const cx = s.x + CAT_W / 2;
+        const below = s.leaving ? up.filter((p) => p.id !== s.leaving) : up;
         const hit = reduce.matches
-          ? landing(up, cx, from, Number.NEGATIVE_INFINITY, width())
+          ? landing(below, cx, from, Number.NEGATIVE_INFINITY, width())
           : s.vy > 0
-            ? landing(up, cx, from, s.y, width())
+            ? landing(below, cx, from, s.y, width())
             : null;
         if (hit) land(hit, s.vy);
       } else if (s.mode === "climb" && s.climb) {
@@ -574,7 +592,8 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
 
       let frame: FrameName;
       if (s.mode === "held") frame = "happy";
-      else if (s.mode === "fall") frame = "crouch";
+      // Stretched out mid-leap, tucked when simply dropping.
+      else if (s.mode === "fall") frame = s.vx !== 0 ? "walkB" : "crouch";
       else if (s.mode === "walk" || s.mode === "run" || s.mode === "climb") {
         const pace = s.mode === "run" ? 90 : s.mode === "climb" ? 140 : 190;
         frame = Math.floor(t / pace) % 2 ? "walkB" : "walkA";
@@ -652,6 +671,8 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     s.goal = null;
     s.route = [];
     s.climb = null;
+    s.vx = 0;
+    s.leaving = null;
     yarnRef.current = null;
     setYarnX(null);
     setMenuLeft(null);

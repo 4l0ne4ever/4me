@@ -292,3 +292,70 @@ export const rateHits = pgTable(
   },
   (t) => [primaryKey({ columns: [t.key, t.window] })],
 );
+
+/**
+ * Private messages between members: two people, or a named group. A conversation between two people has a
+ * `pairKey` ("smallerId:largerId"), so the same two always share one.
+ */
+export const conversations = pgTable(
+  "conversations",
+  {
+    id: serial("id").primaryKey(),
+    /** A group's name; two people's conversation has none. */
+    title: text("title"),
+    isGroup: boolean("is_group").notNull().default(false),
+    pairKey: text("pair_key"),
+    createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+    lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("conversations_pair_idx").on(t.pairKey)],
+);
+
+export const conversationMembers = pgTable(
+  "conversation_members",
+  {
+    conversationId: integer("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Everything after this is unread for them. */
+    lastReadAt: timestamp("last_read_at", { withTimezone: true }).notNull().defaultNow(),
+    joinedAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.conversationId, t.userId] }), index("conversation_members_user_idx").on(t.userId)],
+);
+
+export const messages = pgTable(
+  "messages",
+  {
+    id: serial("id").primaryKey(),
+    conversationId: integer("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    /** Null once its writer deleted their account: shown as "a former reader". */
+    userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+    /** "text" is a message, "buzz" a BUZZ!!!, "system" a line like "Lan added Khoa". */
+    kind: text("kind").$type<"text" | "buzz" | "system">().notNull().default("text"),
+    body: text("body").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("messages_conversation_created_idx").on(t.conversationId, t.createdAt)],
+);
+
+/** Someone a member doesn't want messages from: neither can start a conversation with, or add, the other. */
+export const blocks = pgTable(
+  "blocks",
+  {
+    blockerId: integer("blocker_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    blockedId: integer("blocked_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.blockerId, t.blockedId] }), index("blocks_blocked_idx").on(t.blockedId)],
+);

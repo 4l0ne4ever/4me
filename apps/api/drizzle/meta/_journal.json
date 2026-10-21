@@ -57,6 +57,13 @@
       "when": 1792558167636,
       "tag": "0007_friendly_grey_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792572768686,
+      "tag": "0008_certain_ricochet",
+      "breakpoints": true
     }
   ]
 }
