@@ -92,6 +92,8 @@ export const entryInput = z.object({
   song: songPick.nullable().optional(),
   photos: z.array(uploadedPhoto).max(12).default([]),
   visibility: visibility.default("public"),
+  /** Seals the page until then, a letter to the future; null opens it now. */
+  opensAt: z.iso.datetime({ offset: true }).nullable().optional(),
 });
 export type EntryInput = z.input<typeof entryInput>;
 
@@ -150,6 +152,8 @@ export type EntrySummary = {
   song: Song | null;
   cover: Photo | null;
   noteCount: number;
+  /** Set while the page is a sealed letter: until then only its title, writer and dates show. */
+  sealedUntil: string | null;
 };
 
 export type Entry = EntrySummary & {
@@ -179,6 +183,19 @@ export type Note = {
 
 /** A diary a member subscribed to: whose, and when they last wrote. */
 export type Subscription = Author & { lastWroteAt: string | null };
+
+/** One page as a star in the archive's sky: when it was written and how much it was answered. */
+export type Star = {
+  id: number;
+  slug: string;
+  title: string;
+  mood: string;
+  writtenAt: string;
+  author: { handle: string; name: string };
+  /** Notes and reactions together: how bright the star is. */
+  glow: number;
+  sealedUntil: string | null;
+};
 
 export type SearchResults = { people: Array<Author & { bio: string }>; pages: EntrySummary[] };
 /** Which reaction this reader left, on the page and on each of its notes. */

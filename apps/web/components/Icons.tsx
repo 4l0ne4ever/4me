@@ -90,6 +90,18 @@ export const IconSearch = ({ className }: P) => (
     <path d="M12 14a6 6 0 0 1 5-4" stroke="#fff" strokeWidth="2" fill="none" />
   </svg>
 );
+export const IconArchive = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <rect x="5" y="8" width="30" height="26" fill="#1f3a63" />
+    <rect x="5" y="8" width="30" height="6" fill="#9b4a39" />
+    <rect x="11" y="4" width="3" height="7" fill="#c9ced6" />
+    <rect x="26" y="4" width="3" height="7" fill="#c9ced6" />
+    <circle cx="13" cy="21" r="1.4" fill="#f6f1e6" />
+    <circle cx="21" cy="26" r="2.2" fill="#f0d36b" />
+    <circle cx="28" cy="19" r="1" fill="#f6f1e6" />
+    <circle cx="16" cy="29" r="0.9" fill="#f6f1e6" />
+  </svg>
+);
 export const IconMin = () => (
   <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
     <rect x="2" y="8" width="8" height="2" fill="currentColor" />

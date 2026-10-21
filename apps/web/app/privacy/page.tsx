@@ -89,6 +89,13 @@ export default function Privacy() {
           Reactions are deleted with your account.
         </li>
         <li>Search only ever looks through public pages and the names and addresses of active diaries.</li>
+        <li>
+          The lit windows on the skyline are only a count of open pages. Nobody is named, and nothing about it is kept.
+        </li>
+        <li>
+          A sealed letter&apos;s words, song and photos are kept from everyone but its writer until its day, including
+          from search and link previews.
+        </li>
       </ul>
 
       <h2>Live updates and notifications</h2>

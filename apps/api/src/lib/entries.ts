@@ -1,5 +1,5 @@
 import { type entryInput, searchable, slugify } from "@4me/shared";
-import { and, eq, gt, inArray, lt, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import type { Context } from "hono";
 import type { z } from "zod";
 import { entries, noteReports, notes, reports, uploads, users } from "../db/schema";
@@ -20,6 +20,9 @@ export const isReadable = and(
 
 export const origin = (c: Context<AppEnv>) => new URL(c.req.url).origin;
 
+/** Not a sealed letter any more (or never one): its words may be read, searched and answered. */
+export const isOpen = or(isNull(entries.opensAt), lte(entries.opensAt, sql`now()`));
+
 export function isUniqueViolation(e: unknown): boolean {
   const err = e as { code?: string; cause?: { code?: string } };
   return err?.code === "23505" || err?.cause?.code === "23505";
@@ -38,7 +41,7 @@ export async function readableEntry(c: Context<AppEnv>, id: number) {
     })
     .from(entries)
     .innerJoin(users, eq(users.id, entries.authorId))
-    .where(and(isReadable, eq(entries.id, id)))
+    .where(and(isReadable, isOpen, eq(entries.id, id)))
     .limit(1);
   return row ?? null;
 }
@@ -86,6 +89,14 @@ export async function entryValues(
     searchText: searchable(`${input.title} ${input.body}`),
     updatedAt: new Date(),
   };
+  if (input.opensAt !== undefined) {
+    const opens = input.opensAt ? new Date(input.opensAt) : null;
+    if (opens && opens.getTime() > Date.now() + 10 * 366 * 86_400_000)
+      return { problem: "a letter can be sealed for ten years at most", status: 400 };
+    // A date already past simply opens the page; a new date in the future seals it again.
+    const sealed = opens && opens.getTime() > Date.now() ? opens : null;
+    Object.assign(values, { opensAt: sealed, openedAt: null });
+  }
   if (input.song === null) {
     Object.assign(values, {
       songId: null,

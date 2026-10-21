@@ -18,14 +18,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { handle, slug } = await params;
   const entry = await apiGet<Entry>(`/entries/by/${encodeURIComponent(handle)}/${encodeURIComponent(slug)}`, 30);
   if (!entry) return { title: "Not found" };
-  const description = excerpt(entry.body);
-  const image = entry.photos[0]?.url ?? entry.author.avatar;
+  const description = entry.sealedUntil ? "A sealed letter, not open yet." : excerpt(entry.body);
   return {
     title: `${entry.title} — ${entry.author.name}`,
     description,
     alternates: { types: { "application/rss+xml": `/u/${entry.author.handle}/rss.xml` } },
-    openGraph: { type: "article", title: entry.title, description, images: [image], publishedTime: entry.writtenAt },
-    twitter: { card: "summary_large_image", title: entry.title, description, images: [image] },
+    // The picture is drawn by opengraph-image.tsx next to this page.
+    openGraph: { type: "article", title: entry.title, description, publishedTime: entry.writtenAt },
+    twitter: { card: "summary_large_image", title: entry.title, description },
   };
 }
 

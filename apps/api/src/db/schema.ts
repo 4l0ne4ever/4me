@@ -43,6 +43,10 @@ export const entries = pgTable(
     visibility: text("visibility").$type<Visibility>().notNull().default("public"),
     /** "hidden" by the site's moderator, or by enough reports; only the author still sees it. */
     status: text("status").$type<"visible" | "hidden">().notNull().default("visible"),
+    /** A sealed letter: nobody but its writer reads it before this moment. */
+    opensAt: timestamp("opens_at", { withTimezone: true }),
+    /** When the letter opened and its readers were told (so they are told once). */
+    openedAt: timestamp("opened_at", { withTimezone: true }),
     /** Reports made before this moment no longer count (the moderator looked and kept the page up). */
     clearedAt: timestamp("cleared_at", { withTimezone: true }),
     readCount: integer("read_count").notNull().default(0),
@@ -252,7 +256,9 @@ export const notifications = pgTable(
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    kind: text("kind").$type<"note" | "pending" | "reply" | "shout" | "buzz" | "reaction" | "post">().notNull(),
+    kind: text("kind")
+      .$type<"note" | "pending" | "reply" | "shout" | "buzz" | "reaction" | "post" | "opened">()
+      .notNull(),
     text: text("text").notNull(),
     link: text("link").notNull(),
     actorName: text("actor_name"),

@@ -23,6 +23,7 @@ export class Hub extends DurableObject<Bindings> {
       this.ctx.acceptWebSocket(server, topics);
       server.send(JSON.stringify({ type: "hello" } satisfies LiveEvent));
       for (const t of topics) if (t.startsWith("entry:")) this.presence(t);
+      this.awake();
       return new Response(null, { status: 101, webSocket: client });
     }
     if (url.pathname === "/publish" && req.method === "POST") {
@@ -54,8 +55,15 @@ export class Hub extends DurableObject<Bindings> {
     this.send([topic], { type: "presence", entryId: Number(topic.slice("entry:".length)), reading }, leaving);
   }
 
+  /** Everyone with 4me open: the lit windows on the skyline. */
+  private awake(leaving?: WebSocket) {
+    const n = this.ctx.getWebSockets().filter((ws) => ws !== leaving).length;
+    this.send(["tonight"], { type: "awake", n }, leaving);
+  }
+
   private gone(ws: WebSocket) {
     for (const t of this.ctx.getTags(ws)) if (t.startsWith("entry:")) this.presence(t, ws);
+    this.awake(ws);
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string) {

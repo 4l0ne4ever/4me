@@ -32,6 +32,9 @@ type Draft = {
   visibility: Visibility;
   song: PickedSong | null;
   photos: DraftPhoto[];
+  /** A letter to the future: sealed until `opensAt` (local date and time). */
+  seal: boolean;
+  opensAt: string;
 };
 type Msg = { kind: "ok" | "err"; text: string; field?: string } | null;
 
@@ -45,6 +48,8 @@ const BLANK: Draft = {
   visibility: "public",
   song: null,
   photos: [],
+  seal: false,
+  opensAt: "",
 };
 
 /** "2026-10-20T22:05" in the writer's own time, for a datetime-local field. */
@@ -73,6 +78,8 @@ function fromEntry(e: Entry & { songId: number | null }): Draft {
           url: e.song.url,
         }
       : null,
+    seal: Boolean(e.sealedUntil),
+    opensAt: e.sealedUntil ? toLocalInput(e.sealedUntil) : "",
     // Only uploaded photos can be saved again; the path is what the API stored.
     photos: e.photos.flatMap((p) => {
       const at = p.url.indexOf("/media/u/");
@@ -250,11 +257,16 @@ export function Write({
             : undefined
           : null,
         photos: draft.photos.map((p) => ({ url: p.path, caption: p.caption })),
+        opensAt: draft.seal && draft.opensAt ? new Date(draft.opensAt).toISOString() : null,
       });
       if (!res.ok) return setMsg({ kind: "err", text: res.error, field: res.field });
       setMsg({
         kind: "ok",
-        text: res.entry.visibility === "public" ? "Posted. Opening your page…" : "Saved. Only you can see it.",
+        text: res.entry.sealedUntil
+          ? `Sealed. It opens on ${shortDate(res.entry.sealedUntil)} at ${hhmm(res.entry.sealedUntil)}; until then only you can read it.`
+          : res.entry.visibility === "public"
+            ? "Posted. Opening your page…"
+            : "Saved. Only you can see it.",
       });
       forget(key);
       baseline.current = JSON.stringify(draft);
@@ -451,6 +463,28 @@ export function Write({
               />
             </span>
           </div>
+          <fieldset className="wr-set wr-seal">
+            <legend>A letter to the future</legend>
+            <label className="wr-check">
+              <input type="checkbox" checked={draft.seal} onChange={(e) => set({ seal: e.target.checked })} />
+              Seal this page until a day you choose. Readers see a sealed envelope and a countdown; on the day it opens
+              by itself, and your subscribers are told.
+            </label>
+            {draft.seal && (
+              <label htmlFor="wr-opens">
+                Opens on
+                <input
+                  id="wr-opens"
+                  type="datetime-local"
+                  className="field"
+                  required
+                  min={toLocalInput(new Date(Date.now() + 60_000).toISOString())}
+                  value={draft.opensAt}
+                  onChange={(e) => set({ opensAt: e.target.value })}
+                />
+              </label>
+            )}
+          </fieldset>
           <details className="wr-more">
             <summary>Page address</summary>
             <label htmlFor="wr-slug">

@@ -49,6 +49,15 @@ const app = createApp(
 const port = Number(process.env.PORT ?? 8787);
 const server = serve({ fetch: (req) => app.fetch(req, env), port });
 
+// Sealed letters: the Worker's cron does this every ten minutes in production.
+setInterval(() => {
+  void app.request(
+    "/internal/letters/open",
+    { method: "POST", headers: { authorization: `Bearer ${env.ADMIN_TOKEN}` } },
+    env,
+  );
+}, 60_000);
+
 const wss = new WebSocketServer({ noServer: true });
 server.on("upgrade", async (req, socket, head) => {
   const url = new URL(req.url ?? "/", `http://localhost:${port}`);

@@ -3,7 +3,7 @@ import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { Hono } from "hono";
 import { entries, users } from "../db/schema";
 import type { AppEnv } from "../env";
-import { authorCols, isReadable, noteCount, origin } from "../lib/entries";
+import { authorCols, isOpen, isReadable, noteCount, origin } from "../lib/entries";
 import { allow } from "../lib/guard";
 import { toAuthor, toSummary } from "../lib/map";
 
@@ -29,7 +29,7 @@ export const searchRoutes = new Hono<AppEnv>().get("/search", async (c) => {
       .select({ e: entries, a: authorCols, noteCount })
       .from(entries)
       .innerJoin(users, eq(users.id, entries.authorId))
-      .where(and(isReadable, or(...words.map((w) => ilike(entries.searchText, w)))))
+      .where(and(isReadable, isOpen, or(...words.map((w) => ilike(entries.searchText, w)))))
       .orderBy(desc(entries.writtenAt))
       .limit(15),
   ]);

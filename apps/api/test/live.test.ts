@@ -108,12 +108,13 @@ describe("the in-process hub", () => {
     const b = socket();
     hub.add(a, ["entry:1", "tonight"]);
     hub.add(b, ["entry:1"]);
-    expect(a.got.at(-1)).toEqual({ type: "presence", entryId: 1, reading: 2 });
+    const presence = () => a.got.filter((e) => e.type === "presence").at(-1);
+    expect(presence()).toEqual({ type: "presence", entryId: 1, reading: 2 });
     hub.publish(["tonight"], { type: "hello" });
     expect(a.got.filter((e) => e.type === "hello")).toHaveLength(2);
     expect(b.got.filter((e) => e.type === "hello")).toHaveLength(1);
     hub.remove(b);
-    expect(a.got.at(-1)).toEqual({ type: "presence", entryId: 1, reading: 1 });
+    expect(presence()).toEqual({ type: "presence", entryId: 1, reading: 1 });
   });
 });
 

@@ -274,14 +274,18 @@ export function Messenger({ entry, persona, notes, blasts, awake, live, onBuzz, 
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <button className="btn" type="submit" disabled={busy || !entry || (!me && human.needed && !human.token)}>
+        <button
+          className="btn"
+          type="submit"
+          disabled={busy || !entry || Boolean(entry.sealedUntil) || (!me && human.needed && !human.token)}
+        >
           Send
         </button>
         <button
           className="btn buzz"
           type="button"
           onClick={buzz}
-          disabled={!entry}
+          disabled={!entry || Boolean(entry.sealedUntil)}
           title={entry ? `Shake ${entry.author.name}'s diary` : "Shake the diary"}
         >
           BUZZ!

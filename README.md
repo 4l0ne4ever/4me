@@ -107,6 +107,21 @@ A blog, not a social network, so the extras stay quiet:
 - **Notepad keeps unsaved work** in the browser as you type, per page, and offers it back next time
   ("You have unsaved changes from 21:04. Restore them · Throw them away").
 
+## Things only 4me does
+
+- **Sealed letters.** In Notepad, *A letter to the future* seals a page until a date (up to ten years). Readers see
+  an envelope with a wax seal and a countdown; its words, song and photos stay with its writer, and it can't be
+  answered or found by search. On the day it opens by itself, right on screen for anyone reading, and a cron on the
+  Worker (every ten minutes) tells its writer and subscribers.
+- **The archive is a night sky.** *Archive* shows a diary month by month, each page a star: across by the day,
+  up by how late in the night it was written (17:00 at the horizon, 06:00 at the top), brighter the more it was
+  answered. Above it, *On this night*: pages written on this date in earlier years. The same pages are listed below
+  in plain text.
+- **Lit windows.** A pixel skyline at the foot of the desktop has one lit window for everyone with 4me open right
+  now (only a count; nobody is named).
+- **Link previews** are drawn per page, diary and front page as a 2006 window with the date, title, mood, a few
+  words, the song and the first photo (`opengraph-image.tsx`, fonts in `app/og-fonts`, Vietnamese included).
+
 ## Live updates and notifications
 
 Every page keeps one WebSocket to the API (`/live`) for its topics: the open page (`entry:<id>`: notes, BUZZes and

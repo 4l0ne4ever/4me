@@ -14,7 +14,8 @@ export const metadata: Metadata = {
   title: { default: "4me", template: "%s · 4me" },
   description: "A night diary on a 2006 desktop. One entry after dark, with the mood, the weather and the song.",
   alternates: { types: { "application/rss+xml": "/rss.xml" } },
-  openGraph: { type: "website", siteName: "4me", images: ["/photos/pic-229.jpg"] },
+  openGraph: { type: "website", siteName: "4me" },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

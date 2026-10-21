@@ -75,6 +75,91 @@ function useClip(url: string | null | undefined) {
   return { playing, toggle };
 }
 
+/** Days, hours, minutes and seconds until a moment, as a ticking line: "41 days 03:12:09". */
+function useCountdown(until: string) {
+  // Unknown until the page runs in the browser, so the server and the browser draw the same thing first.
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  if (now === null) return { done: false, text: "··:··:··" };
+  const left = Math.max(0, new Date(until).getTime() - now);
+  const s = Math.floor(left / 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const days = Math.floor(s / 86400);
+  const clock = `${pad(Math.floor((s % 86400) / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+  return { done: left === 0, text: days > 0 ? `${days} ${days === 1 ? "day" : "days"} ${clock}` : clock };
+}
+
+/**
+ * A sealed letter: an envelope with a wax seal and a countdown. When the moment comes, the opened page is fetched
+ * straight from the API (the cached copy of this page may still say "sealed" for a little while).
+ */
+function Sealed({
+  entry,
+  own,
+  onEdit,
+  onOpen,
+}: {
+  entry: Entry;
+  own: boolean;
+  onEdit: () => void;
+  onOpen: (e: Entry) => void;
+}) {
+  const left = useCountdown(entry.sealedUntil!);
+  useEffect(() => {
+    if (!left.done) return;
+    let tries = 0;
+    const url = `${API_URL}/entries/by/${encodeURIComponent(entry.author.handle)}/${encodeURIComponent(entry.slug)}`;
+    const look = () =>
+      fetch(url, { cache: "no-store" })
+        .then((r) => (r.ok ? (r.json() as Promise<Entry>) : null))
+        .then((fresh) => {
+          if (fresh && !fresh.sealedUntil) onOpen(fresh);
+          else if (++tries < 10) t = window.setTimeout(look, 3000);
+        })
+        .catch(() => undefined);
+    let t = window.setTimeout(look, 500);
+    return () => window.clearTimeout(t);
+  }, [left.done, entry.author.handle, entry.slug, onOpen]);
+  return (
+    <div className="body paper sealed">
+      <div className="d-by">
+        <DeskLink href={`/u/${entry.author.handle}`} className="d-author">
+          <img src={entry.author.avatar} alt="" width={28} height={28} />
+          {entry.author.name}
+        </DeskLink>
+        {own ? (
+          <button type="button" className="btn" onClick={onEdit}>
+            Read or change it
+          </button>
+        ) : (
+          <Subscribe author={entry.author} />
+        )}
+      </div>
+      <div className="envelope" role="img" aria-label="A sealed envelope">
+        <span className="flap" />
+        <span className="wax">4</span>
+      </div>
+      <p className="d-note">a letter to the future</p>
+      <h1 className="d-title">{entry.title}</h1>
+      <p className="seal-when">
+        Written {longDate(entry.writtenAt)}. Opens {longDate(entry.sealedUntil!)} at {hhmm(entry.sealedUntil!)}.
+      </p>
+      <p className="seal-count" aria-live="off">
+        {left.done ? "opening…" : left.text}
+      </p>
+      <p className="seal-why">
+        {own
+          ? "Only you can read it until then. Your subscribers will be told the moment it opens."
+          : `Until then, only ${entry.author.name} can read it. Subscribe to be told the moment it opens.`}
+      </p>
+    </div>
+  );
+}
+
 type Props = {
   entry: Entry | null;
   entries: EntrySummary[];
@@ -122,7 +207,26 @@ function useEntryReactions(entry: Entry | null, me: Me | null) {
   return { counts, mine, pick };
 }
 
-export function Diary({ entry, entries, notes, owner, awake, me, onEdit, onPhoto, onSong, onGuestbook }: Props) {
+export function Diary(props: Props) {
+  // A sealed letter that opens while it is on screen is swapped for its opened self.
+  const [opened, setOpened] = useState<Entry | null>(null);
+  const entry = opened ?? props.entry;
+  return <DiaryPage {...props} entry={entry} onOpened={setOpened} />;
+}
+
+function DiaryPage({
+  entry,
+  entries,
+  notes,
+  owner,
+  awake,
+  me,
+  onEdit,
+  onPhoto,
+  onSong,
+  onGuestbook,
+  onOpened,
+}: Props & { onOpened: (e: Entry) => void }) {
   const clip = useClip(entry?.song?.previewUrl);
   const feelings = useEntryReactions(entry, me);
   if (!entry) {
@@ -142,6 +246,7 @@ export function Diary({ entry, entries, notes, owner, awake, me, onEdit, onPhoto
   }
   const own = me?.handle === entry.author.handle;
   const link = (e: EntrySummary) => `/u/${e.author.handle}/${e.slug}`;
+  if (entry.sealedUntil) return <Sealed entry={entry} own={own} onEdit={() => onEdit(entry.id)} onOpen={onOpened} />;
   const idx = entries.findIndex((e) => e.slug === entry.slug);
   const older = idx >= 0 ? entries[idx + 1] : entries[0];
   const newer = idx > 0 ? entries[idx - 1] : undefined;

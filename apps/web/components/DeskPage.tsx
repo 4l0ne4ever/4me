@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiSend } from "@/lib/api";
 import { DeskWindow, useDesk, WINDOWS, type WinId } from "./DeskShell";
 import { Almost } from "./windows/Almost";
+import { Archive } from "./windows/Archive";
 import { Diary } from "./windows/Diary";
 import { Guestbook } from "./windows/Guestbook";
 import { Messenger } from "./windows/Messenger";
@@ -111,6 +112,12 @@ export function DeskPage({ data }: { data: DesktopData }) {
       </DeskWindow>
       <DeskWindow id="photos" title={whose ? `${whose} pictures` : undefined}>
         <Photos pictures={pictures} view={photoView} onView={setPhotoView} />
+      </DeskWindow>
+      <DeskWindow
+        id="archive"
+        title={owner ? (owner.handle === me?.handle ? "My archive" : `${owner.name}'s archive`) : undefined}
+      >
+        <Archive persona={owner} />
       </DeskWindow>
       <DeskWindow id="almost" title={whose ? `${whose} almost posted` : undefined}>
         <Almost items={data.almost} persona={persona} />

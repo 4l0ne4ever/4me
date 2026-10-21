@@ -8,6 +8,8 @@
   // Live updates: one Durable Object holds every browser's WebSocket (SQLite-backed, so it runs on the free plan).
   "durable_objects": { "bindings": [{ "name": "HUB", "class_name": "Hub" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Hub"] }],
+  // Sealed letters whose day has come are announced every ten minutes.
+  "triggers": { "crons": ["*/10 * * * *"] },
   // Public, non-secret settings. Secrets are set by the deploy workflow (DATABASE_URL, ADMIN_TOKEN, IP_SALT) or
   // once by hand (TURNSTILE_SECRET, LASTFM_API_KEY, and the photo bucket: S3_ENDPOINT, S3_REGION,
   // S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY).

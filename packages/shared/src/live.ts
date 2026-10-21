@@ -6,7 +6,7 @@ import type { EntrySummary, Note, Reactions, Shout } from "./schemas";
 //   tonight         new public pages, for the Tonight window
 //   user:<id>       one member's notifications; only with a ticket the web server signed for them
 
-export type NotificationKind = "note" | "pending" | "reply" | "shout" | "buzz" | "reaction" | "post";
+export type NotificationKind = "note" | "pending" | "reply" | "shout" | "buzz" | "reaction" | "post" | "opened";
 
 export type Notification = {
   id: number;
@@ -28,6 +28,8 @@ export type LiveEvent =
   | { type: "shout"; owner: string | null; shout: Shout }
   | { type: "buzz"; entryId: number }
   | { type: "presence"; entryId: number; reading: number }
+  /** How many people have 4me open right now: the lit windows on the skyline. */
+  | { type: "awake"; n: number }
   | { type: "entry"; entry: EntrySummary }
   | { type: "notify"; notification: Notification };
 

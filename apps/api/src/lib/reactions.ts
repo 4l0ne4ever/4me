@@ -3,7 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Context } from "hono";
 import { entries, notes, reactions, users } from "../db/schema";
 import type { AppEnv } from "../env";
-import { isReadable } from "./entries";
+import { isOpen, isReadable } from "./entries";
 import { notify, publish, quote } from "./notify";
 
 type Target = "entry" | "note";
@@ -52,7 +52,7 @@ async function whereIs(c: Context<AppEnv>, target: Target, targetId: number) {
       .select(entryCols)
       .from(entries)
       .innerJoin(users, eq(users.id, entries.authorId))
-      .where(and(isReadable, eq(entries.id, targetId)));
+      .where(and(isReadable, isOpen, eq(entries.id, targetId)));
     return row ? { ...row, owner: row.authorId } : null;
   }
   const [row] = await db
@@ -60,7 +60,7 @@ async function whereIs(c: Context<AppEnv>, target: Target, targetId: number) {
     .from(notes)
     .innerJoin(entries, eq(entries.id, notes.entryId))
     .innerJoin(users, eq(users.id, entries.authorId))
-    .where(and(isReadable, eq(notes.id, targetId), eq(notes.status, "visible")));
+    .where(and(isReadable, isOpen, eq(notes.id, targetId), eq(notes.status, "visible")));
   return row ?? null;
 }
 

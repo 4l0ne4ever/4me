@@ -33,6 +33,7 @@ import { DEFAULT_PREF, PREF_KEY, parsePref, resolveBackground, type WallpaperPre
 import { deleteUpload, loadUpload, saveUpload } from "@/lib/wallpaper-store";
 import { AddressBar } from "./AddressBar";
 import {
+  IconArchive,
   IconBin,
   IconDiary,
   IconDisplay,
@@ -47,6 +48,7 @@ import {
 } from "./Icons";
 import { Ink, nudgeInk } from "./ink/Ink";
 import { Notifications } from "./Notifications";
+import { Skyline } from "./Skyline";
 import { type Pos, Window } from "./Window";
 import { Account } from "./windows/Account";
 import { DisplayProperties, paintStyle } from "./windows/DisplayProperties";
@@ -65,6 +67,7 @@ export type WinId =
   | "amp"
   | "photos"
   | "almost"
+  | "archive"
   | "write"
   | "search"
   | "display"
@@ -112,6 +115,12 @@ export const WINDOWS: Record<
     icon: (c) => <IconBin className={c} />,
     className: "w-almost",
   },
+  archive: {
+    title: "Archive — everyone's nights",
+    task: "Archive",
+    icon: (c) => <IconArchive className={c} />,
+    className: "w-archive",
+  },
   write: {
     title: "Notepad — write tonight's page",
     task: "Notepad",
@@ -147,6 +156,7 @@ const ICONS: Array<[WinId, string]> = [
   ["amp", "Mixtape"],
   ["photos", "Photos"],
   ["almost", "Almost posted"],
+  ["archive", "Archive"],
   ["write", "Notepad"],
   ["search", "Search"],
 ];
@@ -258,6 +268,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
     amp: { open: true, min: false, z: 11 },
     write: { open: false, min: false, z: 10 },
     search: { open: false, min: false, z: 10 },
+    archive: { open: false, min: false, z: 10 },
     guest: { open: false, min: false, z: 10 },
     photos: { open: false, min: false, z: 10 },
     almost: { open: false, min: false, z: 10 },
@@ -582,6 +593,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
         <div className="wall" aria-hidden="true">
           <div className={`paint ${paintClass}`} style={paintStyle(background)} />
         </div>
+        <Skyline />
         <nav className="icons" aria-label="Desktop">
           {ICONS.map(([id, label]) => (
             <button key={id} type="button" className="icon" onClick={() => (id === "write" ? write(null) : open(id))}>

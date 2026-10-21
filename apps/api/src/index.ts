@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { createApp } from "./app";
 import * as schema from "./db/schema";
 import type { DB } from "./db/types";
+import type { Bindings } from "./env";
 import { type MediaStore, s3Store } from "./lib/media";
 import { hubLive } from "./live/hub";
 
@@ -12,7 +13,7 @@ export { Hub } from "./live/hub";
 let cached: { url: string; db: DB } | null = null;
 let media: { endpoint: string | undefined; store: MediaStore | null } | null = null;
 
-export default createApp(
+const app = createApp(
   (env) => {
     if (!cached || cached.url !== env.DATABASE_URL) {
       cached = { url: env.DATABASE_URL, db: drizzle(neon(env.DATABASE_URL), { schema }) as unknown as DB };
@@ -25,3 +26,15 @@ export default createApp(
   },
   (env) => (env.HUB ? hubLive(env.HUB) : null),
 );
+
+export default {
+  fetch: app.fetch,
+  /** Every ten minutes: sealed letters whose day has come are announced to their readers. */
+  scheduled(_event: ScheduledController, env: Bindings, ctx: ExecutionContext) {
+    const req = new Request("https://cron.4me/internal/letters/open", {
+      method: "POST",
+      headers: { authorization: `Bearer ${env.ADMIN_TOKEN}` },
+    });
+    ctx.waitUntil(Promise.resolve(app.fetch(req, env, ctx)));
+  },
+} satisfies ExportedHandler<Bindings>;

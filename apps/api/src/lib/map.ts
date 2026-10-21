@@ -33,8 +33,17 @@ function song(row: EntryRow) {
   };
 }
 
-export function toSummary(row: EntryRow, author: AuthorRow, origin: string): EntrySummary {
-  const cover = row.photos[0];
+/** A sealed letter still waiting for its day. */
+export const isSealed = (row: { opensAt: Date | null }, now = Date.now()) =>
+  row.opensAt !== null && row.opensAt.getTime() > now;
+
+/**
+ * A page as readers see it. While it is a sealed letter only its title, writer and dates show; `reveal` is for its
+ * writer, who always sees everything.
+ */
+export function toSummary(row: EntryRow, author: AuthorRow, origin: string, reveal = false): EntrySummary {
+  const sealed = isSealed(row);
+  const cover = sealed && !reveal ? undefined : row.photos[0];
   return {
     id: row.id,
     slug: row.slug,
@@ -43,18 +52,26 @@ export function toSummary(row: EntryRow, author: AuthorRow, origin: string): Ent
     mood: row.mood,
     weather: row.weather,
     writtenAt: row.writtenAt.toISOString(),
-    song: song(row),
+    song: sealed && !reveal ? null : song(row),
     cover: cover ? withOrigin(cover, origin) : null,
     noteCount: Number(row.noteCount ?? 0),
+    sealedUntil: sealed ? row.opensAt!.toISOString() : null,
   };
 }
 
-export function toEntry(row: EntryRow, author: AuthorRow, origin: string, reactions: Reactions = {}): Entry {
+export function toEntry(
+  row: EntryRow,
+  author: AuthorRow,
+  origin: string,
+  reactions: Reactions = {},
+  reveal = false,
+): Entry {
+  const hide = isSealed(row) && !reveal;
   return {
-    ...toSummary(row, author, origin),
-    body: row.body,
-    reactions,
-    photos: row.photos.map((p) => withOrigin(p, origin)),
+    ...toSummary(row, author, origin, reveal),
+    body: hide ? "" : row.body,
+    reactions: hide ? {} : reactions,
+    photos: hide ? [] : row.photos.map((p) => withOrigin(p, origin)),
     visibility: row.visibility,
     readCount: row.readCount,
     buzzCount: row.buzzCount,

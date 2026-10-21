@@ -39,7 +39,9 @@ function Pages({ list, fresh }: { list: EntrySummary[]; fresh: Set<number> }) {
             {fresh.has(e.id) && <span className="tn-badge">new</span>}
             <small>
               <DeskLink href={`/u/${e.author.handle}`}>{e.author.name}</DeskLink> · {when(e.writtenAt)}
-              {e.mood && ` · ${e.mood}`} · {e.noteCount} {e.noteCount === 1 ? "note" : "notes"}
+              {e.sealedUntil
+                ? ` · ✉ sealed until ${shortDate(e.sealedUntil)}`
+                : `${e.mood ? ` · ${e.mood}` : ""} · ${e.noteCount} ${e.noteCount === 1 ? "note" : "notes"}`}
             </small>
             {e.song && (
               <span className="tn-song">

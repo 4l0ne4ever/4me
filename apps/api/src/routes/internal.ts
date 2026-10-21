@@ -23,7 +23,7 @@ import {
   type Subscription,
   searchable,
 } from "@4me/shared";
-import { and, desc, eq, gt, inArray, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
@@ -58,7 +58,7 @@ import {
   threadOf,
 } from "../lib/entries";
 import { allow, allowKey, humanCheck, isReservedName, looksLikeSpam, sameSecret, sha256 } from "../lib/guard";
-import { toAlmost, toAuthor, toBlast, toEntry, toNote, toShout, toSummary } from "../lib/map";
+import { isSealed, toAlmost, toAuthor, toBlast, toEntry, toNote, toShout, toSummary } from "../lib/map";
 import { notify, publish, quote, recentNotifications } from "../lib/notify";
 import { countsFor, dropReactions, mine, react } from "../lib/reactions";
 import { json } from "../lib/validate";
@@ -698,7 +698,7 @@ export const internalRoutes = new Hono<AppEnv>()
   .get("/users/:id/entries/:entryId", async (c) => {
     const own = await ownEntry(c);
     if (own instanceof Response) return own;
-    return c.json({ ...toEntry(own.e, own.a, origin(c)), songId: own.e.songId });
+    return c.json({ ...toEntry(own.e, own.a, origin(c), {}, true), songId: own.e.songId });
   })
   .post("/users/:id/entries", json(entryInput), async (c) => {
     const u = await writer(c);
@@ -714,7 +714,8 @@ export const internalRoutes = new Hono<AppEnv>()
         .values({ ...made.values, authorId: u.id })
         .returning();
       const author = { handle: u.handle, name: u.displayName, avatar: u.avatar };
-      if (row!.visibility === "public") {
+      // A sealed letter is announced on the day it opens, not now.
+      if (row!.visibility === "public" && !isSealed(row!)) {
         publish(c, ["tonight"], { type: "entry", entry: toSummary(row!, author, origin(c)) });
         // Subscribers hear about a new page, the way a blog emails its readers.
         const readers = await c
@@ -731,7 +732,7 @@ export const internalRoutes = new Hono<AppEnv>()
             actor: { name: u.displayName, avatar: u.avatar },
           });
       }
-      return c.json(toEntry(row!, author, origin(c)), 201);
+      return c.json(toEntry(row!, author, origin(c), {}, true), 201);
     } catch (e) {
       if (isUniqueViolation(e)) return c.json({ error: "you already have a page at that address", field: "slug" }, 409);
       throw e;
@@ -745,7 +746,7 @@ export const internalRoutes = new Hono<AppEnv>()
     try {
       const [row] = await c.get("db").update(entries).set(made.values).where(eq(entries.id, own.e.id)).returning();
       await dropUnusedPhotos(c, own.u.id, photoKeys(own.e.photos));
-      return c.json(toEntry(row!, own.a, origin(c)));
+      return c.json(toEntry(row!, own.a, origin(c), {}, true));
     } catch (e) {
       if (isUniqueViolation(e)) return c.json({ error: "you already have a page at that address", field: "slug" }, 409);
       throw e;
@@ -881,6 +882,45 @@ export const internalRoutes = new Hono<AppEnv>()
       publish(c, [`entry:${row.entryId}`], { type: "note", entryId: row.entryId, note: toNote(row, m) });
     }
     return c.json({ ok: true });
+  })
+
+  /* ---------- sealed letters ---------- */
+  /**
+   * Letters whose day has come: told to their readers once. Run every few minutes by the Worker's cron (and by the
+   * dev server's timer). The words were already readable the moment the day came; this only sends the news.
+   */
+  .post("/letters/open", async (c) => {
+    const db = c.get("db");
+    const due = await db
+      .select({ e: entries, a: authorCols, authorId: users.id })
+      .from(entries)
+      .innerJoin(users, eq(users.id, entries.authorId))
+      .where(and(isReadable, isNull(entries.openedAt), lte(entries.opensAt, sql`now()`)))
+      .limit(50);
+    for (const { e, a, authorId } of due) {
+      const [claimed] = await db
+        .update(entries)
+        .set({ openedAt: new Date() })
+        .where(and(eq(entries.id, e.id), isNull(entries.openedAt)))
+        .returning({ id: entries.id });
+      if (!claimed) continue; // another run got it
+      publish(c, ["tonight"], { type: "entry", entry: toSummary(e, a, origin(c)) });
+      const link = `/u/${a.handle}/${e.slug}`;
+      await notify(c, authorId, { kind: "opened", text: `Your sealed letter ${quote(e.title)} just opened`, link });
+      const readers = await db
+        .select({ id: follows.followerId })
+        .from(follows)
+        .where(eq(follows.followeeId, authorId))
+        .limit(1000);
+      for (const r of readers)
+        await notify(c, r.id, {
+          kind: "opened",
+          text: `${a.name}'s sealed letter just opened: ${quote(e.title)}`,
+          link,
+          actor: { name: a.name, avatar: a.avatar },
+        });
+    }
+    return c.json({ opened: due.length });
   })
 
   /* ---------- notifications ---------- */

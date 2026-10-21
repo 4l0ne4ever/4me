@@ -5,6 +5,7 @@ import type { DB } from "./db/types";
 import type { AppEnv, Bindings, Live } from "./env";
 import type { MediaStore } from "./lib/media";
 import { adminRoutes } from "./routes/admin";
+import { archiveRoutes } from "./routes/archive";
 import { entryRoutes } from "./routes/entries";
 import { internalRoutes } from "./routes/internal";
 import { liveRoutes } from "./routes/live";
@@ -53,6 +54,7 @@ export function createApp(
   app.route("/", mediaRoutes);
   app.route("/", liveRoutes);
   app.route("/", searchRoutes);
+  app.route("/", archiveRoutes);
   app.route("/", socialRoutes);
   app.route("/admin", adminRoutes);
   app.route("/internal", internalRoutes);

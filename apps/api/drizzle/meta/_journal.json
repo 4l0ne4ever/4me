@@ -43,6 +43,13 @@
       "when": 1792551883583,
       "tag": "0005_flowery_doctor_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792553384445,
+      "tag": "0006_high_crusher_hogan",
+      "breakpoints": true
     }
   ]
 }

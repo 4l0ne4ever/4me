@@ -16,12 +16,21 @@ export class MemoryHub implements Live {
     this.sockets.set(socket, topics);
     socket.send(JSON.stringify({ type: "hello" } satisfies LiveEvent));
     for (const t of topics) if (t.startsWith("entry:")) this.presence(t);
+    this.awake();
   }
 
   remove(socket: Socket) {
     const topics = this.sockets.get(socket) ?? [];
     this.sockets.delete(socket);
     for (const t of topics) if (t.startsWith("entry:")) this.presence(t);
+    this.awake();
+  }
+
+  /** Everyone with 4me open: the lit windows on the skyline. */
+  private awake() {
+    let n = 0;
+    for (const s of this.sockets.keys()) if (s.readyState === OPEN) n++;
+    this.publish(["tonight"], { type: "awake", n });
   }
 
   publish(topics: string[], event: LiveEvent) {
