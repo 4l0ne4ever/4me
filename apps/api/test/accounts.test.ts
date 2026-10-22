@@ -153,7 +153,12 @@ describe("accounts", () => {
   it("keeps how a member dressed their Ink, and refuses colours that aren't colours", async () => {
     const look = { name: "Mochi", fur: "#D07A35", eyes: "#8fd16a", collar: "#2f9c95", outfit: "season" };
     const res = await call(`/internal/users/${wren.id}`, { method: "PATCH", body: JSON.stringify({ inkLook: look }) });
-    expect(((await res.json()) as { inkLook: unknown }).inkLook).toEqual({ ...look, fur: "#d07a35" });
+    // An older look without a kind of cat is a shorthair.
+    expect(((await res.json()) as { inkLook: unknown }).inkLook).toEqual({
+      ...look,
+      fur: "#d07a35",
+      breed: "shorthair",
+    });
     const bad = await call(`/internal/users/${wren.id}`, {
       method: "PATCH",
       body: JSON.stringify({ inkLook: { ...look, fur: "url(x)" } }),

@@ -2,7 +2,7 @@ import { moderationInput, userStatusInput } from "@4me/shared";
 import { desc, eq, gt, ilike, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Hono } from "hono";
-import { entries, noteReports, notes, reports, shouts, users } from "../db/schema";
+import { entries, errorEvents, noteReports, notes, reports, shouts, users } from "../db/schema";
 import type { AppEnv } from "../env";
 import { positiveId } from "../lib/entries";
 import { sameSecret } from "../lib/guard";
@@ -21,6 +21,16 @@ export const adminRoutes = new Hono<AppEnv>()
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     if (!token || !(await sameSecret(token, c.env.ADMIN_TOKEN))) return c.json({ error: "unauthorised" }, 401);
     await next();
+  })
+  /** What has gone wrong on the site lately, newest first. */
+  .get("/errors", async (c) => {
+    const rows = await c.get("db").select().from(errorEvents).orderBy(desc(errorEvents.lastAt)).limit(100);
+    return c.json(rows);
+  })
+  /** Seen to: the list starts again. */
+  .delete("/errors", async (c) => {
+    await c.get("db").delete(errorEvents);
+    return c.json({ ok: true });
   })
   /** Pages with reports the moderator hasn't looked at yet, most reported first. */
   .get("/reports", async (c) => {

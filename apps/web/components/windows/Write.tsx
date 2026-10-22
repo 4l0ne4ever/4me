@@ -133,7 +133,20 @@ function useMarkup(body: string, setBody: (v: string) => void) {
       el.setSelectionRange(a + before.length, a + before.length + picked.length);
     });
   };
-  return { area, wrap };
+  /** The selected words become a link, with the address picked so it can be pasted over. */
+  const link = () => {
+    const el = area.current;
+    if (!el) return;
+    const { selectionStart: a, selectionEnd: b } = el;
+    const words = body.slice(a, b) || "words";
+    const start = a + words.length + 3;
+    setBody(`${body.slice(0, a)}[${words}](https://)${body.slice(b)}`);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start, start + "https://".length);
+    });
+  };
+  return { area, wrap, link };
 }
 
 /** The member's Notepad: write or edit a page, see their pages, blast, bin a line, read notes on their pages. */
@@ -388,6 +401,16 @@ export function Write({
             <button type="button" className="btn" onClick={() => markup.wrap("\n\n> ", "\n\n", "a note in the margin")}>
               margin note
             </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => markup.wrap("\n\n| ", "\n— who said it\n\n", "a line from a song")}
+            >
+              quote
+            </button>
+            <button type="button" className="btn" onClick={markup.link}>
+              link
+            </button>
             {draft.photos.length > 0 && (
               <button type="button" className="btn" onClick={() => markup.wrap("\n\n[photo ", "]\n\n", "1")}>
                 photo here
@@ -408,7 +431,8 @@ export function Write({
           />
           <p className="wr-hint">
             A blank line starts a new paragraph. ~~words~~ crosses out, _words_ is italic, a line starting with &gt; is
-            a handwritten note, [photo 2] puts the second photo in the text.
+            a handwritten note, lines starting with | are a quote (end with &quot;— who said it&quot;),
+            [words](https://…) is a link, [photo 2] puts the second photo in the text.
           </p>
 
           <div className="wr-row">

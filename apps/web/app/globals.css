@@ -490,6 +490,46 @@ body[data-skin="snow"] .wall .paint:not(.color) {
   text-decoration-color: #c4544a;
   text-decoration-thickness: 2px;
 }
+/* words from somewhere else: a lyric, something someone said */
+.d-quote {
+  position: relative;
+  margin: 1.4em 0 1.4em 0.2em;
+  padding: 0.1em 0 0.1em 1.4em;
+}
+/* a hanging opening quote mark, in the margin colour, instead of a rule */
+.d-quote::before {
+  content: "\201C";
+  position: absolute;
+  left: -0.1em;
+  top: -0.25em;
+  font-size: 2.6em;
+  line-height: 1;
+  color: color-mix(in srgb, var(--amber) 75%, transparent);
+}
+.d-quote blockquote {
+  margin: 0;
+  font-style: italic;
+  font-size: 1.05em;
+  line-height: 1.6;
+}
+.d-quote blockquote > span {
+  display: block;
+}
+.d-quote figcaption {
+  margin-top: 0.4em;
+  font-size: 0.8em;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  color: var(--paper-dim);
+}
+.d-quote figcaption::before {
+  content: "— ";
+}
+.d-text a {
+  color: var(--amber);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
 .d-note {
   font-family: var(--font-hand), cursive;
   color: var(--amber);

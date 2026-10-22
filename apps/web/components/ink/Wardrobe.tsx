@@ -1,13 +1,15 @@
 "use client";
 
-import { type InkLook, OUTFITS, type Outfit } from "@4me/shared";
+import { BREEDS, type Breed, type InkLook, OUTFITS, type Outfit } from "@4me/shared";
 import { useEffect, useId, useRef, useState } from "react";
 import { Dialog } from "../Dialog";
+import { BREED_INFO } from "./breeds";
 import {
   COLLARS,
   DEFAULT_LOOK,
   EYES,
   FURS,
+  framesFor,
   HAT_PALETTE,
   HAT_ROOM,
   hatFor,
@@ -15,27 +17,31 @@ import {
   outfitToday,
   paletteFor,
   seasonalOutfit,
-  withCollar,
 } from "./looks";
-import { FRAMES, H, paint, W } from "./sprites";
+import { H, paint, W } from "./sprites";
 
-/** Ink sitting in a look, hat and all, drawn big enough to see the collar. */
-function InkPreview({ look }: { look: InkLook }) {
+/** Ink sitting in a look, hat and all. */
+function SitCanvas({ look, hat = true }: { look: InkLook; hat?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const ctx = ref.current?.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, W, H + HAT_ROOM);
-    paint(ctx, withCollar("sit", FRAMES.sit), 0, HAT_ROOM, paletteFor(look));
-    const outfit = outfitToday(look, new Date());
+    paint(ctx, framesFor(look.breed).sit, 0, HAT_ROOM, paletteFor(look));
+    const outfit = hat ? outfitToday(look, new Date()) : null;
     if (outfit) {
-      const hat = hatFor(outfit, "sit");
-      paint(ctx, hat.rows, hat.x, hat.y, HAT_PALETTE);
+      const h = hatFor(outfit, "sit");
+      paint(ctx, h.rows, h.x, h.y, HAT_PALETTE);
     }
-  }, [look]);
+  }, [look, hat]);
+  return <canvas ref={ref} width={W} height={H + HAT_ROOM} />;
+}
+
+/** The big picture of her, drawn large enough to see the collar. */
+function InkPreview({ look }: { look: InkLook }) {
   return (
     <figure className="wd-preview">
-      <canvas ref={ref} width={W} height={H + HAT_ROOM} />
+      <SitCanvas look={look} />
       <figcaption>
         <span className="wd-tag" style={{ background: look.collar }} />
         {look.name || "Ink"}
@@ -97,6 +103,9 @@ export function Wardrobe({
     ...OUTFITS.map((o: Outfit) => ({ id: o, label: OUTFIT_NAMES[o] })),
   ];
   const hatName = useId();
+  const kindName = useId();
+  /** A new kind of cat comes in its own colours; they can still be changed after. */
+  const pickBreed = (breed: Breed) => set({ breed, fur: BREED_INFO[breed].fur, eyes: BREED_INFO[breed].eyes });
   const save = () => {
     onSave({ ...draft, name: draft.name.trim() || DEFAULT_LOOK.name });
     onClose();
@@ -143,6 +152,24 @@ export function Wardrobe({
             data-autofocus
           />
         </label>
+        <fieldset className="wd-row">
+          <legend>Kind of cat</legend>
+          <div className="wd-kinds">
+            {BREEDS.map((b) => (
+              <label key={b} className={`wd-kind${draft.breed === b ? " on" : ""}`} title={BREED_INFO[b].about}>
+                <input type="radio" name={kindName} checked={draft.breed === b} onChange={() => pickBreed(b)} />
+                <SitCanvas
+                  look={{ ...draft, breed: b, fur: BREED_INFO[b].fur, eyes: BREED_INFO[b].eyes }}
+                  hat={false}
+                />
+                <span>{BREED_INFO[b].label}</span>
+              </label>
+            ))}
+          </div>
+          <p className="wd-about">
+            {BREED_INFO[draft.breed].about.replace(/^./, (c) => c.toUpperCase())}. Each kind has its own voice.
+          </p>
+        </fieldset>
         <Colours legend="Fur" options={FURS} value={draft.fur} onChange={(fur) => set({ fur })} />
         <Colours legend="Eyes" options={EYES} value={draft.eyes} onChange={(eyes) => set({ eyes })} />
         <Colours legend="Collar" options={COLLARS} value={draft.collar} onChange={(collar) => set({ collar })} />
@@ -162,7 +189,9 @@ export function Wardrobe({
             ))}
           </div>
         </fieldset>
-        <p className="wd-note">She keeps this look on every visit, and in your account when you&apos;re logged on.</p>
+        <p className="wd-note">
+          Saved to your account: she looks like this on every device you log on to, and only for you.
+        </p>
       </form>
     </Dialog>
   );

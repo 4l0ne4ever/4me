@@ -130,3 +130,25 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* the error log */
+.admin-errors code {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.admin-errors details {
+  margin-top: 4px;
+}
+.admin-errors pre {
+  max-height: 180px;
+  overflow: auto;
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  font-size: 11px;
+  background: var(--field);
+  border: 1px solid var(--chrome-edge);
+  white-space: pre-wrap;
+}
+.admin-clear {
+  padding: 8px 12px 12px;
+}

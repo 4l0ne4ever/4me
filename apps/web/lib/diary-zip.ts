@@ -32,6 +32,13 @@ export function pageMarkdown(page: Page, photos: Map<string, string>): string {
   const body = page.body
     .split(/\n{2,}/)
     .map((chunk) => {
+      // A quote ("| line") is a Markdown blockquote, its lines kept.
+      if (chunk.trim().startsWith("|"))
+        return chunk
+          .trim()
+          .split("\n")
+          .map((l) => `> ${l.replace(/^\|\s?/, "")}  `)
+          .join("\n");
       const m = chunk.trim().match(/^\[photo (\d{1,2})\]$/i);
       if (!m) return chunk;
       const i = Number(m[1]) - 1;

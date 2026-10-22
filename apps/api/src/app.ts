@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import type { DB } from "./db/types";
 import type { AppEnv, Bindings, Live } from "./env";
+import { frames, recordLater, scrub } from "./lib/errors";
 import type { MediaStore } from "./lib/media";
 import { adminRoutes } from "./routes/admin";
 import { archiveRoutes } from "./routes/archive";
@@ -64,8 +65,16 @@ export function createApp(
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {
     // Never log query parameters: they can hold emails and password hashes.
-    const message = err instanceof Error ? err.message.split(/\nparams:/)[0] : "unknown error";
+    const message = err instanceof Error ? scrub(err.message) : "unknown error";
     console.error(`${err instanceof Error ? err.name : "Error"}: ${message}`);
+    // Kept for the moderator (/admin and the morning summary), so a broken page doesn't go unnoticed.
+    if (c.get("db"))
+      recordLater(c, {
+        source: "api",
+        message: `${err instanceof Error ? err.name : "Error"}: ${message}`,
+        detail: frames(err),
+        path: `${c.req.method} ${c.req.path}`,
+      });
     return c.json({ error: "something went wrong" }, 500);
   });
 

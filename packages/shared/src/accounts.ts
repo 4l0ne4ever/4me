@@ -110,8 +110,13 @@ const hex = z
   .regex(/^#[0-9a-f]{6}$/i, "a colour like #17191f")
   .transform((v) => v.toLowerCase());
 
-/** How a reader dressed their Ink: the name on her tag, her colours, and what she wears. */
+/** What kind of cat she is: each has its own shape, markings and voice. */
+export const BREEDS = ["shorthair", "tabby", "tuxedo", "siamese", "longhair", "round"] as const;
+export type Breed = (typeof BREEDS)[number];
+
+/** How a reader dressed their Ink: the kind of cat, the name on her tag, her colours, and what she wears. */
 export const inkLook = z.object({
+  breed: z.enum(BREEDS).default("shorthair"),
   name: z.string().trim().min(1).max(16),
   fur: hex,
   eyes: hex,

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Newsreader, Reenie_Beanie, VT323 } from "next/font/google";
+import Script from "next/script";
 import type { ReactNode } from "react";
 import "./globals.css";
 
@@ -27,10 +28,22 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+const beacon = process.env.NEXT_PUBLIC_CF_BEACON_TOKEN;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${serif.variable} ${hand.variable} ${lcd.variable}`}>
-      <body data-skin="midnight">{children}</body>
+      <body data-skin="midnight">
+        {children}
+        {/* Cloudflare Web Analytics: counts visits without cookies or anything that follows a reader around. */}
+        {beacon && (
+          <Script
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            strategy="afterInteractive"
+            data-cf-beacon={JSON.stringify({ token: beacon, spa: true })}
+          />
+        )}
+      </body>
     </html>
   );
 }

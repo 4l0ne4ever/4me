@@ -34,6 +34,12 @@ function Inlines({ parts }: { parts: Inline[] }) {
         ) : p.kind === "em" ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: parts never reorder
           <em key={i}>{p.text}</em>
+        ) : p.kind === "link" ? (
+          // A writer's link leaves the diary in a new tab, and passes on nothing about the reader.
+          // biome-ignore lint/suspicious/noArrayIndexKey: parts never reorder
+          <a key={i} href={p.href} target="_blank" rel="nofollow ugc noopener noreferrer">
+            {p.text}
+          </a>
         ) : (
           // biome-ignore lint/suspicious/noArrayIndexKey: parts never reorder
           <span key={i}>{p.text}</span>
@@ -325,6 +331,20 @@ function DiaryPage({
                 <p key={key} className="d-note">
                   {b.text}
                 </p>
+              );
+            if (b.kind === "quote")
+              return (
+                <figure key={key} className="d-quote">
+                  <blockquote>
+                    {b.lines.map((line, n) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: lines never reorder
+                      <span key={n}>
+                        <Inlines parts={line} />
+                      </span>
+                    ))}
+                  </blockquote>
+                  {b.cite && <figcaption>{b.cite}</figcaption>}
+                </figure>
               );
             if (b.kind === "photo") {
               const ph = entry.photos[b.index];

@@ -50,3 +50,10 @@ export async function moderate(form: FormData) {
   revalidatePath("/", "layout");
   redirect("/admin#inbox");
 }
+
+/** The errors are seen to: the log starts again. */
+export async function clearErrors() {
+  await guard();
+  await adminApi("/errors", { method: "DELETE" });
+  redirect("/admin#errors");
+}

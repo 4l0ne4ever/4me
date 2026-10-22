@@ -80,6 +80,8 @@ The body uses a small markup that never produces raw HTML:
 | `~~I thought about calling you.~~` | crossed out, the things almost said |
 | `_words_` | italic |
 | `> it will rain again tomorrow.` | a handwritten note in amber |
+| `\| the rain is falling` (one line each) and `— Mazzy Star` | a quote, its lines kept, and whose words they are |
+| `[the song](https://…)`, or just `https://…` | a link (http and https only; it opens in a new tab) |
 | `[photo 2]` | the second photo, inline |
 
 ## One computer, everyone's diaries
@@ -151,6 +153,16 @@ On Workers, the connections live in one Durable Object (`Hub`, SQLite-backed, so
 hibernation API: it sleeps when nothing is happening and answers pings without waking. Locally, `pnpm dev` keeps them
 in the Node process with the same rules.
 
+## When something breaks
+
+Every error is kept in one place, one row per kind of error with a count (`error_events`): the API's own (from its
+error handler), the web server's (Next's `onRequestError`, `instrumentation.ts`) and readers' browsers' (the error
+page reports what it caught, capped so it can't be flooded). Only the message, where in the code and the route are
+kept, never the request: database messages are cut before their parameters. `/admin` lists them with a button to
+clear the list, and the morning cron emails a summary to `ALERT_EMAIL` when anything broke. Visits are counted by
+Cloudflare Web Analytics (no cookies) when `NEXT_PUBLIC_CF_BEACON_TOKEN` is set; the Worker's own logs are in the
+Cloudflare dashboard (observability is on).
+
 ## Moderation
 
 The site's moderator logs in at `/admin` with `ADMIN_PASSWORD`. Members write their own pages; the moderator sees
@@ -194,11 +206,17 @@ Every pet, fish and game is also counted for everyone on the API (`/cat`).
 - **The ball of wool** stays where it is left, on the taskbar, a window or a roof, and is still there next visit.
   Drag it anywhere and let go: it drops onto whatever is below. She swipes it three times when asked, it rolls (and
   can roll off the edge of a window), and now and then she goes and bats it about by herself.
+- **Kind of cat** (in *Dress her up*): shorthair, tabby (stripes, an M on the brow, a ringed tail), tuxedo (white
+  chest and socks), Siamese (dark points), longhair (fluffed outline, bushy tail) or round (chubby cheeks, small ears).
+  Each is drawn from her own frames (`components/ink/breeds.ts`) and has its own voice: the Siamese is loud and long,
+  the longhair trills and purrs deep, the round one is low and soft (`components/ink/sounds.ts`).
 - **Dress her up** (her menu): the name on her collar tag (shown when the pointer rests on her), her fur, eyes and
   collar colours (a few real cat colours, or any colour), and a hat. *With the seasons* follows the date in Vietnam:
   apricot blossom around Tết, a flower crown in spring, a straw hat in summer, a fallen leaf in autumn, a witch hat
   for Halloween, a Santa hat at Christmas, a wool beanie in winter. The shading follows the fur
-  (`components/ink/looks.ts`). Members keep her look in their account; guests in their browser.
+  (`components/ink/looks.ts`). Dressing her up needs an account (a guest is taken to log on): each member's Ink is
+  their own, kept in their account, and someone else signing in on the same browser never gets it. Guests see Ink as
+  she was drawn.
 - Right-click the empty desktop → *Drop a fish here*: the bowl falls from that point onto whatever is below it (a
   window, a roof across the street, or the taskbar), and she finds her way there.
 - She walks about, and now and then climbs up the side of a window or a house to sit on top, walk along it, or
@@ -303,6 +321,8 @@ Check the branch, then point `DATABASE_URL` at it (or restore the same way into 
 | `SESSION_SECRET` | 32+ random characters (`openssl rand -base64 48`) for signing readers' sessions |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | optional, for *Continue with Google* |
 | `RESEND_API_KEY`, `MAIL_FROM` | optional, for emails (confirming addresses, resets, the morning email); without them the "forgot" link is hidden and nothing is sent |
+| `NEXT_PUBLIC_CF_BEACON_TOKEN` | optional; the token of a Cloudflare Web Analytics site (cookieless visit counts). Public by design |
+| `ALERT_EMAIL` | optional; where the morning summary of the last day's errors goes |
 | `CRON_SECRET` | 16+ random characters; Vercel Cron sends it to `/api/cron/digest`, which refuses any other caller |
 
 **Google sign-in**: in Google Cloud Console → APIs & Services → Credentials, create an *OAuth client ID* (Web

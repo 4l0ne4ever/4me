@@ -97,3 +97,20 @@ export function digestMail(d: Digest, site: string, stop: { page: string; oneCli
 
 export const sendDigest = (d: Digest, site: string, stop: { page: string; oneClick: string }) =>
   send(digestMail(d, site, stop));
+
+export type ErrorLine = { source: string; message: string; path: string; count: number; lastAt: string };
+
+/** For the site's keeper: what broke in the last day, most frequent first, and where to see more. */
+export function sendErrorSummary(to: string, rows: ErrorLine[], site: string): Promise<boolean> {
+  const total = rows.reduce((n, r) => n + r.count, 0);
+  const text = [
+    `${rows.length} kind${rows.length === 1 ? "" : "s"} of error in the last day (${total} in all):`,
+    "",
+    ...rows.map((r) => `- ${r.count}× [${r.source}] ${r.message}${r.path ? `  (${r.path})` : ""}`),
+    "",
+    `Details, and a button to clear the list: ${site}/admin#errors`,
+    "",
+    "— 4me",
+  ].join("\n");
+  return send({ to, subject: `4me: ${rows.length} kind${rows.length === 1 ? "" : "s"} of error yesterday`, text });
+}

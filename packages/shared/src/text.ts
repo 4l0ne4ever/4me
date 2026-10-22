@@ -19,9 +19,19 @@ export function slugify(title: string, date: Date): string {
   return words ? `${day}-${words}` : day;
 }
 
-export type Block = { kind: "p"; parts: Inline[] } | { kind: "note"; text: string } | { kind: "photo"; index: number };
+export type Block =
+  | { kind: "p"; parts: Inline[] }
+  | { kind: "note"; text: string }
+  | { kind: "photo"; index: number }
+  /** Words from somewhere else (a lyric, something someone said), line by line, and who said them. */
+  | { kind: "quote"; lines: Inline[][]; cite: string };
 
-export type Inline = { kind: "text"; text: string } | { kind: "strike"; text: string } | { kind: "em"; text: string };
+export type Inline =
+  | { kind: "text"; text: string }
+  | { kind: "strike"; text: string }
+  | { kind: "em"; text: string }
+  /** Only ever an http(s) address. */
+  | { kind: "link"; text: string; href: string };
 
 /**
  * The diary's own tiny markup, parsed into blocks so the web app renders it without HTML injection.
@@ -29,6 +39,8 @@ export type Inline = { kind: "text"; text: string } | { kind: "strike"; text: st
  *   ~~words~~    crossed out (the things almost said)
  *   _words_      italic
  *   > a line     a handwritten note in the margin colour
+ *   | a line     a quote, its lines kept as they are; a last line "— someone" says whose words they are
+ *   [words](https://…)   a link; a bare https://… address becomes a link too
  *   [photo 2]    the second attached photo, inline
  */
 export function parseBody(body: string): Block[] {
@@ -45,19 +57,33 @@ export function parseBody(body: string): Block[] {
       blocks.push({ kind: "note", text: chunk.replace(/^>\s?/gm, "").replace(/\n/g, " ") });
       continue;
     }
+    if (chunk.startsWith("|")) {
+      const lines = chunk.split("\n").map((l) => l.replace(/^\|\s?/, "").trimEnd());
+      const last = lines.at(-1) ?? "";
+      const cite = /^(—|--|-)\s*\S/.test(last) ? last.replace(/^(—|--|-)\s*/, "") : "";
+      if (cite) lines.pop();
+      blocks.push({ kind: "quote", lines: lines.filter((l, i) => l || i > 0).map(parseInline), cite });
+      continue;
+    }
     blocks.push({ kind: "p", parts: parseInline(chunk.replace(/\n/g, " ")) });
   }
   return blocks;
 }
 
+// A named link, then a bare address (which never ends on the full stop or bracket after it), then the two styles.
+const INLINE =
+  /\[([^\]\n]{1,200})\]\((https?:\/\/[^\s)]{1,500})\)|(https?:\/\/[^\s<>()[\]]{1,500}[^\s<>()[\].,!?;:'"])|~~(.+?)~~|_(.+?)_/g;
+
 export function parseInline(text: string): Inline[] {
   const parts: Inline[] = [];
-  const re = /~~(.+?)~~|_(.+?)_/g;
+  const re = new RegExp(INLINE);
   let last = 0;
   for (let m = re.exec(text); m; m = re.exec(text)) {
     if (m.index > last) parts.push({ kind: "text", text: text.slice(last, m.index) });
-    if (m[1] !== undefined) parts.push({ kind: "strike", text: m[1] });
-    else if (m[2] !== undefined) parts.push({ kind: "em", text: m[2] });
+    if (m[1] !== undefined && m[2] !== undefined) parts.push({ kind: "link", text: m[1], href: m[2] });
+    else if (m[3] !== undefined) parts.push({ kind: "link", text: m[3].replace(/^https?:\/\//, ""), href: m[3] });
+    else if (m[4] !== undefined) parts.push({ kind: "strike", text: m[4] });
+    else if (m[5] !== undefined) parts.push({ kind: "em", text: m[5] });
     last = m.index + m[0].length;
   }
   if (last < text.length) parts.push({ kind: "text", text: text.slice(last) });

@@ -1,9 +1,11 @@
 // How Ink looks: her colours, the collar with her name tag, and a hat for the season. Pure, so it is easy to test.
 
-import { type InkLook, inkLook, type Outfit } from "@4me/shared";
-import { type FrameName, PALETTE } from "./sprites";
+import { type Breed, type InkLook, inkLook, type Outfit } from "@4me/shared";
+import { breedFrame } from "./breeds";
+import { FRAMES, type FrameName, PALETTE } from "./sprites";
 
 export const DEFAULT_LOOK: InkLook = {
+  breed: "shorthair",
   name: "Ink",
   fur: "#17191f",
   eyes: "#f6bd63",
@@ -18,7 +20,7 @@ export const FURS = [
   { id: "#7d8ea6", label: "Blue" },
   { id: "#6b4a3a", label: "Cocoa" },
   { id: "#d07a35", label: "Ginger" },
-  { id: "#e9d3a8", label: "Cream" },
+  { id: "#ece0cb", label: "Cream" },
   { id: "#eef0f4", label: "Snow" },
 ];
 export const EYES = [
@@ -87,6 +89,12 @@ export function paletteFor(look: InkLook): Record<string, string> {
     p.e = look.eyes;
     p.E = mix(look.eyes, "#000000", 0.22);
   }
+  // The markings some kinds of cat have, all from her fur: stripes, a white shirt, dark points, fluffy tips.
+  const light = lightness(look.fur);
+  p.d = light < 0.3 ? mix(look.fur, "#6a7184", 0.45) : mix(look.fur, "#000000", 0.38);
+  p.W = "#f2efe8";
+  p.q = mix(look.fur, "#24170f", light > 0.6 ? 0.78 : 0.55);
+  p.F = light < 0.3 ? mix(look.fur, "#8a96ad", 0.2) : mix(look.fur, "#ffffff", 0.18);
   return p;
 }
 
@@ -115,6 +123,19 @@ const COLLAR: Record<FrameName, Spot[]> = {
   eat: [...col(13, 10, 12), [13, 13, "g"]],
   crouch: [...col(13, 10, 12), [13, 13, "g"]],
 };
+
+const dressed = new Map<Breed, Record<FrameName, string[]>>();
+/** Every frame for a kind of cat, collar and tag on. Made once per kind. */
+export function framesFor(breed: Breed): Record<FrameName, string[]> {
+  let frames = dressed.get(breed);
+  if (!frames) {
+    frames = Object.fromEntries(
+      (Object.keys(FRAMES) as FrameName[]).map((f) => [f, withCollar(f, breedFrame(breed, f, FRAMES[f]))]),
+    ) as Record<FrameName, string[]>;
+    dressed.set(breed, frames);
+  }
+  return frames;
+}
 
 /** A frame with her collar and tag painted on. */
 export function withCollar(frame: FrameName, rows: readonly string[]): string[] {

@@ -381,3 +381,18 @@ export const blocks = pgTable(
   },
   (t) => [primaryKey({ columns: [t.blockerId, t.blockedId] }), index("blocks_blocked_idx").on(t.blockedId)],
 );
+
+/**
+ * What went wrong on the site, one row per kind of error: where (the API, the web server, a reader's browser), the
+ * message, where in the code, and how often. Never the request's data: messages are cut before any query parameters.
+ */
+export const errorEvents = pgTable("error_events", {
+  fingerprint: text("fingerprint").primaryKey(),
+  source: text("source").$type<"api" | "web" | "browser">().notNull(),
+  message: text("message").notNull(),
+  detail: text("detail").notNull().default(""),
+  path: text("path").notNull().default(""),
+  count: integer("count").notNull().default(1),
+  firstAt: timestamp("first_at", { withTimezone: true }).notNull().defaultNow(),
+  lastAt: timestamp("last_at", { withTimezone: true }).notNull().defaultNow(),
+});

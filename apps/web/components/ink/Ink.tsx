@@ -13,10 +13,10 @@ import {
 import { apiSend } from "@/lib/api";
 import { saveInk, saveInkLook } from "@/lib/member-actions";
 import { IconHeart } from "../Icons";
-import { DEFAULT_LOOK, HAT_PALETTE, HAT_ROOM, hatFor, loadLook, outfitToday, paletteFor, withCollar } from "./looks";
+import { DEFAULT_LOOK, framesFor, HAT_PALETTE, HAT_ROOM, hatFor, loadLook, outfitToday, paletteFor } from "./looks";
 import * as N from "./needs";
 import * as Sound from "./sounds";
-import { BOWL, FISH, FRAMES, type FrameName, H, paint, W, YARN } from "./sprites";
+import { BOWL, FISH, type FrameName, H, paint, W, YARN } from "./sprites";
 import { Wardrobe } from "./Wardrobe";
 import { CLIMB_INSET, findPlat, GROUND, landing, type Plat, plan, readPlatforms, type Step } from "./world";
 import "./ink.css";
@@ -26,11 +26,6 @@ const CAT_W = W * SCALE;
 /** In the eating frame the bowl starts 15 pixels into the sprite. */
 const BOWL_OFFSET = 15 * SCALE;
 const YARN_W = (YARN[0]?.length ?? 6) * SCALE;
-
-/** Every frame with her collar and name tag on. */
-const DRESSED = Object.fromEntries(
-  (Object.keys(FRAMES) as FrameName[]).map((f) => [f, withCollar(f, FRAMES[f])]),
-) as Record<FrameName, string[]>;
 
 type Mode =
   | "walk"
@@ -103,8 +98,12 @@ function Sprite({ rows, className }: { rows: readonly string[]; className?: stri
   return <canvas ref={ref} width={w} height={rows.length} className={className} />;
 }
 
+/** Her needs, kept per person on this browser: a guest's, and each member's under their own key. */
 const STORE = "4me-ink";
-const LOOK_STORE = "4me-ink-look";
+const storeFor = (me: Me | null) => (me ? `${STORE}:u${me.id}` : STORE);
+/** Where looks used to be kept for everyone on the browser; now they live in each member's account only. */
+const OLD_LOOK_STORE = "4me-ink-look";
+/** The ball of wool belongs to the desktop, not to a person. */
 const YARN_STORE = "4me-ink-yarn";
 const taskTop = () => document.querySelector(".task")?.getBoundingClientRect().top ?? window.innerHeight - 48;
 
@@ -127,6 +126,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   const [look, setLook] = useState<InkLook>(DEFAULT_LOOK);
   const [wardrobe, setWardrobe] = useState(false);
   const paletteRef = useRef(paletteFor(DEFAULT_LOOK));
+  const framesRef = useRef(framesFor(DEFAULT_LOOK.breed));
   const hatRef = useRef<Outfit | null>(null);
   const [needs, setNeeds] = useState<N.Needs>(() => N.fresh(0));
   const [sound, setSound] = useState(true);
@@ -184,11 +184,12 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
 
   const signedIn = useRef(false);
   const syncTimer = useRef(0);
+  const store = useRef(STORE);
   const saveNeeds = useCallback((next: N.Needs) => {
     needsRef.current = next;
     setNeeds(next);
     try {
-      localStorage.setItem(STORE, JSON.stringify(next));
+      localStorage.setItem(store.current, JSON.stringify(next));
     } catch {
       // storage can be off (private windows); Ink just forgets between visits
     }
@@ -199,20 +200,23 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     }
   }, []);
 
+  // Whose Ink this is: a guest's, or a member's (kept in their account, so she is the same cat on every device).
+  // Someone else signing in on the same browser never gets the last person's cat.
   useEffect(() => {
+    window.clearTimeout(syncTimer.current);
     signedIn.current = Boolean(me);
-    if (!me?.ink) return;
+    store.current = storeFor(me);
     const now = Date.now();
-    const local = N.decay(needsRef.current, now);
-    const remote = N.decay(me.ink, now);
-    // Whichever copy was cared for most recently wins.
-    if (me.ink.at > needsRef.current.at) saveNeeds(remote);
-    else saveNeeds(local);
+    const local = N.load(safeGet(store.current), now);
+    // This browser's copy of their cat, or their account's, whichever was cared for most recently.
+    saveNeeds(me?.ink && me.ink.at > local.at ? N.decay(me.ink, now) : local);
   }, [me, saveNeeds]);
 
   /** Dresses her: the palette and the hat are read by the drawing loop, which repaints on the next frame. */
   const wear = useCallback((next: InkLook) => {
     paletteRef.current = paletteFor(next);
+    framesRef.current = framesFor(next.breed);
+    Sound.setVoice(next.breed);
     hatRef.current = outfitToday(next, new Date());
     st.current.frame = "";
     setLook(next);
@@ -221,32 +225,34 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     window.dispatchEvent(new CustomEvent<string>("ink-name", { detail: next.name }));
   }, []);
 
+  /** Only a member can dress her, and the look is kept in their account alone. */
   const saveLook = useCallback(
     (next: InkLook) => {
+      if (!signedIn.current) return;
       wear(next);
-      try {
-        localStorage.setItem(LOOK_STORE, JSON.stringify(next));
-      } catch {
-        // storage can be off; she keeps the look until the page closes
-      }
-      if (signedIn.current) void saveInkLook(next);
+      void saveInkLook(next);
     },
     [wear],
   );
 
-  // Her look: the account's for a member (the same cat on every device), otherwise this browser's.
+  // Her look is the member's own; a guest sees Ink as she was drawn. Only a different person changes it: `me` is
+  // also replaced when they edit their profile, and still carries the look from before they last dressed her.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on who is signed in, on purpose
   useEffect(() => {
-    let local = DEFAULT_LOOK;
+    wear(me?.inkLook ? loadLook(me.inkLook) : DEFAULT_LOOK);
     try {
-      local = loadLook(JSON.parse(safeGet(LOOK_STORE) ?? "null"));
+      localStorage.removeItem(OLD_LOOK_STORE);
     } catch {
-      // a broken saved look is no look
+      // nothing to tidy
     }
-    if (me?.inkLook) return wear(loadLook(me.inkLook));
-    wear(local);
-    // A member dressed her before signing in: keep that in the account.
-    if (me && safeGet(LOOK_STORE)) void saveInkLook(local);
-  }, [me, wear]);
+  }, [me?.id, wear]);
+
+  /** Dressing her up needs an account: a guest is taken to log on, and comes back to the same page. */
+  const dressUp = useCallback(() => {
+    setMenuLeft(null);
+    if (signedIn.current) return setWardrobe(true);
+    window.location.assign(`/welcome?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+  }, []);
 
   /** Keeps the ball of wool where it is, for the next visit; null puts it away. */
   const storeYarn = useCallback(() => {
@@ -403,7 +409,6 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   useEffect(() => {
     const s = st.current;
     s.x = s.target = Math.round(window.innerWidth * 0.45);
-    saveNeeds(N.load(safeGet(STORE), Date.now()));
     // The ball of wool is where it was left last time; it drops onto whatever is there now.
     try {
       const saved = JSON.parse(safeGet(YARN_STORE) ?? "null") as { x?: unknown; y?: unknown } | null;
@@ -620,7 +625,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     const draw = (f: FrameName) => {
       if (!ctx || f === s.frame) return;
       ctx.clearRect(0, 0, W, H);
-      paint(ctx, DRESSED[f], 0, 0, paletteRef.current);
+      paint(ctx, framesRef.current[f], 0, 0, paletteRef.current);
       if (hctx) {
         hctx.clearRect(0, 0, W, H + HAT_ROOM);
         const outfit = hatRef.current;
@@ -824,7 +829,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
       else if (kind === "call") callNow();
       else if (kind === "feed") feedNow();
       else if (kind === "play") playNow();
-      else if (kind === "dress") setWardrobe(true);
+      else if (kind === "dress") dressUp();
     };
     const onFeedAt = (e: Event) => {
       const { x, y } = (e as CustomEvent<{ x: number; y: number }>).detail;
@@ -1155,15 +1160,8 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
               </button>
             </li>
             <li>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setMenuLeft(null);
-                  setWardrobe(true);
-                }}
-              >
-                Dress her up… <small>name, colours, hat</small>
+              <button type="button" role="menuitem" onClick={dressUp}>
+                Dress her up… <small>{me ? "name, colours, hat" : "log on first"}</small>
               </button>
             </li>
             <li>

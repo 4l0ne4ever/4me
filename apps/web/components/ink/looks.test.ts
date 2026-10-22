@@ -1,7 +1,9 @@
-import { OUTFITS } from "@4me/shared";
+import { BREEDS, OUTFITS } from "@4me/shared";
 import { describe, expect, it } from "vitest";
+import { breedFrame } from "./breeds";
 import {
   DEFAULT_LOOK,
+  framesFor,
   HAT_ROOM,
   hatFor,
   lightness,
@@ -87,5 +89,41 @@ describe("the seasons", () => {
     expect(outfitToday({ ...DEFAULT_LOOK, outfit: "santa" }, now)).toBe("santa");
     expect(outfitToday({ ...DEFAULT_LOOK, outfit: "none" }, now)).toBeNull();
     expect(outfitToday(DEFAULT_LOOK, now)).toBe("straw");
+  });
+});
+
+describe("kinds of cat", () => {
+  it("keep every frame the same size, with her collar and tag on", () => {
+    for (const b of BREEDS)
+      for (const f of frames) {
+        const rows = framesFor(b)[f];
+        expect(rows, `${b} ${f}`).toHaveLength(H);
+        for (const r of rows) expect(r.length, `${b} ${f}`).toBe(W);
+        expect(rows.join(""), `${b} ${f}`).toContain("g");
+      }
+  });
+
+  it("mark each kind its own way", () => {
+    const sit = (b: (typeof BREEDS)[number]) => breedFrame(b, "sit", FRAMES.sit).join("");
+    expect(sit("shorthair")).toBe(FRAMES.sit.join(""));
+    expect(sit("tabby")).toContain("d");
+    expect(sit("tuxedo")).toContain("W");
+    expect(sit("siamese")).toContain("q");
+    expect(sit("longhair")).toContain("F");
+    // rounder: more of her is drawn than of the shorthair
+    const filled = (s: string) => s.replace(/\./g, "").length;
+    expect(filled(sit("round"))).toBeGreaterThan(filled(sit("shorthair")));
+  });
+
+  it("never paints a marking over her eyes", () => {
+    for (const b of BREEDS) {
+      const eyes = (s: string) => (s.match(/e/g) ?? []).length;
+      expect(eyes(breedFrame(b, "sit", FRAMES.sit).join("")), b).toBe(eyes(FRAMES.sit.join("")));
+    }
+  });
+
+  it("reads an older saved look as a shorthair", () => {
+    const { breed: _drop, ...old } = DEFAULT_LOOK;
+    expect(loadLook({ ...old, name: "Mochi" }).breed).toBe("shorthair");
   });
 });

@@ -1,9 +1,41 @@
 // Ink's voice, made with the Web Audio API: no sound files to load or license. Every sound starts from something
 // the reader did (a click, a drag, a fish), so browsers allow it, and all of them can be switched off.
 
+import type { Breed } from "@4me/shared";
+
 const KEY = "4me-ink-sound";
 let ctx: AudioContext | null = null;
 let lastPurr = 0;
+
+/** How a kind of cat sounds: higher or lower, longer or shorter, louder or softer, and the speed of her purr. */
+type Voice = {
+  pitch: number;
+  length: number;
+  rise: number;
+  volume: number;
+  wobble: number;
+  purrRate: number;
+  purrTone: number;
+};
+const VOICES: Record<Breed, Voice> = {
+  shorthair: { pitch: 1, length: 1, rise: 1, volume: 1, wobble: 7, purrRate: 25, purrTone: 180 },
+  // bright and chirpy
+  tabby: { pitch: 1.12, length: 0.85, rise: 0.95, volume: 1, wobble: 8, purrRate: 26, purrTone: 190 },
+  // short and clear
+  tuxedo: { pitch: 1.05, length: 0.75, rise: 1.05, volume: 1, wobble: 6, purrRate: 25, purrTone: 180 },
+  // loud, long and raspy: the talkers
+  siamese: { pitch: 0.88, length: 1.55, rise: 1.25, volume: 1.3, wobble: 10, purrRate: 27, purrTone: 200 },
+  // a big cat with a small high trill, and a deep purr
+  longhair: { pitch: 1.3, length: 0.7, rise: 0.85, volume: 0.8, wobble: 12, purrRate: 21, purrTone: 140 },
+  // low, soft and unhurried
+  round: { pitch: 0.78, length: 0.95, rise: 0.8, volume: 0.7, wobble: 5, purrRate: 23, purrTone: 160 },
+};
+let vox = VOICES.shorthair;
+
+/** Her voice follows what kind of cat she is. */
+export function setVoice(breed: Breed) {
+  vox = VOICES[breed] ?? VOICES.shorthair;
+}
 
 export function soundOn(): boolean {
   try {
@@ -50,6 +82,10 @@ function noise(a: AudioContext): AudioBuffer {
 function meowLike(pitch: number, length: number, rise = 1.6, volume = 0.16) {
   const a = audio();
   if (!a) return;
+  pitch *= vox.pitch;
+  length *= vox.length;
+  rise = 1 + (rise - 1) * vox.rise;
+  volume = Math.min(0.24, volume * vox.volume);
   const t = a.currentTime;
   const voice = a.createOscillator();
   voice.type = "sawtooth";
@@ -61,7 +97,7 @@ function meowLike(pitch: number, length: number, rise = 1.6, volume = 0.16) {
   // a little wobble, so it doesn't sound like a synth
   const wobble = a.createOscillator();
   const wobbleDepth = a.createGain();
-  wobble.frequency.value = 7;
+  wobble.frequency.value = vox.wobble;
   wobbleDepth.gain.value = base * 0.03;
   wobble.connect(wobbleDepth).connect(voice.frequency);
 
@@ -105,11 +141,11 @@ export function purr(seconds = 1.6) {
   src.loop = true;
   const low = a.createBiquadFilter();
   low.type = "lowpass";
-  low.frequency.value = 180;
+  low.frequency.value = vox.purrTone;
   const pulse = a.createGain();
   pulse.gain.value = 0;
   const lfo = a.createOscillator();
-  lfo.frequency.value = 25;
+  lfo.frequency.value = vox.purrRate;
   const lfoDepth = a.createGain();
   lfoDepth.gain.value = 0.5;
   const bias = a.createConstantSource();

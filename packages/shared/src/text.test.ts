@@ -39,6 +39,38 @@ describe("parseBody", () => {
     expect(blocks[1]).toEqual({ kind: "note", text: "it will rain" });
     expect(blocks[2]).toEqual({ kind: "photo", index: 1 });
   });
+  it("keeps a quote line by line, with whose words they are", () => {
+    const [q] = parseBody("| the rain is falling\n| on the _night bus_\n— Mazzy Star");
+    expect(q).toEqual({
+      kind: "quote",
+      lines: [
+        [{ kind: "text", text: "the rain is falling" }],
+        [
+          { kind: "text", text: "on the " },
+          { kind: "em", text: "night bus" },
+        ],
+      ],
+      cite: "Mazzy Star",
+    });
+    expect(parseBody("| just words")[0]).toMatchObject({ kind: "quote", cite: "" });
+  });
+  it("makes links from [words](address) and from bare addresses, leaving the full stop after one alone", () => {
+    const [b] = parseBody("read [this](https://example.com/a_b) and https://2die429.com/u/lan.");
+    expect(b).toEqual({
+      kind: "p",
+      parts: [
+        { kind: "text", text: "read " },
+        { kind: "link", text: "this", href: "https://example.com/a_b" },
+        { kind: "text", text: " and " },
+        { kind: "link", text: "2die429.com/u/lan", href: "https://2die429.com/u/lan" },
+        { kind: "text", text: "." },
+      ],
+    });
+  });
+  it("only ever links http and https", () => {
+    const [b] = parseBody("[click](javascript:alert(1)) and [x](data:text/html,hi)");
+    expect(b && b.kind === "p" && b.parts.every((p) => p.kind === "text")).toBe(true);
+  });
   it("never produces markup from angle brackets", () => {
     const [b] = parseBody("<script>alert(1)</script>");
     expect(b).toEqual({ kind: "p", parts: [{ kind: "text", text: "<script>alert(1)</script>" }] });

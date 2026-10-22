@@ -75,6 +75,7 @@ import { notify, publish, quote, recentNotifications } from "../lib/notify";
 import { countsFor, dropReactions, mine, react } from "../lib/reactions";
 import { json } from "../lib/validate";
 import { chatRoutes } from "./chat";
+import { errorRoutes } from "./errors";
 import { mailRoutes } from "./mail";
 import { activeMember } from "./social";
 
@@ -1037,4 +1038,5 @@ export const internalRoutes = new Hono<AppEnv>()
     return diary ? c.json(diary) : c.json({ error: "not found" }, 404);
   })
   .route("/", chatRoutes)
-  .route("/", mailRoutes);
+  .route("/", mailRoutes)
+  .route("/", errorRoutes);

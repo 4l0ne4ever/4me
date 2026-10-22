@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { adminApi } from "@/lib/admin-api";
-import { shortDate } from "@/lib/api";
+import { hhmm, shortDate } from "@/lib/api";
 import { isAuthor } from "@/lib/session";
-import { login, logout, moderate, moderateEntry, setUserStatus } from "./actions";
+import { clearErrors, login, logout, moderate, moderateEntry, setUserStatus } from "./actions";
 import "./admin.css";
 
 export const metadata: Metadata = { title: "Moderation", robots: { index: false } };
@@ -44,6 +44,15 @@ type Member = {
 type Held = { id: number; name: string; body: string; createdAt: string; status: string };
 type HeldNote = Held & { slug: string; title: string; handle: string };
 type HeldShout = Held & { owner: string | null };
+type ErrorRow = {
+  fingerprint: string;
+  source: "api" | "web" | "browser";
+  message: string;
+  detail: string;
+  path: string;
+  count: number;
+  lastAt: string;
+};
 type Search = { searchParams: Promise<Record<string, string | undefined>> };
 
 const REASON: Record<string, string> = {
@@ -115,13 +124,14 @@ export default async function Admin({ searchParams }: Search) {
   if (!(await isAuthor())) return <Login failed={q.error === "password"} />;
   const query = (q.q ?? "").trim();
 
-  const [reports, noteReports, hidden, members, notes, shouts] = await Promise.all([
+  const [reports, noteReports, hidden, members, notes, shouts, errors] = await Promise.all([
     adminApi<Report[]>("/reports"),
     adminApi<NoteReport[]>("/note-reports"),
     adminApi<Hidden[]>("/entries/hidden"),
     adminApi<Member[]>(`/users${query ? `?q=${encodeURIComponent(query)}` : ""}`),
     adminApi<HeldNote[]>("/notes?status=pending"),
     adminApi<HeldShout[]>("/shouts?status=pending"),
+    adminApi<ErrorRow[]>("/errors").catch(() => [] as ErrorRow[]),
   ]);
 
   return (
@@ -186,6 +196,43 @@ export default async function Admin({ searchParams }: Search) {
                 </li>
               ))}
             </ul>
+          </section>
+
+          <section className="win admin-win" id="errors" aria-labelledby="h-errors">
+            <div className="bar">
+              <b id="h-errors">Errors ({errors.length})</b>
+            </div>
+            <p className="admin-note">
+              What broke on the API, the web server or in readers&apos; browsers, one line per kind of error. The
+              morning email lists the last day&apos;s.
+            </p>
+            <ul className="admin-list admin-errors">
+              {errors.length === 0 && <li>Nothing has broken.</li>}
+              {errors.map((e) => (
+                <li key={e.fingerprint}>
+                  <span>
+                    <code>{e.message}</code>
+                    <small>
+                      {e.source} · {e.path || "?"} · {e.count} {e.count === 1 ? "time" : "times"} · last{" "}
+                      {shortDate(e.lastAt)} {hhmm(e.lastAt)}
+                    </small>
+                    {e.detail && (
+                      <details>
+                        <summary>where</summary>
+                        <pre>{e.detail}</pre>
+                      </details>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {errors.length > 0 && (
+              <form action={clearErrors} className="admin-clear">
+                <button type="submit" className="btn">
+                  Seen to: clear the list
+                </button>
+              </form>
+            )}
           </section>
 
           <section className="win admin-win" id="hidden" aria-labelledby="h-hidden">

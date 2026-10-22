@@ -25,8 +25,16 @@ export default function Privacy() {
       <ul>
         <li>No cookies are set.</li>
         <li>
-          Your wallpaper, Ink&apos;s hunger, how you dressed her and where her ball of wool lies are kept in your own
-          browser, not on our servers.
+          Visits are counted with Cloudflare Web Analytics, which sets no cookies and keeps no fingerprint of you: only
+          which pages were opened, from roughly which country, and how fast they loaded.
+        </li>
+        <li>
+          When something breaks, the error&apos;s message and the page it happened on are kept for us to fix it, for the
+          site as a whole and never with your name, address or anything you typed.
+        </li>
+        <li>
+          Your wallpaper, Ink&apos;s hunger and where her ball of wool lies are kept in your own browser, not on our
+          servers.
         </li>
         <li>
           Your IP address is never stored. A salted, one-way hash of it counts a page as read once per visitor and keeps
