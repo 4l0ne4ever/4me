@@ -166,7 +166,7 @@ export default function Privacy() {
 
       <h2>Writing to us</h2>
       <p>
-        Anything about your data, or this page: <a href="mailto:hello@2die429.com">hello@2die429.com</a>.
+        Anything about your data, or this page: <a href="mailto:fgpw@2die429.com">fgpw@2die429.com</a>.
       </p>
 
       <p className="privacy-back">

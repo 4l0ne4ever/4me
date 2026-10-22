@@ -238,7 +238,7 @@ CI only; preview the web app locally with `pnpm dev`.
 | `www` | CNAME | the target Vercel shows (redirects to `2die429.com`) | DNS only |
 | `api` | Worker Custom Domain | `4me-api` (added from the Worker's Domains & Routes; Cloudflare creates the record and certificate) | proxied |
 | `send`, `rsend`, `resend._domainkey`, `_dmarc` | CNAME / TXT | Resend's sending records (SPF, DKIM) and a DMARC policy | DNS only |
-| `2die429.com` | MX / TXT | Cloudflare Email Routing (added by it), forwarding `hello@2die429.com` | DNS only |
+| `2die429.com` | MX / TXT | Cloudflare Email Routing (added by it), forwarding `fgpw@2die429.com` | DNS only |
 
 Vercel's records stay *DNS only* so Vercel can issue its own certificate. The old `*.vercel.app` address redirects to
 the domain from Vercel's Domains settings. Google sign-in lists `https://2die429.com` as an origin and
