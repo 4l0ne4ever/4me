@@ -159,6 +159,15 @@ export default function Privacy() {
         stay, signed &ldquo;a former reader&rdquo;. Any single page can be deleted from your Notepad. To have a guest
         note removed, sign the guestbook asking for it.
       </p>
+      <p>
+        One encrypted copy of the database is made each night in case something breaks, and each copy is deleted after
+        30 days; so what you delete is gone from the backups within a month too. Photos are not in those copies.
+      </p>
+
+      <h2>Writing to us</h2>
+      <p>
+        Anything about your data, or this page: <a href="mailto:hello@2die429.com">hello@2die429.com</a>.
+      </p>
 
       <p className="privacy-back">
         <Link href="/">Back to tonight&apos;s pages</Link>

@@ -70,6 +70,14 @@ describe("public reading", () => {
     expect((await call("/entries/by/lan/the-lamps-came-on-early")).status).toBe(404);
   });
 
+  it("lists every public page's address for search engines, and nothing more", async () => {
+    const res = await call("/entries/sitemap");
+    expect(res.status).toBe(200);
+    const list = (await res.json()) as Array<Record<string, string>>;
+    expect(list).toContainEqual(expect.objectContaining({ handle: "lan", slug: "the-last-tram" }));
+    expect(Object.keys(list[0]!).sort()).toEqual(["at", "handle", "slug"]);
+  });
+
   it("shows a member's desktop details", async () => {
     const profile = await (await call("/profiles/lan")).json();
     expect(profile).toMatchObject({ handle: "lan", name: "Lan", nights: 1, bio: "night shifts, early trams." });

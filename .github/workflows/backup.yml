@@ -1,0 +1,57 @@
+name: Backup
+
+# Every night at 03:00 in Vietnam: the whole database, checked, encrypted, into a private bucket that keeps 30 nights.
+# The bucket's key can only add files there: it can't read, list or delete them, so a leaked key loses nothing.
+on:
+  schedule:
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    name: Dump the database to S3
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    env:
+      BUCKET: ${{ vars.BACKUP_BUCKET }}
+    steps:
+      - name: Dump
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          test -n "$BUCKET" || { echo "::error::Set the BACKUP_BUCKET variable first"; exit 1; }
+          # pg_dump wants Neon's direct address, not the pooled one.
+          docker run --rm postgres:18-alpine \
+            pg_dump --format=custom --no-owner --no-privileges --dbname="${DATABASE_URL/-pooler./.}" > db.dump
+          # A dump that can't be listed, or has no diaries in it, is not a backup.
+          docker run --rm -i postgres:18-alpine pg_restore --list < db.dump | grep -q "TABLE public entries"
+          echo "dump: $(du -h db.dump | cut -f1)"
+
+      - name: Encrypt
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          test -n "$BACKUP_PASSPHRASE" || { echo "::error::Set the BACKUP_PASSPHRASE secret first"; exit 1; }
+          gpg --batch --pinentry-mode loopback --passphrase-file <(printf '%s' "$BACKUP_PASSPHRASE") \
+            --symmetric --cipher-algo AES256 --output db.dump.gpg db.dump
+          shred -u db.dump
+
+      - name: Upload
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-southeast-1
+        run: |
+          set -euo pipefail
+          aws s3 cp db.dump.gpg "s3://$BUCKET/db/$(date -u +%Y-%m-%dT%H%MZ).dump.gpg" --only-show-errors
+          rm -f db.dump.gpg

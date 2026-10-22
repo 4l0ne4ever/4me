@@ -237,11 +237,37 @@ CI only; preview the web app locally with `pnpm dev`.
 | `2die429.com` | A | the address Vercel shows under Settings → Domains | DNS only |
 | `www` | CNAME | the target Vercel shows (redirects to `2die429.com`) | DNS only |
 | `api` | Worker Custom Domain | `4me-api` (added from the Worker's Domains & Routes; Cloudflare creates the record and certificate) | proxied |
-| `send`, `resend._domainkey`, `_dmarc` | MX / TXT | Resend's sending records (SPF, DKIM) and a DMARC policy | DNS only |
+| `send`, `rsend`, `resend._domainkey`, `_dmarc` | CNAME / TXT | Resend's sending records (SPF, DKIM) and a DMARC policy | DNS only |
+| `2die429.com` | MX / TXT | Cloudflare Email Routing (added by it), forwarding `hello@2die429.com` | DNS only |
 
 Vercel's records stay *DNS only* so Vercel can issue its own certificate. The old `*.vercel.app` address redirects to
 the domain from Vercel's Domains settings. Google sign-in lists `https://2die429.com` as an origin and
 `https://2die429.com/auth/google/callback` as a redirect URI; Turnstile lists `2die429.com` as a hostname.
+
+`/sitemap.xml` lists the front page, every desktop with a public page, and every public page (sealed letters once
+they open); `/robots.txt` points to it and keeps sign-in, accounts and `/admin` out of search engines.
+
+### Backups
+
+`.github/workflows/backup.yml` dumps the whole database every night at 03:00 (Vietnam), checks the dump lists the
+diaries, encrypts it with a passphrase (AES-256, `gpg`), and puts it in a private S3 bucket that deletes dumps after
+30 days. The workflow's key can only add files to that bucket, never read, list or delete them. Photos are not in
+the dump; they stay in the photo bucket.
+
+Set it up once, with AWS admin credentials: `bash scripts/backup-setup.sh`. It creates the bucket and the
+write-only user, and leaves the values in `4me-backup.credentials.csv` (gitignored): add `BACKUP_BUCKET` as a
+variable and `BACKUP_AWS_ACCESS_KEY_ID`, `BACKUP_AWS_SECRET_ACCESS_KEY`, `BACKUP_PASSPHRASE` as secrets of the
+`production` environment, keep the passphrase in a password manager, then delete the file. Run the workflow once
+from the Actions tab to see a dump arrive.
+
+To restore, download a dump from the S3 console, then restore it into a fresh Neon branch first, not over production:
+
+```bash
+gpg --decrypt 2026-10-22T2000Z.dump.gpg > db.dump          # asks for the passphrase
+pg_restore --no-owner --no-privileges --dbname="$BRANCH_URL" db.dump   # pg_restore 18 or newer
+```
+
+Check the branch, then point `DATABASE_URL` at it (or restore the same way into production with `--clean`).
 
 ### Web environment (Vercel)
 

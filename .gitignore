@@ -17,3 +17,5 @@ coverage
 *accessKeys*.csv
 *credentials*.csv
 *.pem
+*.dump
+*.dump.gpg

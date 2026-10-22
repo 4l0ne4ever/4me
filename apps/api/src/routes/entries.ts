@@ -7,6 +7,7 @@ import {
   authorCols,
   fileNoteReport,
   fileReport,
+  isOpen,
   isReadable,
   noteCount,
   origin,
@@ -46,6 +47,20 @@ export const entryRoutes = new Hono<AppEnv>()
       .limit(limit);
     c.header("Cache-Control", cache(30));
     return c.json(rows.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, origin(c))));
+  })
+  // Every page a search engine may list: addresses and when each last changed, nothing else. Sealed letters wait
+  // until they open.
+  .get("/sitemap", async (c) => {
+    const rows = await c
+      .get("db")
+      .select({ handle: users.handle, slug: entries.slug, at: entries.updatedAt })
+      .from(entries)
+      .innerJoin(users, eq(users.id, entries.authorId))
+      .where(and(isReadable, isOpen))
+      .orderBy(desc(entries.writtenAt))
+      .limit(5000);
+    c.header("Cache-Control", cache(600));
+    return c.json(rows.map((r) => ({ handle: r.handle, slug: r.slug, at: r.at.toISOString() })));
   })
   .get("/latest", async (c) => {
     const [row] = await readable(c)
