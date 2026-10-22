@@ -60,12 +60,22 @@ import {
   threadOf,
 } from "../lib/entries";
 import { diaryExport } from "../lib/export";
-import { allow, allowKey, humanCheck, isReservedName, looksLikeSpam, sameSecret, sha256 } from "../lib/guard";
+import {
+  allow,
+  allowKey,
+  humanCheck,
+  isReservedName,
+  looksLikeSpam,
+  randomToken,
+  sameSecret,
+  sha256,
+} from "../lib/guard";
 import { isSealed, toAlmost, toAuthor, toBlast, toEntry, toNote, toShout, toSummary } from "../lib/map";
 import { notify, publish, quote, recentNotifications } from "../lib/notify";
 import { countsFor, dropReactions, mine, react } from "../lib/reactions";
 import { json } from "../lib/validate";
 import { chatRoutes } from "./chat";
+import { mailRoutes } from "./mail";
 import { activeMember } from "./social";
 
 // Account storage for the web server. Every route needs the server token; browsers never reach these.
@@ -94,6 +104,8 @@ async function toMe(c: Context<AppEnv>, u: UserRow): Promise<Me & { sessionVersi
     lastfmUser: u.lastfmUser,
     suspended: u.status !== "active",
     email: u.email,
+    emailVerified: u.emailVerified,
+    emailDigest: u.emailDigest,
     avatar: (AVATAR_IDS.includes(u.avatar) ? u.avatar : "pines") as AvatarId,
     hasPassword: Boolean(u.passwordHash),
     google: Boolean(g),
@@ -194,12 +206,6 @@ function uniqueField(e: unknown): "email" | "name" | "handle" | null {
   const where = `${err?.constraint ?? err?.cause?.constraint ?? ""} ${err?.message ?? ""}`;
   return where.includes("email") ? "email" : where.includes("handle") ? "handle" : "name";
 }
-
-const randomToken = () => {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
-};
 
 export const internalRoutes = new Hono<AppEnv>()
   .use("*", async (c, next) => {
@@ -321,7 +327,13 @@ export const internalRoutes = new Hono<AppEnv>()
   })
   .patch(
     "/users/:id",
-    json(profileInput.extend({ ink: inkState.optional(), inkLook: inkLook.optional() })),
+    json(
+      profileInput.extend({
+        ink: inkState.optional(),
+        inkLook: inkLook.optional(),
+        emailDigest: z.boolean().optional(),
+      }),
+    ),
     async (c) => {
       const u = await loadUser(c, c.req.param("id"));
       if (!u) return c.json({ error: "not found" }, 404);
@@ -343,6 +355,7 @@ export const internalRoutes = new Hono<AppEnv>()
       if (input.avatar) set.avatar = input.avatar;
       if (input.ink) set.ink = input.ink;
       if (input.inkLook) set.inkLook = input.inkLook;
+      if (input.emailDigest !== undefined) set.emailDigest = input.emailDigest;
       if (set.displayName || set.handle)
         set.searchName = searchable(`${set.displayName ?? u.displayName} ${set.handle ?? u.handle}`);
       if (Object.keys(set).length === 0) return c.json(await toMe(c, u));
@@ -1009,7 +1022,8 @@ export const internalRoutes = new Hono<AppEnv>()
       await db.delete(passwordResets).where(eq(passwordResets.userId, reset.userId));
       await db
         .update(users)
-        .set({ passwordHash, sessionVersion: sql`${users.sessionVersion} + 1` })
+        // The link went to their inbox, so the address is theirs.
+        .set({ passwordHash, emailVerified: true, sessionVersion: sql`${users.sessionVersion} + 1` })
         .where(eq(users.id, reset.userId));
       return c.json({ ok: true });
     },
@@ -1022,4 +1036,5 @@ export const internalRoutes = new Hono<AppEnv>()
     const diary = await diaryExport(c, id);
     return diary ? c.json(diary) : c.json({ error: "not found" }, 404);
   })
-  .route("/", chatRoutes);
+  .route("/", chatRoutes)
+  .route("/", mailRoutes);

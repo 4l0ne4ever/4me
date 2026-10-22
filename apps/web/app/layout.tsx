@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   alternates: { types: { "application/rss+xml": "/rss.xml" } },
   openGraph: { type: "website", siteName: "4me" },
   twitter: { card: "summary_large_image" },
+  // On an iPhone's home screen it opens in its own window, under a plain black status bar.
+  appleWebApp: { capable: true, title: "4me", statusBarStyle: "black" },
 };
 
 export const viewport: Viewport = {

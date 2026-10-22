@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { DUMMY_HASH, hashPassword, readSession, safeNext, signSession, verifyPassword } from "./crypto";
+import {
+  checkUnsubscribe,
+  DUMMY_HASH,
+  hashPassword,
+  readSession,
+  safeNext,
+  signSession,
+  unsubscribeToken,
+  verifyPassword,
+} from "./crypto";
 
 describe("passwords", () => {
   it("hashes with a fresh salt and verifies", async () => {
@@ -37,5 +46,15 @@ describe("safeNext", () => {
     for (const bad of ["//evil.com", "https://evil.com", "/\\evil.com", "javascript:alert(1)", "", null]) {
       expect(safeNext(bad)).toBe("/");
     }
+  });
+});
+
+describe("unsubscribe links", () => {
+  it("work for their own member only, and only with the right secret", () => {
+    const t = unsubscribeToken(7, "s".repeat(32));
+    expect(checkUnsubscribe(7, t, "s".repeat(32))).toBe(true);
+    expect(checkUnsubscribe(8, t, "s".repeat(32))).toBe(false);
+    expect(checkUnsubscribe(7, t, "x".repeat(32))).toBe(false);
+    expect(checkUnsubscribe(7, "", "s".repeat(32))).toBe(false);
   });
 });

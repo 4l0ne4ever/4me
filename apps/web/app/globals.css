@@ -417,6 +417,10 @@ body[data-skin="snow"] .wall .paint:not(.color) {
   transform-origin: left;
   display: inline-block;
 }
+/* the time never ends up alone on a line of its own */
+.d-time {
+  white-space: nowrap;
+}
 .d-title {
   font-family: var(--font-serif), Georgia, serif;
   font-weight: 400;
@@ -1835,6 +1839,39 @@ body.daytime .tray .state-dot {
 .acc-ok {
   color: var(--ok);
 }
+.acc-ok-inline {
+  color: var(--ok);
+}
+.acc-warn {
+  color: var(--away);
+}
+.acc-sec label.acc-check {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  color: var(--chrome-ink);
+  gap: 8px;
+  cursor: pointer;
+}
+.acc-check input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  flex-shrink: 0;
+  accent-color: var(--amber);
+}
+.acc-check span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.acc-check small {
+  color: var(--chrome-dim);
+}
+.acc-check.off {
+  cursor: default;
+  opacity: 0.6;
+}
 .acc-danger h3 {
   color: var(--buzz);
 }
@@ -2928,6 +2965,15 @@ body.busy * {
 }
 .srch .field {
   flex: none;
+}
+.srch-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 2px;
+  color: var(--chrome-dim);
+  font-size: 13px;
+  line-height: 1.5;
 }
 .srch-note {
   color: var(--chrome-dim);

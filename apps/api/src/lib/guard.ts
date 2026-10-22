@@ -92,3 +92,10 @@ export async function sameSecret(given: string, expected: string): Promise<boole
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
 }
+
+/** 32 random bytes as hex: a token for a link sent by email. Only its SHA-256 is ever stored. */
+export const randomToken = () => {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+};

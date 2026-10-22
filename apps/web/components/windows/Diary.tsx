@@ -12,7 +12,7 @@ import {
   type ReactionKind,
 } from "@4me/shared";
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
-import { API_URL, apiSend, hhmm, longDate } from "@/lib/api";
+import { API_URL, apiSend, count, hhmm, longDate } from "@/lib/api";
 import { claimAudio, useOtherAudio } from "@/lib/clip";
 import { useLiveEvent } from "@/lib/live";
 import { myReactions, reactAsMember } from "@/lib/member-actions";
@@ -290,7 +290,7 @@ function DiaryPage({
         )}
       </div>
       <span className="d-date">
-        {longDate(entry.writtenAt)} — {hhmm(entry.writtenAt)}
+        {longDate(entry.writtenAt)} <span className="d-time">— {hhmm(entry.writtenAt)}</span>
       </span>
       <h1 className="d-title">{entry.title}</h1>
       <div className="d-cur">
@@ -313,7 +313,7 @@ function DiaryPage({
           </span>
         )}
         <span>
-          Read <b>{entry.readCount}</b> times
+          Read <b>{entry.readCount.toLocaleString("en")}</b> {entry.readCount === 1 ? "time" : "times"}
         </span>
       </div>
       <div className="d-grid">
@@ -417,7 +417,7 @@ function DiaryPage({
                 });
             }}
           >
-            {entry.noteCount} notes
+            {count(entry.noteCount, "note")}
           </button>{" "}
           ·{" "}
           <button type="button" className="linkish" onClick={onGuestbook}>

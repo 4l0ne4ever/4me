@@ -7,9 +7,11 @@ import { shortDate } from "@/lib/api";
 import { diaryZip } from "@/lib/diary-zip";
 import {
   changePassword,
+  confirmEmail,
   deleteAccount,
   exportDiary,
   myNotes,
+  setEmailDigest,
   signOutEverywhere,
   updateProfile,
 } from "@/lib/member-actions";
@@ -40,6 +42,29 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
   const [leaveMsg, setLeaveMsg] = useState<Msg>(null);
   const [packing, setPacking] = useState<string | null>(null);
   const [packMsg, setPackMsg] = useState<Msg>(null);
+  const [mailMsg, setMailMsg] = useState<Msg>(null);
+
+  const askConfirm = () =>
+    start(async () => {
+      const res = await confirmEmail();
+      if (!res.ok) return setMailMsg({ kind: "err", text: res.error });
+      if (res.verified) {
+        onMe({ ...me, emailVerified: true });
+        return setMailMsg({ kind: "ok", text: "Your email is already confirmed." });
+      }
+      setMailMsg({ kind: "ok", text: `A link is on its way to ${me.email}. It works for a day.` });
+    });
+
+  const digest = (on: boolean) =>
+    start(async () => {
+      const res = await setEmailDigest(on);
+      if (!res.ok) return setMailMsg({ kind: "err", text: res.error });
+      onMe(res.me);
+      setMailMsg({
+        kind: "ok",
+        text: on ? "Done. New pages come in one email in the morning." : "Done. No more emails with new pages.",
+      });
+    });
 
   /** Asks for everything, fetches the photos, packs the zip and hands it to the browser to save. */
   const takeHome = async () => {
@@ -282,6 +307,50 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
         </button>
         <Line msg={pwMsg} />
       </form>
+
+      <section className="acc-sec">
+        <h3>Email</h3>
+        {me.email ? (
+          <>
+            <p className="acc-dim">
+              {me.email} ·{" "}
+              {me.emailVerified ? (
+                <span className="acc-ok-inline">confirmed</span>
+              ) : (
+                <span className="acc-warn">not confirmed yet</span>
+              )}
+            </p>
+            {!me.emailVerified && (
+              <>
+                <p className="acc-dim">
+                  Open the link we emailed you when you signed up. Until then a forgotten password can&apos;t be reset
+                  by email.
+                </p>
+                <div className="acc-row">
+                  <button className="btn" type="button" onClick={askConfirm} disabled={pending}>
+                    Send the link again
+                  </button>
+                </div>
+              </>
+            )}
+            <label className={`acc-check${me.emailVerified ? "" : " off"}`}>
+              <input
+                type="checkbox"
+                checked={me.emailDigest}
+                disabled={pending || !me.emailVerified}
+                onChange={(e) => digest(e.target.checked)}
+              />
+              <span>
+                Email me new pages from the diaries I subscribe to
+                <small>one email in the morning, only when there is something new</small>
+              </span>
+            </label>
+          </>
+        ) : (
+          <p className="acc-dim">This account has no email address, so 4me never emails it.</p>
+        )}
+        <Line msg={mailMsg} />
+      </section>
 
       <section className="acc-sec">
         <h3>Take your diary home</h3>

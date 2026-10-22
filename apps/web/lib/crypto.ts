@@ -66,3 +66,9 @@ export function safeNext(next: string | null | undefined): string {
   if (!next?.startsWith("/") || next.startsWith("//") || next.startsWith("/\\") || next.includes("\n")) return "/";
   return next.slice(0, 300);
 }
+
+/** The token in a morning email's unsubscribe link: it turns off that member's emails and nobody else's. */
+export const unsubscribeToken = (uid: number, secret: string) =>
+  createHmac("sha256", secret).update(`digest-off.v1.${uid}`).digest("base64url").slice(0, 32);
+export const checkUnsubscribe = (uid: number, token: string, secret: string) =>
+  Number.isInteger(uid) && uid > 0 && sameString(unsubscribeToken(uid, secret), token);

@@ -60,6 +60,12 @@ export function Search({ query, onQuery }: { query: string; onQuery: (q: string)
         </p>
       )}
       {none && <p className="srch-note">Nothing found for “{query.trim()}”.</p>}
+      {!results && state === "idle" && (
+        <div className="srch-hint">
+          <p>Find a diary by its writer&apos;s name or address, or a page by any words in it.</p>
+          <p>Accents are optional: “mua” finds “mưa”.</p>
+        </div>
+      )}
       {results && results.people.length > 0 && (
         <section>
           <h3>Diaries</h3>

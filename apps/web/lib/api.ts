@@ -55,6 +55,9 @@ export const dayOf = (iso: string | Date) => day.format(typeof iso === "string" 
 export const stamp = (iso: string) =>
   dayOf(iso) === dayOf(new Date()) ? hhmm(iso) : `${shortDate(iso)}, ${hhmm(iso)}`;
 
+/** "1 note", "3 notes": a count with its word, singular when there is one. */
+export const count = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString("en")} ${n === 1 ? one : many}`;
+
 /** The taskbar clock is the reader's own. */
 export function clockTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;

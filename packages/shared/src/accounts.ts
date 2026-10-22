@@ -130,6 +130,10 @@ export type Me = {
   /** Suspended members can read and sign in, but not write. */
   suspended: boolean;
   email: string | null;
+  /** The address is proven theirs (Google said so, or they opened the link sent to it). */
+  emailVerified: boolean;
+  /** Wants the morning email with new pages from the diaries they subscribe to. */
+  emailDigest: boolean;
   avatar: AvatarId;
   hasPassword: boolean;
   google: boolean;
@@ -151,3 +155,16 @@ export type MyNote = {
 
 /** Lowercased form used for uniqueness, so "Wren" and "wren" are the same name. */
 export const nameKey = (name: string) => name.trim().toLowerCase().normalize("NFC");
+
+/** One page in the morning email. */
+export type DigestPage = {
+  title: string;
+  slug: string;
+  handle: string;
+  author: string;
+  mood: string;
+  excerpt: string;
+  writtenAt: string;
+};
+/** The morning email for one member: who, where to, and the new pages since the last one. */
+export type Digest = { userId: number; email: string; name: string; pages: DigestPage[] };

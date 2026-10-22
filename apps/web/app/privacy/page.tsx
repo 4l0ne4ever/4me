@@ -50,7 +50,12 @@ export default function Privacy() {
         </li>
         <li>
           Your password is never stored, only a scrypt hash of it. A password reset link is stored as a hash too, and
-          expires after an hour.
+          expires after an hour; so is the link that confirms your email address, which expires after a day.
+        </li>
+        <li>
+          We email you only to confirm your address, to reset a password you asked to reset, and, if you turn it on in
+          My account, one morning email with new pages from the diaries you subscribe to. Every one of those has a link
+          to stop them. Nothing else, and your address is never given to anyone.
         </li>
         <li>
           With Google, we receive your Google account ID, email address and name, and nothing else (the scopes are{" "}
@@ -133,7 +138,7 @@ export default function Privacy() {
         <li>
           Photos are kept in a private storage bucket (Cloudflare R2 or Amazon S3) and only served through our API.
         </li>
-        <li>Password reset emails are sent through Resend.</li>
+        <li>Emails (confirming an address, password resets, the morning email) are sent through Resend.</li>
         <li>
           A song player (Spotify, YouTube or SoundCloud) loads from that service only on pages that have one; YouTube is
           loaded from its no-cookie domain.

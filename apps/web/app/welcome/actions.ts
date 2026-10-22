@@ -3,6 +3,7 @@
 import { email as emailSchema, password as passwordSchema, registerInput, signInInput } from "@4me/shared";
 import { redirect } from "next/navigation";
 import { ApiError, endSession, internalApi, type MeWithVersion, mailEnabled, siteUrl, startSession } from "@/lib/auth";
+import { sendCheck } from "@/lib/checks";
 import { DUMMY_HASH, hashPassword, safeNext, verifyPassword } from "@/lib/crypto";
 import { sendResetMail } from "@/lib/mail";
 
@@ -40,6 +41,8 @@ export async function register(_prev: FormState, form: FormData): Promise<FormSt
     return { error: "Something went wrong. Try again in a moment." };
   }
   await startSession(me.id, me.sessionVersion);
+  // A link to prove the address. Best effort: the account works either way, and the link can be asked for again.
+  if (mailEnabled()) await sendCheck(me.id).catch(() => undefined);
   redirect(safeNext(str(form, "next")));
 }
 

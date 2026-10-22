@@ -276,3 +276,24 @@
 .wl-bottom p a:visited {
   color: inherit;
 }
+
+/* a page with one message: an address confirmed, emails stopped */
+.wl-notice {
+  max-width: 380px;
+}
+.wl-notice form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wl-notice .wl-go {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  color: #fff;
+  text-decoration: none;
+}
+.wl-notice .wl-go:visited {
+  color: #fff;
+}

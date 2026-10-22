@@ -27,7 +27,8 @@ import {
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { type Fail, fail, type Ok, signedOut } from "./action-result";
-import { endSession, getMe, internalApi, type MeWithVersion, publicMe, startSession } from "./auth";
+import { endSession, getMe, internalApi, type MeWithVersion, mailEnabled, publicMe, startSession } from "./auth";
+import { sendCheck } from "./checks";
 import { hashPassword, verifyPassword } from "./crypto";
 
 // Everything a signed-in reader can do. Each action re-reads the session itself; nothing trusts the browser's word.
@@ -249,6 +250,33 @@ export async function changePassword(current: string, next: string): Promise<Ok<
     });
     await startSession(me.id, sessionVersion);
     return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Emails the signed-in member a new link to confirm their address. */
+export async function confirmEmail(): Promise<Ok<{ verified: boolean }> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  if (!mailEnabled()) return { ok: false, error: "email isn't switched on here yet" };
+  try {
+    const r = await sendCheck(me.id);
+    if (r === "failed") return { ok: false, error: "the email didn't go out; try again in a moment" };
+    return { ok: true, verified: r === "verified" };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Turns the morning email of new pages on or off. Only a confirmed address can have it. */
+export async function setEmailDigest(on: boolean): Promise<Ok<{ me: Me }> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  if (on && !me.emailVerified) return { ok: false, error: "confirm your email first" };
+  try {
+    const next = await internalApi<MeWithVersion>(`/users/${me.id}`, { method: "PATCH", body: { emailDigest: on } });
+    return { ok: true, me: publicMe(next) };
   } catch (e) {
     return fail(e);
   }

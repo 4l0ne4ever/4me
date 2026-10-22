@@ -170,6 +170,15 @@ private ones too, with photos, notes, blasts, the bin and the guestbook, plus `d
 `/internal/users/:id/export`), logs off on every device, or deletes the account (with
 their pages and photos; notes on other people's pages stay, signed "a former reader").
 
+**Email.** A new password account gets a link to confirm its address (`/verify`, one day, single use, only a hash is
+kept); *My account* sends it again. Google accounts are confirmed by Google, and a used reset link confirms too. With
+a confirmed address a member can turn on the **morning email**: once a day (Vercel Cron, 08:00 in Vietnam,
+`/api/cron/digest`) the new public pages from the diaries they subscribe to, in one email, only when there is
+something new. Every email has a one-click unsubscribe (`List-Unsubscribe`, RFC 8058) and a link to `/unsubscribe`,
+which asks with a button so mail scanners can't unsubscribe anyone; both are signed per member.
+
+**On a phone's home screen** 4me opens like an app (`app/manifest.ts`, the icons in `public/icons/`).
+
 How it is built: the **web server** does the authentication (scrypt hashing, Google's code flow with PKCE, the session
 cookie on its own domain) and the **API** stores accounts behind `/internal/*`, which only accepts the server token.
 Pages stay cacheable: the desktop asks `/me` who is signed in after it renders.
@@ -293,7 +302,8 @@ Check the branch, then point `DATABASE_URL` at it (or restore the same way into 
 | `ADMIN_TOKEN` | same as the API's; authorises the account and writing calls to `/internal/*` and signs upload tickets |
 | `SESSION_SECRET` | 32+ random characters (`openssl rand -base64 48`) for signing readers' sessions |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | optional, for *Continue with Google* |
-| `RESEND_API_KEY`, `MAIL_FROM` | optional, for password-reset emails; without them the "forgot" link is hidden |
+| `RESEND_API_KEY`, `MAIL_FROM` | optional, for emails (confirming addresses, resets, the morning email); without them the "forgot" link is hidden and nothing is sent |
+| `CRON_SECRET` | 16+ random characters; Vercel Cron sends it to `/api/cron/digest`, which refuses any other caller |
 
 **Google sign-in**: in Google Cloud Console → APIs & Services → Credentials, create an *OAuth client ID* (Web
 application). Authorised JavaScript origin: your `SITE_URL`. Authorised redirect URI:

@@ -2,7 +2,7 @@
 
 import type { Almost, Blast, Entry, InboxNote, Me, MyEntry, Visibility } from "@4me/shared";
 import { type FormEvent, useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { hhmm, shortDate } from "@/lib/api";
+import { count, hhmm, shortDate } from "@/lib/api";
 import {
   addAlmost,
   addBlast,
@@ -546,7 +546,8 @@ export function Write({
                 <span>
                   <b>{e.title}</b>
                   <small>
-                    {shortDate(e.writtenAt)}, {hhmm(e.writtenAt)} · {VIS_LABEL[e.visibility]} · {e.noteCount} notes
+                    {shortDate(e.writtenAt)}, {hhmm(e.writtenAt)} · {VIS_LABEL[e.visibility]} ·{" "}
+                    {count(e.noteCount, "note")}
                     {e.status === "hidden" && " · hidden by the moderator"}
                   </small>
                 </span>

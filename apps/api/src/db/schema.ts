@@ -84,6 +84,10 @@ export const users = pgTable(
     ink: jsonb("ink").$type<InkState>(),
     /** How they dressed their Ink: her name, colours and hat. */
     inkLook: jsonb("ink_look").$type<InkLook>(),
+    /** Wants one morning email with the new pages from the diaries they subscribe to (verified addresses only). */
+    emailDigest: boolean("email_digest").notNull().default(false),
+    /** When that email last went out: the next one starts from here. */
+    digestAt: timestamp("digest_at", { withTimezone: true }),
     createdAt: createdAt(),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -113,6 +117,18 @@ export const passwordResets = pgTable("password_resets", {
   userId: integer("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: createdAt(),
+});
+
+/** Single-use, one-day links that prove an address is the member's. Only a SHA-256 of the token is kept. */
+export const emailChecks = pgTable("email_checks", {
+  tokenHash: text("token_hash").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  /** The address the link was sent to: it only proves that one. */
+  email: text("email").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: createdAt(),
 });
