@@ -3956,3 +3956,15 @@ body.busy * {
   color: var(--chrome-dim);
   font-size: 11px;
 }
+
+/* the human check (Turnstile) and its note while it is still deciding */
+.ts-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ts-wait {
+  margin: 0;
+  font-size: 12px;
+  color: var(--chrome-dim);
+}

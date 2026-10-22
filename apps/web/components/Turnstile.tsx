@@ -10,6 +10,7 @@ declare global {
         opts: { sitekey: string; callback: (t: string) => void; theme?: string; size?: string },
       ) => string;
       reset: (id?: string) => void;
+      remove?: (id: string) => void;
     };
   }
 }
@@ -21,15 +22,17 @@ const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
  * and a reset for after each submit. Without a key it renders nothing and the token stays undefined.
  */
 export function useTurnstile() {
-  const box = useRef<HTMLDivElement>(null);
+  // The box can appear later than the hook (a form that opens on a click), so the widget mounts when the box does.
+  const [box, setBox] = useState<HTMLDivElement | null>(null);
   const widget = useRef<string | null>(null);
   const [token, setToken] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (!SITE_KEY || !box.current) return;
+    if (!SITE_KEY || !box) return;
+    let gone = false;
     const mount = () => {
-      if (!window.turnstile || !box.current || widget.current) return;
-      widget.current = window.turnstile.render(box.current, {
+      if (gone || !window.turnstile || widget.current) return;
+      widget.current = window.turnstile.render(box, {
         sitekey: SITE_KEY,
         callback: setToken,
         theme: "dark",
@@ -48,12 +51,30 @@ export function useTurnstile() {
       }
       s.addEventListener("load", mount);
     }
-  }, []);
+    // The box went away (the form closed): its widget goes too, and a new box gets a new one.
+    return () => {
+      gone = true;
+      if (widget.current) window.turnstile?.remove?.(widget.current);
+      widget.current = null;
+      setToken(undefined);
+    };
+  }, [box]);
 
   const reset = () => {
     setToken(undefined);
     if (widget.current) window.turnstile?.reset(widget.current);
   };
 
-  return { needed: Boolean(SITE_KEY), token, reset, widget: SITE_KEY ? <div ref={box} /> : null };
+  // Until the check answers, the button it guards stays off: say why, so a blocked check isn't a mystery.
+  const view = SITE_KEY ? (
+    <div className="ts-box">
+      <div ref={setBox} />
+      {!token && (
+        <p className="ts-wait" role="status">
+          Checking that you&apos;re a person… If this never finishes, allow challenges.cloudflare.com.
+        </p>
+      )}
+    </div>
+  ) : null;
+  return { needed: Boolean(SITE_KEY), token, reset, widget: view };
 }
