@@ -61,6 +61,8 @@ setInterval(() => {
 
 const wss = new WebSocketServer({ noServer: true });
 server.on("upgrade", async (req, socket, head) => {
+  // A browser that closes mid-handshake resets the socket; that must not take the dev server down.
+  socket.on("error", () => socket.destroy());
   const url = new URL(req.url ?? "/", `http://localhost:${port}`);
   const origin = req.headers.origin ?? "";
   const topics =
@@ -77,6 +79,7 @@ server.on("upgrade", async (req, socket, head) => {
       if (m.toString() === "ping") ws.send("pong");
     });
     ws.on("close", () => hub.remove(ws));
+    ws.on("error", () => hub.remove(ws));
   });
 });
 console.log(`4me api on http://localhost:${port}`);

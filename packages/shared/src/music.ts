@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { SongResult } from "./schemas";
+import type { SongResult, SongSticker } from "./schemas";
 
 // Songs come from the iTunes Search API: free, no key, every song has a 30-second preview. The reader's browser asks
 // it directly (Apple allows that from any site, and blocks many cloud servers), so the servers never call Apple;
@@ -71,3 +71,12 @@ export const songPick = z.object({
   url: z.union([appleLink, z.literal("")]),
 });
 export type SongPick = z.infer<typeof songPick>;
+
+/** The parts of a picked song that are kept on a note or a shout. */
+export const toSticker = (s: SongPick): SongSticker => ({
+  title: s.title,
+  artist: s.artist,
+  url: s.url,
+  coverUrl: s.coverUrl,
+  previewUrl: s.previewUrl,
+});

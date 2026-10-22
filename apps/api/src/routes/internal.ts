@@ -10,6 +10,7 @@ import {
   handleFrom,
   handle as handleSchema,
   type InboxNote,
+  inkLook,
   inkState,
   type Me,
   type MyEntry,
@@ -22,6 +23,7 @@ import {
   reportReason,
   type Subscription,
   searchable,
+  toSticker,
 } from "@4me/shared";
 import { and, desc, eq, gt, inArray, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -96,6 +98,7 @@ async function toMe(c: Context<AppEnv>, u: UserRow): Promise<Me & { sessionVersi
     hasPassword: Boolean(u.passwordHash),
     google: Boolean(g),
     ink: u.ink ?? null,
+    inkLook: u.inkLook ?? null,
     createdAt: u.createdAt.toISOString(),
     sessionVersion: u.sessionVersion,
   };
@@ -316,39 +319,44 @@ export const internalRoutes = new Hono<AppEnv>()
     const u = await loadUser(c, c.req.param("id"));
     return u ? c.json(await toMe(c, u)) : c.json({ error: "not found" }, 404);
   })
-  .patch("/users/:id", json(profileInput.extend({ ink: inkState.optional() })), async (c) => {
-    const u = await loadUser(c, c.req.param("id"));
-    if (!u) return c.json({ error: "not found" }, 404);
-    const input = c.req.valid("json");
-    const set: Partial<typeof users.$inferInsert> = {};
-    if (input.displayName && input.displayName !== u.displayName) {
-      if (!(await nameFree(c, input.displayName, u.id)))
-        return c.json({ error: "that name is taken", field: "displayName" }, 409);
-      set.displayName = input.displayName;
-      set.nameKey = nameKey(input.displayName);
-    }
-    if (input.handle && input.handle !== u.handle) {
-      if (!(await handleFree(c, input.handle, u.id)))
-        return c.json({ error: "that address is taken", field: "handle" }, 409);
-      set.handle = input.handle;
-    }
-    if (input.bio !== undefined) set.bio = input.bio;
-    if (input.lastfmUser !== undefined) set.lastfmUser = input.lastfmUser;
-    if (input.avatar) set.avatar = input.avatar;
-    if (input.ink) set.ink = input.ink;
-    if (set.displayName || set.handle)
-      set.searchName = searchable(`${set.displayName ?? u.displayName} ${set.handle ?? u.handle}`);
-    if (Object.keys(set).length === 0) return c.json(await toMe(c, u));
-    try {
-      const [next] = await c.get("db").update(users).set(set).where(eq(users.id, u.id)).returning();
-      return c.json(await toMe(c, next!));
-    } catch (e) {
-      const field = uniqueField(e);
-      if (field === "handle") return c.json({ error: "that address is taken", field: "handle" }, 409);
-      if (field) return c.json({ error: "that name is taken", field: "displayName" }, 409);
-      throw e;
-    }
-  })
+  .patch(
+    "/users/:id",
+    json(profileInput.extend({ ink: inkState.optional(), inkLook: inkLook.optional() })),
+    async (c) => {
+      const u = await loadUser(c, c.req.param("id"));
+      if (!u) return c.json({ error: "not found" }, 404);
+      const input = c.req.valid("json");
+      const set: Partial<typeof users.$inferInsert> = {};
+      if (input.displayName && input.displayName !== u.displayName) {
+        if (!(await nameFree(c, input.displayName, u.id)))
+          return c.json({ error: "that name is taken", field: "displayName" }, 409);
+        set.displayName = input.displayName;
+        set.nameKey = nameKey(input.displayName);
+      }
+      if (input.handle && input.handle !== u.handle) {
+        if (!(await handleFree(c, input.handle, u.id)))
+          return c.json({ error: "that address is taken", field: "handle" }, 409);
+        set.handle = input.handle;
+      }
+      if (input.bio !== undefined) set.bio = input.bio;
+      if (input.lastfmUser !== undefined) set.lastfmUser = input.lastfmUser;
+      if (input.avatar) set.avatar = input.avatar;
+      if (input.ink) set.ink = input.ink;
+      if (input.inkLook) set.inkLook = input.inkLook;
+      if (set.displayName || set.handle)
+        set.searchName = searchable(`${set.displayName ?? u.displayName} ${set.handle ?? u.handle}`);
+      if (Object.keys(set).length === 0) return c.json(await toMe(c, u));
+      try {
+        const [next] = await c.get("db").update(users).set(set).where(eq(users.id, u.id)).returning();
+        return c.json(await toMe(c, next!));
+      } catch (e) {
+        const field = uniqueField(e);
+        if (field === "handle") return c.json({ error: "that address is taken", field: "handle" }, 409);
+        if (field) return c.json({ error: "that name is taken", field: "displayName" }, 409);
+        throw e;
+      }
+    },
+  )
   .post("/users/:id/password", json(z.object({ passwordHash: hash })), async (c) => {
     const u = await loadUser(c, c.req.param("id"));
     if (!u) return c.json({ error: "not found" }, 404);
@@ -420,7 +428,7 @@ export const internalRoutes = new Hono<AppEnv>()
     const entryId = positiveId(c.req.param("entryId"));
     const entry = entryId ? await readableEntry(c, entryId) : null;
     if (!entry) return c.json({ error: "not found" }, 404);
-    const { body, parentId } = c.req.valid("json");
+    const { body, parentId, song } = c.req.valid("json");
     const thread = parentId ? await threadOf(c, entry.id, parentId) : null;
     if (parentId && !thread) return c.json({ error: "that note is gone" }, 404);
     // The page's own author answering on it is marked, and never held for review.
@@ -435,6 +443,7 @@ export const internalRoutes = new Hono<AppEnv>()
         userId: u.id,
         name: u.displayName,
         body,
+        song: song ? toSticker(song) : null,
         status,
         isAuthor,
       })
@@ -641,14 +650,21 @@ export const internalRoutes = new Hono<AppEnv>()
     if (u instanceof Response) return u;
     if (!(await allowKey(c, `member-shout:${u.id}`, 10, 600)))
       return c.json({ error: "slow down a little, try again soon" }, 429);
-    const { body, owner: ownerHandle } = c.req.valid("json");
+    const { body, owner: ownerHandle, song } = c.req.valid("json");
     const owner = await activeMember(c, ownerHandle);
     if (!owner) return c.json({ error: "not found" }, 404);
     const status = owner.id !== u.id && looksLikeSpam(body) ? "pending" : "visible";
     const [row] = await c
       .get("db")
       .insert(shouts)
-      .values({ ownerId: owner.id, userId: u.id, name: u.displayName, body, status })
+      .values({
+        ownerId: owner.id,
+        userId: u.id,
+        name: u.displayName,
+        body,
+        song: song ? toSticker(song) : null,
+        status,
+      })
       .returning();
     const shout = toShout(row!, u);
     if (status === "visible") publish(c, [`guest:${owner.handle}`], { type: "shout", owner: owner.handle, shout });

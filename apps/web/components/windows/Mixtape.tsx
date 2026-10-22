@@ -3,6 +3,7 @@
 import { type Author, type EntrySummary, type NowPlaying, type Song, searchSongs } from "@4me/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { API_URL } from "@/lib/api";
+import { claimAudio, useOtherAudio } from "@/lib/clip";
 import { IconNext, IconPause, IconPlay, IconPrev } from "../Icons";
 
 /**
@@ -252,6 +253,7 @@ export function Mixtape({
       }
       setSec(0);
       setBlocked(false);
+      claimAudio("mixtape");
       if (s?.videoId) {
         audio.current?.pause();
         setPlaying(true);
@@ -278,6 +280,7 @@ export function Mixtape({
               onStateChange: (e) => {
                 if (e.data === 0) goNext.current();
                 if (e.data === 1) {
+                  claimAudio("mixtape");
                   setPlaying(true);
                   setBlocked(false);
                 }
@@ -312,13 +315,14 @@ export function Mixtape({
   };
   goNext.current = () => (tracks.length > 1 ? go(i + 1) : setPlaying(false));
 
-  const toggle = () => {
-    if (playing) {
-      player.current?.pauseVideo();
-      audio.current?.pause();
-      setPlaying(false);
-    } else start(track);
-  };
+  const hush = useCallback(() => {
+    player.current?.pauseVideo();
+    audio.current?.pause();
+    setPlaying(false);
+  }, []);
+  useOtherAudio("mixtape", hush);
+
+  const toggle = () => (playing ? hush() : start(track));
 
   const who = persona?.name ?? "4me";
 

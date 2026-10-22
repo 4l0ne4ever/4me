@@ -64,6 +64,13 @@
       "when": 1792572768686,
       "tag": "0008_certain_ricochet",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792640033314,
+      "tag": "0009_abnormal_silver_samurai",
+      "breakpoints": true
     }
   ]
 }

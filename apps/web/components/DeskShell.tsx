@@ -49,7 +49,7 @@ import {
   IconTonight,
   IconWrite,
 } from "./Icons";
-import { feedInkAt, Ink, nudgeInk } from "./ink/Ink";
+import { feedInkAt, Ink, inkName, nudgeInk } from "./ink/Ink";
 import { Notifications } from "./Notifications";
 import { Skyline } from "./Skyline";
 import { type Pos, Window } from "./Window";
@@ -285,6 +285,14 @@ export function DeskShell({ children }: { children: ReactNode }) {
   const [focus, setFocus] = useState<WinId>(path === "/" ? "tonight" : "diary");
   const zTop = useRef(20);
   const [startOpen, setStartOpen] = useState(false);
+  // Whatever her reader named her: Ink says so whenever her look changes.
+  const [catName, setCatName] = useState("Ink");
+  useEffect(() => {
+    const on = (e: Event) => setCatName((e as CustomEvent<string>).detail);
+    window.addEventListener("ink-name", on);
+    setCatName(inkName());
+    return () => window.removeEventListener("ink-name", on);
+  }, []);
   const [rssOpen, setRssOpen] = useState(false);
   const [skin, setSkin] = useLocal<SkinId>(
     "4me-skin",
@@ -721,7 +729,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
                   </button>
                 </li>
                 <li className="sm-sep" aria-hidden="true" />
-                {(["feed", "play", "call"] as const).map((a) => (
+                {(["feed", "play", "call", "dress"] as const).map((a) => (
                   <li key={a}>
                     <button
                       type="button"
@@ -732,7 +740,13 @@ export function DeskShell({ children }: { children: ReactNode }) {
                       }}
                     >
                       <IconHeart />
-                      {a === "feed" ? "Give Ink a fish" : a === "play" ? "Play with Ink" : "Call Ink over"}
+                      {a === "feed"
+                        ? `Give ${catName} a fish`
+                        : a === "play"
+                          ? `Play with ${catName}`
+                          : a === "call"
+                            ? `Call ${catName} over`
+                            : `Dress ${catName} up…`}
                     </button>
                   </li>
                 ))}

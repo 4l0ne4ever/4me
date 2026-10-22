@@ -1,4 +1,4 @@
-import type { InkState, Photo, Visibility } from "@4me/shared";
+import type { InkLook, InkState, Photo, SongSticker, Visibility } from "@4me/shared";
 import {
   type AnyPgColumn,
   bigint,
@@ -82,6 +82,8 @@ export const users = pgTable(
     /** Bumped to sign the person out everywhere (password change, reset, "log off everywhere"). */
     sessionVersion: integer("session_version").notNull().default(1),
     ink: jsonb("ink").$type<InkState>(),
+    /** How they dressed their Ink: her name, colours and hat. */
+    inkLook: jsonb("ink_look").$type<InkLook>(),
     createdAt: createdAt(),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -130,6 +132,8 @@ export const notes = pgTable(
     userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
     status: text("status").$type<"visible" | "hidden" | "pending">().notNull().default("visible"),
     ipHash: text("ip_hash"),
+    /** A song stuck on the note. */
+    song: jsonb("song").$type<SongSticker>(),
     editedAt: timestamp("edited_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
@@ -151,6 +155,8 @@ export const shouts = pgTable(
     userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
     status: text("status").$type<"visible" | "hidden" | "pending">().notNull().default("visible"),
     ipHash: text("ip_hash"),
+    /** A song stuck on the shout. */
+    song: jsonb("song").$type<SongSticker>(),
     createdAt: createdAt(),
   },
   (t) => [index("shouts_created_idx").on(t.createdAt), index("shouts_owner_created_idx").on(t.ownerId, t.createdAt)],

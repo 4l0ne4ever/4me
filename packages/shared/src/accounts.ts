@@ -102,6 +102,24 @@ export const inkState = z.object({
 });
 export type InkState = z.infer<typeof inkState>;
 
+/** What Ink wears: a hat for the season (or a chosen one, or none). */
+export const OUTFITS = ["witch", "santa", "mai", "beanie", "flowers", "straw", "leaf"] as const;
+export type Outfit = (typeof OUTFITS)[number];
+const hex = z
+  .string()
+  .regex(/^#[0-9a-f]{6}$/i, "a colour like #17191f")
+  .transform((v) => v.toLowerCase());
+
+/** How a reader dressed their Ink: the name on her tag, her colours, and what she wears. */
+export const inkLook = z.object({
+  name: z.string().trim().min(1).max(16),
+  fur: hex,
+  eyes: hex,
+  collar: hex,
+  outfit: z.enum(["season", "none", ...OUTFITS]),
+});
+export type InkLook = z.infer<typeof inkLook>;
+
 /** The person signed in, as the web app sees them. */
 export type Me = {
   id: number;
@@ -116,6 +134,7 @@ export type Me = {
   hasPassword: boolean;
   google: boolean;
   ink: InkState | null;
+  inkLook: InkLook | null;
   createdAt: string;
 };
 

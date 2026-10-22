@@ -11,8 +11,9 @@ import {
   parseBody,
   type ReactionKind,
 } from "@4me/shared";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { API_URL, apiSend, hhmm, longDate } from "@/lib/api";
+import { claimAudio, useOtherAudio } from "@/lib/clip";
 import { useLiveEvent } from "@/lib/live";
 import { myReactions, reactAsMember } from "@/lib/member-actions";
 import { reportAsMember } from "@/lib/writer-actions";
@@ -57,6 +58,13 @@ function useClip(url: string | null | undefined) {
       setPlaying(false);
     };
   }, [url]);
+  useOtherAudio(
+    "ticket",
+    useCallback(() => {
+      audio.current?.pause();
+      setPlaying(false);
+    }, []),
+  );
   const toggle = () => {
     if (!url) return false;
     audio.current ??= new Audio(url);
@@ -65,11 +73,13 @@ function useClip(url: string | null | undefined) {
     if (playing) {
       a.pause();
       setPlaying(false);
-    } else
+    } else {
+      claimAudio("ticket");
       void a.play().then(
         () => setPlaying(true),
         () => setPlaying(false),
       );
+    }
     return true;
   };
   return { playing, toggle };

@@ -1,4 +1,4 @@
-import { handle as handleSchema, type Profile, shoutInput } from "@4me/shared";
+import { handle as handleSchema, type Profile, shoutInput, toSticker } from "@4me/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { almost, blasts, catStats, entries, follows, shouts, users } from "../db/schema";
@@ -89,7 +89,14 @@ export const socialRoutes = new Hono<AppEnv>()
     const [row] = await c
       .get("db")
       .insert(shouts)
-      .values({ ownerId: owner.id, name: input.name, body: input.body, status, ipHash: await ipHash(c) })
+      .values({
+        ownerId: owner.id,
+        name: input.name,
+        body: input.body,
+        song: input.song ? toSticker(input.song) : null,
+        status,
+        ipHash: await ipHash(c),
+      })
       .returning();
     const shout = toShout(row!);
     if (status === "visible") publish(c, [`guest:${owner.handle}`], { type: "shout", owner: owner.handle, shout });

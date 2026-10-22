@@ -24,7 +24,10 @@ export default function Privacy() {
       <h2>If you only read</h2>
       <ul>
         <li>No cookies are set.</li>
-        <li>Your wallpaper and Ink&apos;s hunger are kept in your own browser, not on our servers.</li>
+        <li>
+          Your wallpaper, Ink&apos;s hunger, how you dressed her and where her ball of wool lies are kept in your own
+          browser, not on our servers.
+        </li>
         <li>
           Your IP address is never stored. A salted, one-way hash of it counts a page as read once per visitor and keeps
           spam down; those counters are deleted after a day.
@@ -42,8 +45,8 @@ export default function Privacy() {
       <ul>
         <li>
           Your email address, the name you show, your desktop&apos;s address, the line about you, the picture you
-          picked, and Ink&apos;s state, so she remembers you on every device. Your name, address, line and picture are
-          public; your email address is never shown on the site.
+          picked, and Ink&apos;s state and look, so she is the same cat on every device. Your name, address, line and
+          picture are public; your email address is never shown on the site.
         </li>
         <li>
           Your password is never stored, only a scrypt hash of it. A password reset link is stored as a hash too, and

@@ -2201,6 +2201,96 @@ body.daytime .tray .state-dot {
   width: 14px;
   height: 14px;
 }
+/* the small search under a note or a shout */
+.song-search.compact .song-results {
+  max-height: 200px;
+}
+.song-search.compact .song-pick {
+  padding: 4px 6px;
+}
+.song-search.compact .song-pick img,
+.song-search.compact .song-blank,
+.song-picked.compact img,
+.song-picked.compact .song-blank {
+  width: 32px;
+  height: 32px;
+}
+.song-picked.compact .song-play {
+  min-width: 32px;
+  min-height: 32px;
+}
+.add-song {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.add-song > :first-child {
+  align-self: stretch;
+}
+.add-song-open {
+  align-self: flex-start;
+  font-size: 12px;
+}
+
+/* a song stuck on a note or a shout: a cassette label, slightly crooked */
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 3px 4px 3px 3px;
+  border: 1px dashed color-mix(in srgb, var(--amber) 55%, transparent);
+  background: color-mix(in srgb, var(--amber) 10%, transparent);
+  font-size: 12px;
+  transform: rotate(-0.6deg);
+}
+.sticker img,
+.sticker-blank {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--field);
+}
+.sticker a,
+.sticker > span:not(.sticker-blank) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+}
+.sticker a::before,
+.sticker > span:not(.sticker-blank)::before {
+  content: "♪ ";
+  color: var(--amber);
+}
+.sticker-play {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--amber) 55%, transparent);
+  border-radius: 50%;
+  background: none;
+  color: var(--amber);
+  cursor: pointer;
+}
+.sticker-play svg {
+  width: 12px;
+  height: 12px;
+}
+.sticker.on {
+  border-style: solid;
+}
+.sticker.on .sticker-play {
+  background: var(--amber);
+  color: var(--field);
+}
 
 /* the photo picker */
 .ph-pick {

@@ -90,6 +90,7 @@ export const toNote = (r: typeof notes.$inferSelect, m?: MemberRow, reactions: R
   isAuthor: r.isAuthor,
   member: member(r.userId, m),
   reactions,
+  song: r.song ?? null,
   createdAt: r.createdAt.toISOString(),
   editedAt: r.editedAt?.toISOString() ?? null,
 });
@@ -98,6 +99,7 @@ export const toShout = (r: typeof shouts.$inferSelect, m?: MemberRow): Shout => 
   name: r.name,
   body: r.body,
   member: member(r.userId, m),
+  song: r.song ?? null,
   createdAt: r.createdAt.toISOString(),
 });
 export const toBlast = (r: typeof blasts.$inferSelect): Blast => ({

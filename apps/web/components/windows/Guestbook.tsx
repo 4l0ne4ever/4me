@@ -7,6 +7,8 @@ import { useFresh, useLiveEvent } from "@/lib/live";
 import { shoutAsMember } from "@/lib/member-actions";
 import { DeskLink } from "../DeskLink";
 import { nudgeInk } from "../ink/Ink";
+import type { PickedSong } from "../SongPicker";
+import { AddSong, SongSticker, toPick } from "../SongSticker";
 import { useTurnstile } from "../Turnstile";
 
 const EMOTICONS = [":-)", ":-(", "<3", ";-)", "zzz", "^_^"];
@@ -40,6 +42,7 @@ function Signing({ initial, me, owner }: { initial: Shout[]; me: Me | null; owne
   const [shouts, setShouts] = useState(initial);
   const [name, setName] = useState("");
   const [text, setText] = useState("");
+  const [song, setSong] = useState<PickedSong | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -61,7 +64,7 @@ function Signing({ initial, me, owner }: { initial: Shout[]; me: Me | null; owne
     setBusy(true);
     setNote(null);
     const res = me
-      ? await shoutAsMember(text, owner.handle).then((r) =>
+      ? await shoutAsMember(text, owner.handle, toPick(song)).then((r) =>
           r.ok
             ? { ok: true as const, data: { shout: r.shout, pending: r.pending } }
             : { ok: false as const, error: r.error },
@@ -70,12 +73,14 @@ function Signing({ initial, me, owner }: { initial: Shout[]; me: Me | null; owne
           name,
           body: text,
           owner: owner.handle,
+          song: toPick(song),
           turnstileToken: human.token,
         });
     setBusy(false);
     if (!me) human.reset();
     if (!res.ok) return setNote(res.error);
     setText("");
+    setSong(null);
     if (res.data.pending) setNote("thanks. your shout shows up once it has been checked.");
     else addShout(res.data.shout);
     nudgeInk("note");
@@ -97,6 +102,7 @@ function Signing({ initial, me, owner }: { initial: Shout[]; me: Me | null; owne
               <span> · {stamp(s.createdAt)}</span>
             </div>
             <p>{s.body}</p>
+            {s.song && <SongSticker song={s.song} />}
           </div>
         ))}
       </div>
@@ -122,6 +128,7 @@ function Signing({ initial, me, owner }: { initial: Shout[]; me: Me | null; owne
             </button>
           ))}
         </fieldset>
+        <AddSong value={song} onChange={setSong} />
         <div className="grow">
           {me ? (
             <span className="as-me" title={`Signing as ${me.displayName}`}>

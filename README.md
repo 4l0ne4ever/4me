@@ -103,6 +103,10 @@ same one again takes it back. Members are counted by account, guests by hashed I
 writer, can delete it with its replies. Notes, replies, reactions and deletions reach everyone reading the page live;
 the person replied to, the page's writer and a note's writer are notified.
 
+A note, and a guestbook shout, can carry a **song sticker**: *♪ add a song* opens a small music search, and the song
+shows under the words with its cover and its 30-second clip. Only one sound plays on the desktop at a time: starting a
+sticker pauses the mixtape and the page's song ticket, and the other way round (`lib/clip.ts`).
+
 ## Subscriptions, search, editing
 
 A blog, not a social network, so the extras stay quiet:
@@ -177,7 +181,15 @@ Every pet, fish and game is also counted for everyone on the API (`/cat`).
 
 - Click to pet. Press and drag across her to stroke her (purrs after a few strokes).
 - Right-click, long-press, or Shift+F10 opens her menu: give a fish (a bowl drops in front of her and she eats it),
-  play with the yarn (she chases it three times), pet, call her over. The Start menu has the same actions.
+  play with the wool, pet, call her over, dress her up. The Start menu has the same actions.
+- **The ball of wool** stays where it is left, on the taskbar, a window or a roof, and is still there next visit.
+  Drag it anywhere and let go: it drops onto whatever is below. She swipes it three times when asked, it rolls (and
+  can roll off the edge of a window), and now and then she goes and bats it about by herself.
+- **Dress her up** (her menu): the name on her collar tag (shown when the pointer rests on her), her fur, eyes and
+  collar colours (a few real cat colours, or any colour), and a hat. *With the seasons* follows the date in Vietnam:
+  apricot blossom around Tết, a flower crown in spring, a straw hat in summer, a fallen leaf in autumn, a witch hat
+  for Halloween, a Santa hat at Christmas, a wool beanie in winter. The shading follows the fur
+  (`components/ink/looks.ts`). Members keep her look in their account; guests in their browser.
 - Right-click the empty desktop → *Drop a fish here*: the bowl falls from that point onto whatever is below it (a
   window, a roof across the street, or the taskbar), and she finds her way there.
 - She walks about, and now and then climbs up the side of a window or a house to sit on top, walk along it, or
@@ -329,6 +341,4 @@ application). Authorised JavaScript origin: your `SITE_URL`. Authorised redirect
 
 ## Next
 
-- Song stickers on notes and guestbook shouts.
-- Live BUZZ and "reading now" between readers (Durable Objects or a small WebSocket service).
-- More of Ink: a name tag, seasonal outfits, a ball of wool that stays where you left it.
+- More of Ink: more hats, a second toy.

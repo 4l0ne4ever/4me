@@ -35,9 +35,15 @@ export function Dialog({
   onClose,
   children,
   buttons,
+  icon,
+  wide = false,
 }: {
   title: string;
   tone?: Tone;
+  /** Something to show in place of the tone's icon: a picture of what the box is about. */
+  icon?: ReactNode;
+  /** Room for a small form rather than a sentence or two. */
+  wide?: boolean;
   onClose: () => void;
   children: ReactNode;
   /** The row of buttons along the bottom; leave it out when the content has its own (a form). */
@@ -61,7 +67,7 @@ export function Dialog({
     // biome-ignore lint/a11y/useKeyWithClickEvents: Escape already closes it (onCancel); the click is for the backdrop
     <dialog
       ref={ref}
-      className="msgbox"
+      className={`msgbox${wide ? " wide" : ""}`}
       aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
@@ -77,7 +83,7 @@ export function Dialog({
         </button>
       </div>
       <div className="mb-body">
-        <ToneIcon tone={tone} />
+        {icon ?? <ToneIcon tone={tone} />}
         <div className="mb-text">{children}</div>
       </div>
       {buttons && <div className="mb-btns">{buttons}</div>}

@@ -12,6 +12,7 @@ export const noteInput = z.object({
   name: name.default("a stranger"),
   body: z.string().trim().min(1).max(500),
   parentId: z.number().int().positive().optional(),
+  song: songPick.optional(),
   turnstileToken: z.string().max(2048).optional(),
 });
 export type NoteInput = z.input<typeof noteInput>;
@@ -20,6 +21,7 @@ export type NoteInput = z.input<typeof noteInput>;
 export const memberNoteInput = z.object({
   body: z.string().trim().min(1).max(500),
   parentId: z.number().int().positive().optional(),
+  song: songPick.optional(),
 });
 
 /** How a reader feels about a page or a note: one at a time, like Yahoo 360 smileys. */
@@ -50,13 +52,18 @@ export const memberReactInput = z.object({
 /** Whose guestbook: a desktop address. The API looks the member up ("4me", the first diary, is reserved but real). */
 const guestbookOwner = z.string().trim().min(1).max(24);
 
-export const memberShoutInput = z.object({ body: z.string().trim().min(1).max(280), owner: guestbookOwner });
+export const memberShoutInput = z.object({
+  body: z.string().trim().min(1).max(280),
+  owner: guestbookOwner,
+  song: songPick.optional(),
+});
 
 /** A guestbook belongs to a diary: `owner` is whose guestbook is signed. */
 export const shoutInput = z.object({
   name: name.default("a stranger"),
   body: z.string().trim().min(1).max(280),
   owner: guestbookOwner,
+  song: songPick.optional(),
   turnstileToken: z.string().max(2048).optional(),
 });
 export type ShoutInput = z.input<typeof shoutInput>;
@@ -124,6 +131,9 @@ export type Song = {
   previewUrl: string | null;
 };
 
+/** A song stuck on a note or a guestbook shout: what it is, its cover, and its 30-second clip. */
+export type SongSticker = Pick<Song, "title" | "artist" | "url" | "coverUrl" | "previewUrl">;
+
 /** One hit from the music search. */
 export type SongResult = {
   id: number;
@@ -178,6 +188,7 @@ export type Note = {
   isAuthor: boolean;
   member: Member;
   reactions: Reactions;
+  song: SongSticker | null;
   createdAt: string;
   /** Set when the writer changed it after posting. */
   editedAt: string | null;
@@ -202,7 +213,14 @@ export type Star = {
 export type SearchResults = { people: Array<Author & { bio: string }>; pages: EntrySummary[] };
 /** Which reaction this reader left, on the page and on each of its notes. */
 export type MyReactions = { entry: ReactionKind | null; notes: Record<number, ReactionKind> };
-export type Shout = { id: number; name: string; body: string; member: Member; createdAt: string };
+export type Shout = {
+  id: number;
+  name: string;
+  body: string;
+  member: Member;
+  song: SongSticker | null;
+  createdAt: string;
+};
 /** A member's own page, for the list in their Notepad. */
 export type MyEntry = {
   id: number;

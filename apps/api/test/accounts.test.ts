@@ -150,6 +150,49 @@ describe("accounts", () => {
     });
   });
 
+  it("keeps how a member dressed their Ink, and refuses colours that aren't colours", async () => {
+    const look = { name: "Mochi", fur: "#D07A35", eyes: "#8fd16a", collar: "#2f9c95", outfit: "season" };
+    const res = await call(`/internal/users/${wren.id}`, { method: "PATCH", body: JSON.stringify({ inkLook: look }) });
+    expect(((await res.json()) as { inkLook: unknown }).inkLook).toEqual({ ...look, fur: "#d07a35" });
+    const bad = await call(`/internal/users/${wren.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ inkLook: { ...look, fur: "url(x)" } }),
+    });
+    expect(bad.status).toBe(400);
+  });
+
+  it("sticks a song on a member's note and shout, and only Apple's links", async () => {
+    const song = {
+      id: 1440833098,
+      title: "No Surprises",
+      artist: "Radiohead",
+      coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/a/600x600bb.jpg",
+      previewUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/a.m4a",
+      url: "https://music.apple.com/vn/album/x",
+    };
+    const { id: lamps } = (await (
+      await call("/entries/by/4me/the-lamps-came-on-early", { internal: false })
+    ).json()) as { id: number };
+    const res = await post(`/internal/users/${wren.id}/notes/${lamps}`, { body: "this one, tonight", song });
+    expect(res.status).toBe(201);
+    const { note } = (await res.json()) as { note: { song: unknown } };
+    expect(note.song).toEqual({
+      title: "No Surprises",
+      artist: "Radiohead",
+      coverUrl: song.coverUrl,
+      previewUrl: song.previewUrl,
+      url: song.url,
+    });
+    const shout = await post(`/internal/users/${wren.id}/shouts`, { body: "hi", owner: "lan", song });
+    expect(((await shout.json()) as { shout: { song: { title: string } } }).shout.song.title).toBe("No Surprises");
+    const evil = await post(`/internal/users/${wren.id}/shouts`, {
+      body: "hi",
+      owner: "lan",
+      song: { ...song, previewUrl: "https://evil.example/a.m4a" },
+    });
+    expect(evil.status).toBe(400);
+  });
+
   it("keeps desktop addresses unique and off the site's own paths", async () => {
     const taken = await call(`/internal/users/${wren.id}`, {
       method: "PATCH",

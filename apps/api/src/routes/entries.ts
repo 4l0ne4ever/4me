@@ -1,4 +1,4 @@
-import { noteInput, reactInput, reportInput } from "@4me/shared";
+import { noteInput, reactInput, reportInput, toSticker } from "@4me/shared";
 import { and, asc, desc, eq, lt, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { entries, notes, users } from "../db/schema";
@@ -155,6 +155,7 @@ export const entryRoutes = new Hono<AppEnv>()
         parentId: thread?.id ?? null,
         name: input.name,
         body: input.body,
+        song: input.song ? toSticker(input.song) : null,
         status,
         ipHash: await ipHash(c),
       })

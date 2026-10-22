@@ -4,7 +4,9 @@ import {
   type DiaryExport,
   type EntrySummary,
   editNoteInput,
+  type InkLook,
   type InkState,
+  inkLook,
   inkState,
   type Me,
   type MyNote,
@@ -19,6 +21,7 @@ import {
   type Reactions,
   reportReason,
   type Shout,
+  type SongPick,
   type Subscription,
 } from "@4me/shared";
 import { revalidatePath } from "next/cache";
@@ -34,10 +37,11 @@ export async function noteAsMember(
   entryId: number,
   body: string,
   parentId?: number,
+  song?: SongPick,
 ): Promise<Ok<{ note: Note; pending: boolean }> | Fail> {
   const me = await getMe();
   if (!me) return signedOut;
-  const input = memberNoteInput.safeParse({ body, parentId });
+  const input = memberNoteInput.safeParse({ body, parentId, song });
   if (!input.success || !Number.isInteger(entryId))
     return { ok: false, error: "write something first (500 characters at most)" };
   try {
@@ -153,10 +157,11 @@ export async function myFeed(): Promise<EntrySummary[]> {
 export async function shoutAsMember(
   body: string,
   owner: string,
+  song?: SongPick,
 ): Promise<Ok<{ shout: Shout; pending: boolean }> | Fail> {
   const me = await getMe();
   if (!me) return signedOut;
-  const input = memberShoutInput.safeParse({ body, owner });
+  const input = memberShoutInput.safeParse({ body, owner, song });
   if (!input.success) return { ok: false, error: "write something first (280 characters at most)" };
   try {
     return {
@@ -176,6 +181,14 @@ export async function saveInk(state: InkState): Promise<void> {
   const input = inkState.safeParse(state);
   if (!me || !input.success) return;
   await internalApi(`/users/${me.id}`, { method: "PATCH", body: { ink: input.data } }).catch(() => undefined);
+}
+
+/** Keeps how a member dressed their Ink in their account, so she looks the same on every device. */
+export async function saveInkLook(look: InkLook): Promise<void> {
+  const me = await getMe();
+  const input = inkLook.safeParse(look);
+  if (!me || !input.success) return;
+  await internalApi(`/users/${me.id}`, { method: "PATCH", body: { inkLook: input.data } }).catch(() => undefined);
 }
 
 export async function updateProfile(changes: {

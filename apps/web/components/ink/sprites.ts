@@ -17,6 +17,8 @@ export const PALETTE: Record<string, string> = {
   f: "#9fd0ff", // fish
   y: "#c4544a", // yarn
   Y: "#ee9a86", // yarn highlight
+  l: "#c8333b", // collar
+  g: "#f2c94c", // name tag
 };
 
 export const W = 22;
@@ -176,11 +178,17 @@ export const FISH = ["..ff....", ".ffff.f.", "fkffffff", ".ffff.f.", "..ff...."]
 export const BOWL = ["BBBBBBBB", "bbbbbbbb", ".bbbbbb."];
 
 /** Paint a frame into a 2D canvas context at 1 unit per pixel. */
-export function paint(ctx: CanvasRenderingContext2D, rows: readonly string[], ox = 0, oy = 0) {
+export function paint(
+  ctx: CanvasRenderingContext2D,
+  rows: readonly string[],
+  ox = 0,
+  oy = 0,
+  palette: Record<string, string> = PALETTE,
+) {
   for (let y = 0; y < rows.length; y++) {
     const row = rows[y] ?? "";
     for (let x = 0; x < row.length; x++) {
-      const color = PALETTE[row[x] ?? "."];
+      const color = palette[row[x] ?? "."];
       if (!color) continue;
       ctx.fillStyle = color;
       ctx.fillRect(ox + x, oy + y, 1, 1);

@@ -17,6 +17,8 @@ import { useConfirm } from "./Dialog";
 import { nudgeInk } from "./ink/Ink";
 import { ReactionBar, shift } from "./Reactions";
 import { Report } from "./Report";
+import type { PickedSong } from "./SongPicker";
+import { AddSong, SongSticker, toPick } from "./SongSticker";
 import { useTurnstile } from "./Turnstile";
 
 const when = (iso: string) => `${shortDate(iso)}, ${hhmm(iso)}`;
@@ -39,6 +41,7 @@ function Composer({
 }) {
   const [text, setText] = useState("");
   const [name, setName] = useState("");
+  const [song, setSong] = useState<PickedSong | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const human = useTurnstile();
@@ -50,19 +53,21 @@ function Composer({
     setBusy(true);
     setMsg(null);
     const res = me
-      ? await noteAsMember(entry.id, text, parentId).then((r) =>
+      ? await noteAsMember(entry.id, text, parentId, toPick(song)).then((r) =>
           r.ok ? { ok: true as const, data: r } : { ok: false as const, error: r.error },
         )
       : await apiSend<{ note: Note; pending: boolean }>(`/entries/${entry.id}/notes`, {
           name,
           body: text,
           parentId,
+          song: toPick(song),
           turnstileToken: human.token,
         });
     setBusy(false);
     if (!me) human.reset();
     if (!res.ok) return setMsg(res.error);
     setText("");
+    setSong(null);
     if (res.data.pending) setMsg(`Thanks. Notes with links wait for ${entry.author.name} to read them first.`);
     onSent(res.data.note, res.data.pending);
     nudgeInk("note");
@@ -107,6 +112,7 @@ function Composer({
           // biome-ignore lint/a11y/noAutofocus: a reply box opens because the reader asked to reply
           autoFocus={Boolean(parentId)}
         />
+        <AddSong value={song} onChange={setSong} />
         {!me && human.widget}
         {msg && (
           <p className="cm-msg" role="status">
@@ -220,6 +226,7 @@ function NoteItem({
         ) : (
           <p>{note.body}</p>
         )}
+        {note.song && !editing && <SongSticker song={note.song} />}
         <div className="cm-acts">
           <ReactionBar small counts={note.reactions} mine={mine} onPick={onReact} label={`${note.name}'s note`} />
           <button type="button" className="linkish" onClick={onReply}>
