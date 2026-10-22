@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { API_URL, apiSend, hhmm, shortDate } from "@/lib/api";
 import { useFresh, useLiveEvent } from "@/lib/live";
 import {
+  banFromDiary,
   deleteNote,
   editNote,
   myReactions,
@@ -148,15 +149,20 @@ function NoteItem({
   note,
   me,
   canDelete,
+  canBan,
   mine,
   onReact,
   onReply,
   onDelete,
+  onBan,
   onEdited,
 }: {
   note: Note;
   me: Me | null;
   canDelete: boolean;
+  /** The page's writer, on someone else's note: they may keep its writer off their diary. */
+  canBan: boolean;
+  onBan: () => void;
   mine: ReactionKind | null;
   onReact: (kind: ReactionKind | null) => void;
   onReply: () => void;
@@ -242,6 +248,11 @@ function NoteItem({
               delete
             </button>
           )}
+          {canBan && (
+            <button type="button" className="linkish" onClick={onBan}>
+              block
+            </button>
+          )}
           {!own && (
             <Report
               me={me}
@@ -318,6 +329,21 @@ export function Comments({ entry, initial, me }: { entry: Entry; initial: Note[]
     if (res.ok) setNotes((l) => l.map((x) => (x.id === note.id ? { ...x, reactions: res.reactions } : x)));
   };
 
+  /** Keeps the note's writer off this diary, and takes the note (and its replies) down. */
+  const ban = async (note: Note) => {
+    const ok = await confirm({
+      title: "Block from your diary",
+      text: `Keep ${note.name} off your diary? They won't be able to leave notes on your pages or sign your guestbook${
+        note.member ? "" : " (a guest is recognised by their connection, so others on it are kept off too)"
+      }. This note is deleted. You can let them back from My account.`,
+      ok: "Block and delete",
+      danger: true,
+    });
+    if (!ok) return;
+    const res = await banFromDiary({ noteId: note.id }, true);
+    if (res.ok) setNotes((l) => l.filter((x) => x.id !== note.id && x.parentId !== note.id));
+  };
+
   const remove = async (note: Note) => {
     const ok = await confirm({
       title: "Delete note",
@@ -337,6 +363,8 @@ export function Comments({ entry, initial, me }: { entry: Entry; initial: Note[]
       me={me}
       onEdited={(next, pending) => (pending ? setNotes((l) => l.filter((x) => x.id !== next.id)) : add(next))}
       canDelete={Boolean(me && (note.member?.handle === me.handle || isOwner))}
+      canBan={isOwner && note.member?.handle !== me?.handle && !note.isAuthor}
+      onBan={() => void ban(note)}
       mine={mine.notes[note.id] ?? null}
       onReact={(k) => void reactTo(note, k)}
       onReply={() => setReplying(threadId)}

@@ -56,6 +56,7 @@ import { type Pos, Window } from "./Window";
 import { Account } from "./windows/Account";
 import { DisplayProperties, paintStyle } from "./windows/DisplayProperties";
 import { Search } from "./windows/Search";
+import { Readme } from "./windows/Readme";
 import { Write } from "./windows/Write";
 
 // The reader's own computer. It lives in the layout, so it is never rebuilt when they go from one diary to another:
@@ -74,7 +75,8 @@ export type WinId =
   | "write"
   | "search"
   | "display"
-  | "account";
+  | "account"
+  | "readme";
 type WinState = { open: boolean; min: boolean; z: number; pos?: Pos };
 
 export const WINDOWS: Record<
@@ -148,21 +150,31 @@ export const WINDOWS: Record<
     icon: (c) => <IconMessenger className={c} />,
     className: "w-account",
   },
+  readme: {
+    title: "Read me.txt",
+    task: "Read me",
+    icon: (c) => <IconWrite className={c} />,
+    className: "w-readme",
+  },
 };
 
-/** The desktop's icons: one per window, always the same, so they are easy to learn. */
-const ICONS: Array<[WinId, string]> = [
-  ["tonight", "Tonight"],
-  ["diary", "Diary"],
-  ["msn", "Messenger"],
-  ["guest", "Guestbook"],
-  ["amp", "Mixtape"],
-  ["photos", "Photos"],
-  ["almost", "Almost posted"],
-  ["archive", "Archive"],
-  ["write", "Notepad"],
-  ["search", "Search"],
+/** The desktop's icons: one per window, always the same, so they are easy to learn. Each says what it opens. */
+const ICONS: Array<[WinId, string, string]> = [
+  ["tonight", "Tonight", "Everyone's newest pages"],
+  ["diary", "Diary", "The page you are reading"],
+  ["msn", "Messenger", "Private messages, and this diary's writer"],
+  ["guest", "Guestbook", "Words for this diary's writer"],
+  ["amp", "Mixtape", "The songs from the pages, to play"],
+  ["photos", "Photos", "The pictures from this diary"],
+  ["almost", "Almost posted", "Lines the writer wrote and took back"],
+  ["archive", "Archive", "Every night, by month or by mood"],
+  ["write", "Notepad", "Write tonight's page"],
+  ["search", "Search", "Find a diary or a page"],
 ];
+
+/** Set once Read me has been seen, so it opens by itself only on a first visit. */
+const README_SEEN = "4me-readme-seen";
+const TEXT_SIZES = ["normal", "large"] as const;
 
 export const SKINS = [
   { id: "midnight", name: "Midnight", swatch: "#22304a", wall: "/photos/pic-229.jpg" },
@@ -202,6 +214,8 @@ type Desk = {
   subscribe: (author: { handle: string; name: string; avatar: string }, on: boolean) => Promise<void>;
   /** Opens Search with these words. */
   searchFor: (q: string) => void;
+  /** The one window a phone shows: the focused one, or the highest one still open. */
+  front: WinId | null;
 };
 
 const DeskContext = createContext<Desk | null>(null);
@@ -238,7 +252,7 @@ function useLocal<T extends string>(key: string, fallback: T, valid: readonly st
 
 /** A window that shows only while open and not minimised, wired to the computer's window manager. */
 export function DeskWindow({ id, title, children }: { id: WinId; title?: string; children: ReactNode }) {
-  const { wins, focus, raise, patch } = useDesk();
+  const { wins, focus, raise, patch, front } = useDesk();
   const w = wins[id];
   if (!w.open || w.min) return null;
   return (
@@ -246,7 +260,7 @@ export function DeskWindow({ id, title, children }: { id: WinId; title?: string;
       id={`win-${id}`}
       title={title ?? WINDOWS[id].title}
       icon={WINDOWS[id].icon()}
-      className={WINDOWS[id].className}
+      className={`${WINDOWS[id].className}${front === id ? " front" : ""}`}
       focused={focus === id}
       z={w.z}
       pos={w.pos}
@@ -267,12 +281,12 @@ export function DeskShell({ children }: { children: ReactNode }) {
   const path = raw === "/index" ? "/" : raw;
   const router = useRouter();
   const [wins, setWins] = useState<Record<WinId, WinState>>(() => ({
-    // The front page is everyone's: tonight's pages and tonight's songs. A diary opens on its page and Messenger,
-    // with its writer's status at the top.
+    // The front page opens on tonight's pages; a diary on its page. Messenger (with the writer's status) and the
+    // mixtape wait on the taskbar, so the first thing on screen is one window to read.
     tonight: { open: path === "/", min: false, z: 14 },
     diary: { open: path !== "/", min: false, z: 13 },
-    msn: { open: path !== "/", min: false, z: 12 },
-    amp: { open: true, min: false, z: 11 },
+    msn: { open: path !== "/", min: true, z: 12 },
+    amp: { open: true, min: true, z: 11 },
     write: { open: false, min: false, z: 10 },
     search: { open: false, min: false, z: 10 },
     archive: { open: false, min: false, z: 10 },
@@ -281,6 +295,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
     almost: { open: false, min: false, z: 10 },
     display: { open: false, min: false, z: 10 },
     account: { open: false, min: false, z: 10 },
+    readme: { open: false, min: false, z: 10 },
   }));
   const [focus, setFocus] = useState<WinId>(path === "/" ? "tonight" : "diary");
   const zTop = useRef(20);
@@ -294,6 +309,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("ink-name", on);
   }, []);
   const [rssOpen, setRssOpen] = useState(false);
+  const [textSize, setTextSize] = useLocal<"normal" | "large">("4me-text", "normal", TEXT_SIZES);
   const [skin, setSkin] = useLocal<SkinId>(
     "4me-skin",
     "midnight",
@@ -409,6 +425,10 @@ export function DeskShell({ children }: { children: ReactNode }) {
     document.body.classList.toggle("busy", pending);
   }, [pending]);
 
+  useEffect(() => {
+    document.body.dataset.text = textSize;
+  }, [textSize]);
+
   const applyWallpaper = useCallback((pref: WallpaperPref) => {
     setWallPref(pref);
     try {
@@ -515,6 +535,49 @@ export function DeskShell({ children }: { children: ReactNode }) {
     (id: WinId, p: Partial<WinState>) => setWins((w) => ({ ...w, [id]: { ...w[id], ...p } })),
     [],
   );
+  /** Puts every open window in a neat cascade from the top left, the focused one on top. */
+  const tidy = useCallback(() => {
+    setDeskMenu(null);
+    setStartOpen(false);
+    setWins((w) => {
+      const order = (Object.keys(w) as WinId[])
+        .filter((id) => w[id].open && !w[id].min)
+        .sort((a, b) => w[a].z - w[b].z);
+      const next = { ...w };
+      order.forEach((id, i) => {
+        next[id] = { ...w[id], pos: { left: 120 + i * 32, top: 16 + i * 30 } };
+      });
+      return next;
+    });
+  }, []);
+
+  // A first visit opens Read me, once; after that it waits in the Start menu.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(README_SEEN)) return;
+    } catch {
+      return;
+    }
+    const t = window.setTimeout(() => open("readme"), 900);
+    return () => window.clearTimeout(t);
+  }, [open]);
+  const readmeDone = useCallback(() => {
+    patch("readme", { open: false, min: false });
+    try {
+      localStorage.setItem(README_SEEN, "1");
+    } catch {
+      // it may open again next time; harmless
+    }
+  }, [patch]);
+  useEffect(() => {
+    if (!wins.readme.open) return;
+    try {
+      localStorage.setItem(README_SEEN, "1");
+    } catch {
+      // fine
+    }
+  }, [wins.readme.open]);
+
   const taskClick = (id: WinId) => {
     const w = wins[id];
     if (w.min) open(id);
@@ -582,6 +645,11 @@ export function DeskShell({ children }: { children: ReactNode }) {
     if (e.type === "buzz" && e.entryId === entryId && Date.now() - ownBuzz.current > 2500) buzz();
   });
 
+  const shownIds = (Object.keys(wins) as WinId[]).filter((id) => wins[id].open && !wins[id].min);
+  const front = shownIds.includes(focus)
+    ? focus
+    : (shownIds.sort((a, b) => wins[b].z - wins[a].z)[0] ?? null);
+
   const desk: Desk = {
     me,
     setMe,
@@ -601,6 +669,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
     subscriptions,
     subscribe,
     searchFor,
+    front,
   };
 
   const visible = (Object.keys(WINDOWS) as WinId[]).filter((id) => wins[id].open);
@@ -614,7 +683,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
         <ChatProvider me={me} shown={wins.msn.open && !wins.msn.min} onOpen={openMessenger} onBuzz={buzz}>
           {/* biome-ignore lint/a11y/noStaticElementInteractions: right-click on empty desktop; the same actions are in the Start menu */}
           <div
-            className={`desk${shaking ? " shake" : ""}${settled ? " settled" : ""}${pending ? " busy" : ""}`}
+            className={`desk${shaking ? " shake" : ""}${settled ? " settled" : ""}${pending ? " busy" : ""}${front ? " has-front" : ""}`}
             onContextMenu={onDeskContext}
           >
             <div className="wall" aria-hidden="true">
@@ -622,11 +691,12 @@ export function DeskShell({ children }: { children: ReactNode }) {
             </div>
             <Skyline />
             <nav className="icons" aria-label="Desktop">
-              {ICONS.map(([id, label]) => (
+              {ICONS.map(([id, label, about]) => (
                 <button
                   key={id}
                   type="button"
                   className="icon"
+                  title={about}
                   onClick={() => (id === "write" ? write(null) : open(id))}
                 >
                   {WINDOWS[id].icon()}
@@ -657,6 +727,21 @@ export function DeskShell({ children }: { children: ReactNode }) {
                   </p>
                 </div>
               )}
+            </DeskWindow>
+            <DeskWindow id="readme" title="Read me.txt — welcome to 4me">
+              <Readme
+                me={me}
+                onRead={() => {
+                  readmeDone();
+                  if (path === "/") open("tonight");
+                  else navigate("/");
+                }}
+                onWrite={() => {
+                  readmeDone();
+                  write(null);
+                }}
+                onDone={readmeDone}
+              />
             </DeskWindow>
             <DeskWindow id="search">
               <Search query={query} onQuery={setQuery} />
@@ -726,6 +811,18 @@ export function DeskShell({ children }: { children: ReactNode }) {
                   <button type="button" role="menuitem" onClick={() => open("search")}>
                     {WINDOWS.search.icon()}
                     Search…
+                  </button>
+                </li>
+                <li>
+                  <button type="button" role="menuitem" onClick={tidy}>
+                    <IconTidy />
+                    Tidy up windows
+                  </button>
+                </li>
+                <li>
+                  <button type="button" role="menuitem" onClick={() => open("readme")}>
+                    {WINDOWS.readme.icon()}
+                    Read me: how 4me works
                   </button>
                 </li>
                 <li className="sm-sep" aria-hidden="true" />
@@ -840,6 +937,9 @@ export function DeskShell({ children }: { children: ReactNode }) {
               >
                 Refresh
               </button>
+              <button type="button" role="menuitem" onClick={tidy}>
+                Tidy up windows
+              </button>
               <button
                 type="button"
                 role="menuitem"
@@ -877,6 +977,18 @@ export function DeskShell({ children }: { children: ReactNode }) {
             >
               4me
             </button>
+            {/* The one thing to do here, always in reach. */}
+            {me ? (
+              <button type="button" className="tb-write" onClick={() => write(null)}>
+                <IconWrite />
+                <span>Write tonight&apos;s page</span>
+              </button>
+            ) : (
+              <a className="tb-write" href="/welcome?start=register">
+                <IconWrite />
+                <span>Start your diary</span>
+              </a>
+            )}
             <AddressBar path={path} me={me} />
             <div className="tasks">
               {visible.map((id) => (
@@ -894,6 +1006,17 @@ export function DeskShell({ children }: { children: ReactNode }) {
             </div>
             <div className="tray">
               {me && <Notifications me={me} />}
+              {me && (
+                <button
+                  type="button"
+                  className="tray-me"
+                  title="My account"
+                  aria-label={`My account (${me.displayName})`}
+                  onClick={() => open("account")}
+                >
+                  <img src={avatarUrl(me.avatar)} alt="" width={24} height={24} />
+                </button>
+              )}
               <span
                 className={`net net-${liveState}`}
                 title={liveState === "live" ? "Live: new notes appear by themselves" : "Reconnecting…"}
@@ -916,6 +1039,56 @@ export function DeskShell({ children }: { children: ReactNode }) {
               </button>
               <span className="clock">{clock}</span>
             </div>
+            {/* On a phone: the five places, one tap each, instead of windows and a taskbar. */}
+            <nav className="mnav" aria-label="Places">
+              <button
+                type="button"
+                aria-current={front === "tonight" || undefined}
+                onClick={() => (path === "/" ? open("tonight") : navigate("/"))}
+              >
+                {WINDOWS.tonight.icon()}
+                <span>Tonight</span>
+              </button>
+              <button
+                type="button"
+                aria-current={front === "diary" || undefined}
+                onClick={() =>
+                  current.entry || current.owner ? open("diary") : me ? navigate(`/u/${me.handle}`) : open("tonight")
+                }
+              >
+                {WINDOWS.diary.icon()}
+                <span>Diary</span>
+              </button>
+              {me ? (
+                <button type="button" aria-current={front === "write" || undefined} onClick={() => write(null)}>
+                  {WINDOWS.write.icon()}
+                  <span>Write</span>
+                </button>
+              ) : (
+                <a href="/welcome?start=register">
+                  {WINDOWS.write.icon()}
+                  <span>Write</span>
+                </a>
+              )}
+              <button type="button" aria-current={front === "msn" || undefined} onClick={() => open("msn")}>
+                {WINDOWS.msn.icon()}
+                <span>Messages</span>
+                <ChatCount />
+              </button>
+              {me ? (
+                <button type="button" aria-current={front === "account" || undefined} onClick={() => open("account")}>
+                  <img src={avatarUrl(me.avatar)} alt="" width={22} height={22} />
+                  <span>Me</span>
+                </button>
+              ) : (
+                <a href={login}>
+                  <span className="mnav-guest" aria-hidden="true">
+                    ?
+                  </span>
+                  <span>Log on</span>
+                </a>
+              )}
+            </nav>
           </footer>
           {rssOpen && <RssDialog owner={owner} onClose={() => setRssOpen(false)} />}
         </ChatProvider>

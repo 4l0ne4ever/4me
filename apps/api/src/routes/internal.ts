@@ -44,6 +44,7 @@ import {
   users,
 } from "../db/schema";
 import type { AppEnv } from "../env";
+import { BANNED, bannedFrom } from "../lib/bans";
 import {
   authorCols,
   dropUnusedPhotos,
@@ -74,6 +75,7 @@ import { isSealed, toAlmost, toAuthor, toBlast, toEntry, toNote, toShout, toSumm
 import { notify, publish, quote, recentNotifications } from "../lib/notify";
 import { countsFor, dropReactions, mine, react } from "../lib/reactions";
 import { json } from "../lib/validate";
+import { banRoutes } from "./bans";
 import { chatRoutes } from "./chat";
 import { errorRoutes } from "./errors";
 import { mailRoutes } from "./mail";
@@ -443,6 +445,8 @@ export const internalRoutes = new Hono<AppEnv>()
     const entry = entryId ? await readableEntry(c, entryId) : null;
     if (!entry) return c.json({ error: "not found" }, 404);
     const { body, parentId, song } = c.req.valid("json");
+    if (entry.authorId !== u.id && (await bannedFrom(c, entry.authorId, { userId: u.id })))
+      return c.json({ error: BANNED }, 403);
     const thread = parentId ? await threadOf(c, entry.id, parentId) : null;
     if (parentId && !thread) return c.json({ error: "that note is gone" }, 404);
     // The page's own author answering on it is marked, and never held for review.
@@ -667,6 +671,7 @@ export const internalRoutes = new Hono<AppEnv>()
     const { body, owner: ownerHandle, song } = c.req.valid("json");
     const owner = await activeMember(c, ownerHandle);
     if (!owner) return c.json({ error: "not found" }, 404);
+    if (owner.id !== u.id && (await bannedFrom(c, owner.id, { userId: u.id }))) return c.json({ error: BANNED }, 403);
     const status = owner.id !== u.id && looksLikeSpam(body) ? "pending" : "visible";
     const [row] = await c
       .get("db")
@@ -1039,4 +1044,5 @@ export const internalRoutes = new Hono<AppEnv>()
   })
   .route("/", chatRoutes)
   .route("/", mailRoutes)
-  .route("/", errorRoutes);
+  .route("/", errorRoutes)
+  .route("/", banRoutes);

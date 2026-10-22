@@ -4,8 +4,9 @@ import { avatarUrl, type Me, type Profile, type Shout } from "@4me/shared";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { API_URL, apiSend, stamp } from "@/lib/api";
 import { useFresh, useLiveEvent } from "@/lib/live";
-import { shoutAsMember } from "@/lib/member-actions";
+import { banFromDiary, deleteShout, shoutAsMember } from "@/lib/member-actions";
 import { DeskLink } from "../DeskLink";
+import { useConfirm } from "../Dialog";
 import { nudgeInk } from "../ink/Ink";
 import type { PickedSong } from "../SongPicker";
 import { AddSong, SongSticker, toPick } from "../SongSticker";
@@ -48,6 +49,8 @@ function Signing({ initial, me, owner }: { initial: Shout[]; me: Me | null; owne
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const human = useTurnstile();
+  const confirm = useConfirm();
+  const isOwner = me?.handle === owner.handle;
   useFresh<Shout[]>(`${API_URL}/guestbook?owner=${encodeURIComponent(owner.handle)}`, setShouts);
   const addShout = (shout: Shout) => setShouts((s) => (s.some((x) => x.id === shout.id) ? s : [...s, shout]));
   useLiveEvent((e) => {
@@ -57,6 +60,24 @@ function Signing({ initial, me, owner }: { initial: Shout[]; me: Me | null; owne
   useEffect(() => {
     if (shouts.length) list.current?.scrollTo({ top: 1e6 });
   }, [shouts]);
+
+  /** The owner takes a shout down, and may keep its writer off the diary too. */
+  const takeDown = async (s: Shout, block: boolean) => {
+    const ok = await confirm(
+      block
+        ? {
+            title: "Block from your diary",
+            text: `Keep ${s.name} off your diary? They won't be able to sign your guestbook or leave notes on your pages. This shout is deleted. You can let them back from My account.`,
+            ok: "Block and delete",
+            danger: true,
+          }
+        : { title: "Delete shout", text: "Delete this shout from your guestbook?", ok: "Delete", danger: true },
+    );
+    if (!ok) return;
+    const res = block ? await banFromDiary({ shoutId: s.id }, true) : await deleteShout(s.id);
+    if (res.ok) setShouts((l) => l.filter((x) => x.id !== s.id));
+    else setNote(res.error);
+  };
 
   const send = async (e: FormEvent) => {
     e.preventDefault();
@@ -103,6 +124,16 @@ function Signing({ initial, me, owner }: { initial: Shout[]; me: Me | null; owne
             </div>
             <p>{s.body}</p>
             {s.song && <SongSticker song={s.song} />}
+            {isOwner && s.member?.handle !== me?.handle && (
+              <div className="shout-acts">
+                <button type="button" className="linkish" onClick={() => void takeDown(s, false)}>
+                  delete
+                </button>
+                <button type="button" className="linkish" onClick={() => void takeDown(s, true)}>
+                  block
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -165,6 +165,15 @@ Cloudflare dashboard (observability is on).
 
 ## Moderation
 
+**A writer's own diary.** Under a note on their page, or a shout in their guestbook, a writer can press *block*: its
+writer can no longer leave notes on their pages or sign their guestbook (a member by account, a guest by the hashed
+address their note came from), and the note goes. *My account → Blocked from my diary* lets them back. This is
+separate from blocking someone in Messenger. A guestbook's owner can also delete any shout in it.
+
+**Loved this week** (a tab in Tonight) ranks the last seven days' pages by what readers gave them: a note from
+someone else counts 3, a reaction 2, and reads only break ties (`/entries/favourites`).
+
+
 The site's moderator logs in at `/admin` with `ADMIN_PASSWORD`. Members write their own pages; the moderator sees
 pages readers reported (with the reasons), hides or keeps them up, suspends or restores accounts, and approves held
 notes and shouts. A page reported by three different readers (one per account, or per hashed IP for guests) is

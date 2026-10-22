@@ -22,11 +22,18 @@ function ago(iso: string | null): string {
   return d < 30 ? `wrote ${d} d ago` : `wrote ${shortDate(iso)}`;
 }
 
-function Pages({ list, fresh }: { list: EntrySummary[]; fresh: Set<number> }) {
+function Pages({ list, fresh, ranked = false }: { list: EntrySummary[]; fresh: Set<number>; ranked?: boolean }) {
+  const List = ranked ? "ol" : "ul";
   return (
-    <ul className="tn-list" aria-live="polite">
-      {list.map((e) => (
+    // A chart is an ordered list, so a screen reader counts it too.
+    <List className={`tn-list${ranked ? " tn-ranked" : ""}`} aria-live="polite">
+      {list.map((e, i) => (
         <li key={e.id} className={fresh.has(e.id) ? "tn-new" : undefined}>
+          {ranked && (
+            <span className="tn-rank" aria-hidden="true">
+              {i + 1}
+            </span>
+          )}
           <DeskLink className="tn-av" href={`/u/${e.author.handle}`} aria-label={`${e.author.name}'s diary`}>
             <img src={e.author.avatar} alt="" width={40} height={40} />
           </DeskLink>
@@ -50,14 +57,15 @@ function Pages({ list, fresh }: { list: EntrySummary[]; fresh: Set<number> }) {
           </div>
         </li>
       ))}
-    </ul>
+    </List>
   );
 }
 
 /** Everyone's newest pages, like a LiveJournal friends page: who wrote, what, and the song that was on. */
 export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: Me | null; onWrite: () => void }) {
   const { subscriptions } = useDesk();
-  const [tab, setTab] = useState<"everyone" | "subs">("everyone");
+  const [tab, setTab] = useState<"everyone" | "loved" | "subs">("everyone");
+  const [loved, setLoved] = useState<EntrySummary[] | null>(null);
   const [list, setList] = useState(recent);
   const [feed, setFeed] = useState<EntrySummary[] | null>(null);
   const [fresh, setFresh] = useState<Set<number>>(() => new Set());
@@ -66,6 +74,10 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
 
   useEffect(() => {
     if (tab === "subs" && me) void myFeed().then(setFeed);
+    if (tab === "loved")
+      void fetch(`${API_URL}/entries/favourites`)
+        .then((r) => (r.ok ? (r.json() as Promise<EntrySummary[]>) : []))
+        .then(setLoved, () => setLoved([]));
   }, [tab, me]);
 
   // New pages arrive while the window is open; ones from subscribed diaries join that list too.
@@ -83,6 +95,15 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
         <>
           {list.length === 0 && <p className="tn-empty">Nobody has written yet. The first page could be yours.</p>}
           <Pages list={list} fresh={fresh} />
+        </>
+      ) : tab === "loved" ? (
+        <>
+          <p className="tn-note">The pages readers answered most this week: notes, reactions, then reads.</p>
+          {loved === null && <p className="tn-empty">Loading…</p>}
+          {loved?.length === 0 && (
+            <p className="tn-empty">No page has been answered this week yet. Leave a note on one you liked.</p>
+          )}
+          {loved && loved.length > 0 && <Pages list={loved} fresh={fresh} ranked />}
         </>
       ) : (
         <>
@@ -135,19 +156,30 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
           </>
         )}
       </div>
-      {me && (
-        <div className="wr-tabs" role="tablist" aria-label="Whose pages">
-          <button
-            type="button"
-            role="tab"
-            className="wr-tab"
-            id="tn-tab-everyone"
-            aria-selected={tab === "everyone"}
-            aria-controls="tn-panel"
-            onClick={() => setTab("everyone")}
-          >
-            Everyone
-          </button>
+      <div className="wr-tabs" role="tablist" aria-label="Which pages">
+        <button
+          type="button"
+          role="tab"
+          className="wr-tab"
+          id="tn-tab-everyone"
+          aria-selected={tab === "everyone"}
+          aria-controls="tn-panel"
+          onClick={() => setTab("everyone")}
+        >
+          Everyone
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className="wr-tab"
+          id="tn-tab-loved"
+          aria-selected={tab === "loved"}
+          aria-controls="tn-panel"
+          onClick={() => setTab("loved")}
+        >
+          Loved this week
+        </button>
+        {me && (
           <button
             type="button"
             role="tab"
@@ -159,15 +191,11 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
           >
             Subscriptions{subscriptions?.length ? ` (${subscriptions.length})` : ""}
           </button>
-        </div>
-      )}
-      {me ? (
-        <div id="tn-panel" role="tabpanel" aria-labelledby={`tn-tab-${tab}`}>
-          {panel}
-        </div>
-      ) : (
-        <div id="tn-panel">{panel}</div>
-      )}
+        )}
+      </div>
+      <div id="tn-panel" role="tabpanel" aria-labelledby={`tn-tab-${tab}`}>
+        {panel}
+      </div>
     </div>
   );
 }

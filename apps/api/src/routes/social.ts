@@ -3,6 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { almost, blasts, catStats, entries, follows, shouts, users } from "../db/schema";
 import type { AppEnv } from "../env";
+import { BANNED, bannedFrom } from "../lib/bans";
 import { isReadable } from "../lib/entries";
 import { allow, humanCheck, ipHash, looksLikeSpam } from "../lib/guard";
 import { toAlmost, toAuthor, toBlast, toShout } from "../lib/map";
@@ -85,6 +86,8 @@ export const socialRoutes = new Hono<AppEnv>()
     if (nameProblem) return c.json({ error: nameProblem }, 409);
     const owner = await activeMember(c, input.owner);
     if (!owner) return c.json({ error: "not found" }, 404);
+    const ip = await ipHash(c);
+    if (await bannedFrom(c, owner.id, { ipHash: ip })) return c.json({ error: BANNED }, 403);
     const status = looksLikeSpam(input.body) ? "pending" : "visible";
     const [row] = await c
       .get("db")
@@ -95,7 +98,7 @@ export const socialRoutes = new Hono<AppEnv>()
         body: input.body,
         song: input.song ? toSticker(input.song) : null,
         status,
-        ipHash: await ipHash(c),
+        ipHash: ip,
       })
       .returning();
     const shout = toShout(row!);

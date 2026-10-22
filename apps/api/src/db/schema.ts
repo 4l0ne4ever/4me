@@ -396,3 +396,26 @@ export const errorEvents = pgTable("error_events", {
   firstAt: timestamp("first_at", { withTimezone: true }).notNull().defaultNow(),
   lastAt: timestamp("last_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * People a writer keeps off their diary: no notes on their pages, no signing their guestbook. A member by their
+ * account; a guest by the hashed IP their note came from. Separate from blocking someone in Messenger.
+ */
+export const diaryBans = pgTable(
+  "diary_bans",
+  {
+    id: serial("id").primaryKey(),
+    ownerId: integer("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+    ipHash: text("ip_hash"),
+    /** The name they wrote under, so the writer knows who is on their list. */
+    label: text("label").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("diary_bans_owner_user_idx").on(t.ownerId, t.userId),
+    uniqueIndex("diary_bans_owner_ip_idx").on(t.ownerId, t.ipHash),
+  ],
+);

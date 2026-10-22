@@ -68,6 +68,62 @@ export async function deleteNote(noteId: number): Promise<Ok<object> | Fail> {
   }
 }
 
+/** Keeps whoever wrote this note (on the member's page) or shout (in their guestbook) off their diary. */
+export async function banFromDiary(
+  what: { noteId: number } | { shoutId: number },
+  remove: boolean,
+): Promise<Ok<object> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  const noteId = "noteId" in what ? what.noteId : undefined;
+  const shoutId = "shoutId" in what ? what.shoutId : undefined;
+  if (!Number.isInteger(noteId ?? shoutId)) return { ok: false, error: "not found" };
+  try {
+    await internalApi(`/users/${me.id}/bans`, { method: "POST", body: { noteId, shoutId, remove } });
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export type DiaryBan = { id: number; label: string; kind: "member" | "guest"; createdAt: string };
+
+export async function myBans(): Promise<DiaryBan[]> {
+  const me = await getMe();
+  if (!me) return [];
+  try {
+    return await internalApi<DiaryBan[]>(`/users/${me.id}/bans`);
+  } catch {
+    return [];
+  }
+}
+
+/** Lets someone back onto the member's diary. */
+export async function liftBan(banId: number): Promise<Ok<object> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  if (!Number.isInteger(banId)) return { ok: false, error: "not found" };
+  try {
+    await internalApi(`/users/${me.id}/bans/${banId}`, { method: "DELETE" });
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** The guestbook's owner takes a shout down. */
+export async function deleteShout(shoutId: number): Promise<Ok<object> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  if (!Number.isInteger(shoutId)) return { ok: false, error: "not found" };
+  try {
+    await internalApi(`/users/${me.id}/shouts/${shoutId}`, { method: "DELETE" });
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /** Sets this member's reaction on a page or a note; `null` takes it back. */
 export async function reactAsMember(
   target: "entry" | "note",

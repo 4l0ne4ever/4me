@@ -8,8 +8,11 @@ import { diaryZip } from "@/lib/diary-zip";
 import {
   changePassword,
   confirmEmail,
+  type DiaryBan,
   deleteAccount,
   exportDiary,
+  liftBan,
+  myBans,
   myNotes,
   setEmailDigest,
   signOutEverywhere,
@@ -43,6 +46,7 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
   const [packing, setPacking] = useState<string | null>(null);
   const [packMsg, setPackMsg] = useState<Msg>(null);
   const [mailMsg, setMailMsg] = useState<Msg>(null);
+  const [bans, setBans] = useState<DiaryBan[] | null>(null);
 
   const askConfirm = () =>
     start(async () => {
@@ -90,6 +94,7 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
 
   useEffect(() => {
     void myNotes().then(setNotes);
+    void myBans().then(setBans);
   }, []);
 
   const save = (changes: { displayName?: string; avatar?: string }) =>
@@ -350,6 +355,44 @@ export function Account({ me, onMe }: { me: Me; onMe: (me: Me) => void }) {
           <p className="acc-dim">This account has no email address, so 4me never emails it.</p>
         )}
         <Line msg={mailMsg} />
+      </section>
+
+      <section className="acc-sec">
+        <h3>Blocked from my diary</h3>
+        {bans === null && <p className="acc-dim">Loading…</p>}
+        {bans?.length === 0 && (
+          <p className="acc-dim">
+            Nobody. Press <b>block</b> under a note on your page, or a shout in your guestbook, to keep its writer off
+            your diary.
+          </p>
+        )}
+        {bans && bans.length > 0 && (
+          <ul className="acc-bans">
+            {bans.map((b) => (
+              <li key={b.id}>
+                <span>
+                  {b.label}
+                  <small>
+                    {b.kind === "guest" ? "a guest, by their connection" : "a member"} · since {shortDate(b.createdAt)}
+                  </small>
+                </span>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={pending}
+                  onClick={() =>
+                    start(async () => {
+                      const res = await liftBan(b.id);
+                      if (res.ok) setBans((l) => l?.filter((x) => x.id !== b.id) ?? null);
+                    })
+                  }
+                >
+                  Let back
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="acc-sec">

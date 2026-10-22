@@ -3,6 +3,7 @@ import { and, asc, desc, eq, lt, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { entries, notes, users } from "../db/schema";
 import type { AppEnv } from "../env";
+import { BANNED, bannedFrom } from "../lib/bans";
 import {
   authorCols,
   fileNoteReport,
@@ -61,6 +62,29 @@ export const entryRoutes = new Hono<AppEnv>()
       .limit(5000);
     c.header("Cache-Control", cache(600));
     return c.json(rows.map((r) => ({ handle: r.handle, slug: r.slug, at: r.at.toISOString() })));
+  })
+  /**
+   * The week's most loved pages: written in the last seven days, ranked by what readers gave them (a note from
+   * someone else counts 3, a reaction 2), and only then by how often they were read. Sealed letters wait.
+   */
+  .get("/favourites", async (c) => {
+    const others = sql<number>`(select count(*)::int from "notes" n where n."entry_id" = "entries"."id" and n."status" = 'visible' and n."is_author" = false)`;
+    const hearts = sql<number>`(select count(*)::int from "reactions" r where r."target" = 'entry' and r."target_id" = "entries"."id")`;
+    const score = sql<number>`(${others} * 3 + ${hearts} * 2)`;
+    const rows = await readable(c)
+      .where(
+        and(
+          isReadable,
+          isOpen,
+          sql`${entries.writtenAt} > now() - interval '7 days'`,
+          sql`(${score} > 0 or ${entries.readCount} > 0)`,
+          byAuthor(c.req.query("author")),
+        ),
+      )
+      .orderBy(desc(score), desc(entries.readCount), desc(entries.writtenAt))
+      .limit(Math.min(Math.max(Number(c.req.query("limit")) || 5, 1), 10));
+    c.header("Cache-Control", cache(120));
+    return c.json(rows.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, origin(c))));
   })
   .get("/latest", async (c) => {
     const [row] = await readable(c)
@@ -144,6 +168,8 @@ export const entryRoutes = new Hono<AppEnv>()
     const id = positiveId(c.req.param("id"));
     const entry = id ? await readableEntry(c, id) : null;
     if (!entry) return c.json({ error: "not found" }, 404);
+    const ip = await ipHash(c);
+    if (await bannedFrom(c, entry.authorId, { ipHash: ip })) return c.json({ error: BANNED }, 403);
     const thread = input.parentId ? await threadOf(c, entry.id, input.parentId) : null;
     if (input.parentId && !thread) return c.json({ error: "that note is gone" }, 404);
     const status = looksLikeSpam(input.body) ? "pending" : "visible";
@@ -157,7 +183,7 @@ export const entryRoutes = new Hono<AppEnv>()
         body: input.body,
         song: input.song ? toSticker(input.song) : null,
         status,
-        ipHash: await ipHash(c),
+        ipHash: ip,
       })
       .returning();
     const note = toNote(row!);

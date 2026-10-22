@@ -85,6 +85,13 @@
       "when": 1792655585605,
       "tag": "0011_massive_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792659967750,
+      "tag": "0012_bitter_proudstar",
+      "breakpoints": true
     }
   ]
 }
