@@ -11,7 +11,7 @@ const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site),
-  title: { default: "4me", template: "%s · 4me" },
+  title: { default: "4me · night diaries", template: "%s · 4me" },
   description: "A night diary on a 2006 desktop. One entry after dark, with the mood, the weather and the song.",
   alternates: { types: { "application/rss+xml": "/rss.xml" } },
   openGraph: { type: "website", siteName: "4me" },
