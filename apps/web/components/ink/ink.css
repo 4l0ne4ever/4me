@@ -37,6 +37,7 @@
   display: block;
   width: 100%;
   height: 100%;
+  transform: scale(var(--ink-s, 1));
 }
 .ink .ink-hat {
   position: absolute;
@@ -45,7 +46,7 @@
   height: calc(100% + 15px);
 }
 .ink.flip .ink-art {
-  transform: scaleX(-1);
+  transform: scale(calc(-1 * var(--ink-s, 1)), var(--ink-s, 1));
 }
 /* climbing a wall: upright, paws to the wall */
 .ink[data-climb="left"] .ink-art {
@@ -53,6 +54,19 @@
 }
 .ink[data-climb="right"] .ink-art {
   transform: scaleX(-1) rotate(-90deg);
+}
+/* On a phone she is a little smaller, and sits on the sill above the taskbar. */
+@media (max-width: 899px) {
+  .ink {
+    --ink-s: 0.72;
+  }
+  .ink-art {
+    transform-origin: 50% 100%;
+  }
+  .ink-bubble,
+  .ink-name {
+    bottom: 40px;
+  }
 }
 /* the name on her tag, read when the pointer rests on her */
 .ink-name {

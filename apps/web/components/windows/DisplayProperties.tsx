@@ -21,6 +21,9 @@ type Props = {
   onClose: () => void;
   onUpload: (picture: Blob) => Promise<void>;
   onRemoveUpload: () => Promise<void>;
+  /** How big the words in every window are; applied at once, kept in this browser. */
+  textSize: "normal" | "large";
+  onTextSize: (size: "normal" | "large") => void;
 };
 
 type Option = { key: string; label: string; swatch: CSSProperties; pref: WallpaperPref["wallpaper"] };
@@ -40,7 +43,17 @@ const keyOf = (w: WallpaperPref["wallpaper"]) =>
   w.source === "preset" || w.source === "color" ? `${w.source}:${w.id}` : w.source;
 
 /** Windows XP's Display Properties, Desktop tab: pick a picture, a colour, or your own file. */
-export function DisplayProperties({ pref, skinWall, uploadUrl, onApply, onClose, onUpload, onRemoveUpload }: Props) {
+export function DisplayProperties({
+  pref,
+  skinWall,
+  uploadUrl,
+  onApply,
+  onClose,
+  onUpload,
+  onRemoveUpload,
+  textSize,
+  onTextSize,
+}: Props) {
   const [draft, setDraft] = useState(pref);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -175,6 +188,17 @@ export function DisplayProperties({ pref, skinWall, uploadUrl, onApply, onClose,
             )}
           </div>
         </div>
+
+        <fieldset className="disp-text">
+          <legend>Text size</legend>
+          {(["normal", "large"] as const).map((size) => (
+            <label key={size} className={textSize === size ? "on" : undefined}>
+              <input type="radio" name="text-size" checked={textSize === size} onChange={() => onTextSize(size)} />
+              <span className={`disp-text-${size}`}>Aa</span>
+              {size === "normal" ? "Normal" : "Large"}
+            </label>
+          ))}
+        </fieldset>
 
         <p className="disp-hint">
           Pick one, drop a picture on the screen, or browse for a file. Your picture stays in this browser and is never

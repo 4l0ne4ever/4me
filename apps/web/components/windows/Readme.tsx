@@ -20,8 +20,8 @@ export function Readme({
   return (
     <div className="body readme">
       <p className="rm-lead">
-        4me is a diary for the night. Everyone here writes one page after dark (the mood, the weather, the song that
-        was on) and reads each other&apos;s.
+        4me is a diary for the night. Everyone here writes one page after dark (the mood, the weather, the song that was
+        on) and reads each other&apos;s.
       </p>
       <ol className="rm-steps">
         <li>
@@ -54,8 +54,15 @@ export function Readme({
         </li>
       </ol>
       <p className="rm-tip">
-        Everything opens in windows, like an old computer: the icons on the left open them, the taskbar at the bottom
-        shows what&apos;s open, and the 4me button is the Start menu. The black cat is Ink; click her.
+        <span className="rm-desk">
+          Everything opens in windows, like an old computer: the icons on the left open them, the taskbar at the bottom
+          shows what&apos;s open, and the 4me button is the Start menu.
+        </span>
+        <span className="rm-phone">
+          The bar at the bottom takes you to Tonight, the diary, Notepad, your messages and your account; the 4me button
+          opens everything else.
+        </span>{" "}
+        The black cat is Ink; tap her.
       </p>
       <div className="rm-end">
         <button type="button" className="btn" onClick={onDone}>

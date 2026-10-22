@@ -51,6 +51,51 @@ function Inlines({ parts }: { parts: Inline[] }) {
 
 const TILTS = ["-4deg", "5deg", "-2deg", "3deg"];
 
+/** Scrolls inside the diary window to its notes: scrolling the page would move the whole desktop. */
+function toNotes() {
+  const notes = document.getElementById("notes");
+  const box = notes?.closest<HTMLElement>(".body");
+  if (!notes || !box) return;
+  // Larger text zooms the window's body; its scroll offsets are in its own (zoomed) units.
+  const zoom = Number.parseFloat(getComputedStyle(box).zoom) || 1;
+  if (box.scrollHeight <= box.clientHeight) return notes.scrollIntoView({ behavior: "smooth", block: "start" });
+  box.scrollTo({
+    top: box.scrollTop + (notes.getBoundingClientRect().top - box.getBoundingClientRect().top) / zoom - 12,
+    behavior: "smooth",
+  });
+}
+
+/**
+ * A small button that stays at the bottom of the window while the reader is still in the page, and takes them to
+ * its notes; it goes once the notes are in view.
+ */
+function NotesPill({ count }: { count: number }) {
+  const [away, setAway] = useState(false);
+  useEffect(() => {
+    const notes = document.getElementById("notes");
+    if (!notes) return;
+    // The window's body scrolls on a computer; on a phone the whole page does.
+    const box = notes.closest<HTMLElement>(".body");
+    const scroller = box && box.scrollHeight > box.clientHeight ? box : null;
+    const seen = new IntersectionObserver(
+      ([e]) => setAway(Boolean(e && !e.isIntersecting && e.boundingClientRect.top > 0)),
+      { root: scroller, threshold: 0 },
+    );
+    seen.observe(notes);
+    return () => seen.disconnect();
+  }, []);
+  // A dock of no height: the button comes and goes without moving the page under the reader.
+  return (
+    <div className="d-notes-dock">
+      {away && (
+        <button type="button" className="d-notes-pill" onClick={toNotes}>
+          {count === 0 ? "Leave the first note" : `Notes (${count})`} ↓
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** The song ticket plays the page's 30-second preview, the way a song sticker does. */
 function useClip(url: string | null | undefined) {
   const audio = useRef<HTMLAudioElement | null>(null);
@@ -423,20 +468,7 @@ function DiaryPage({
       <div className="d-foot">
         <span>{older && <DeskLink href={link(older)}>« {older.title}</DeskLink>}</span>
         <span>
-          <button
-            type="button"
-            className="linkish"
-            onClick={() => {
-              // Scroll inside the diary window only; scrolling the page would move the whole desktop.
-              const notes = document.getElementById("notes");
-              const box = notes?.closest<HTMLElement>(".body");
-              if (notes && box)
-                box.scrollTo({
-                  top: box.scrollTop + notes.getBoundingClientRect().top - box.getBoundingClientRect().top - 12,
-                  behavior: "smooth",
-                });
-            }}
-          >
+          <button type="button" className="linkish" onClick={toNotes}>
             {count(entry.noteCount, "note")}
           </button>{" "}
           ·{" "}
@@ -467,6 +499,7 @@ function DiaryPage({
           )}
         </span>
       </div>
+      <NotesPill key={`pill-${entry.id}`} count={entry.noteCount} />
       <Comments key={entry.id} entry={entry} initial={notes} me={me} />
     </div>
   );

@@ -144,6 +144,7 @@ function Signing({ initial, me, owner }: { initial: Shout[]; me: Me | null; owne
       )}
       {!me && human.widget}
       <form className="gform" onSubmit={send}>
+        <p className="gb-hint">Words for {owner.name}, not about one page. To answer a page, leave a note under it.</p>
         <fieldset className="emos">
           <legend className="sr">Add an emoticon</legend>
           {EMOTICONS.map((emo) => (

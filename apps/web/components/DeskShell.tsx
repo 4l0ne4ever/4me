@@ -46,6 +46,7 @@ import {
   IconPhotos,
   IconRss,
   IconSearch,
+  IconTidy,
   IconTonight,
   IconWrite,
 } from "./Icons";
@@ -55,8 +56,8 @@ import { Skyline } from "./Skyline";
 import { type Pos, Window } from "./Window";
 import { Account } from "./windows/Account";
 import { DisplayProperties, paintStyle } from "./windows/DisplayProperties";
-import { Search } from "./windows/Search";
 import { Readme } from "./windows/Readme";
+import { Search } from "./windows/Search";
 import { Write } from "./windows/Write";
 
 // The reader's own computer. It lives in the layout, so it is never rebuilt when they go from one diary to another:
@@ -524,12 +525,8 @@ export function DeskShell({ children }: { children: ReactNode }) {
     setWins((w) => ({ ...w, [id]: { ...w[id], open: true, min: false, z } }));
     setFocus(id);
     setStartOpen(false);
-    if (window.innerWidth < 900) {
-      window.setTimeout(
-        () => document.getElementById(`win-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
-        50,
-      );
-    }
+    // A phone shows one window at a time, from its top.
+    if (window.innerWidth < 900) window.scrollTo({ top: 0 });
   }, []);
   const patch = useCallback(
     (id: WinId, p: Partial<WinState>) => setWins((w) => ({ ...w, [id]: { ...w[id], ...p } })),
@@ -646,9 +643,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
   });
 
   const shownIds = (Object.keys(wins) as WinId[]).filter((id) => wins[id].open && !wins[id].min);
-  const front = shownIds.includes(focus)
-    ? focus
-    : (shownIds.sort((a, b) => wins[b].z - wins[a].z)[0] ?? null);
+  const front = shownIds.includes(focus) ? focus : (shownIds.sort((a, b) => wins[b].z - wins[a].z)[0] ?? null);
 
   const desk: Desk = {
     me,
@@ -755,6 +750,8 @@ export function DeskShell({ children }: { children: ReactNode }) {
                 onClose={() => patch("display", { open: false, min: false })}
                 onUpload={storeUpload}
                 onRemoveUpload={removeUpload}
+                textSize={textSize}
+                onTextSize={setTextSize}
               />
             </DeskWindow>
             <DeskWindow id="account">

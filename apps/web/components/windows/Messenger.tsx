@@ -170,6 +170,7 @@ function Chats({ me }: { me: Me }) {
           New message
         </button>
       </header>
+      <p className="chats-hint">Private: only the people in a conversation can read it.</p>
       {chats === null && <p className="msn-guest">Loading…</p>}
       {chats?.length === 0 && (
         <p className="msn-guest">No conversations yet. Press New message to write to someone, or to a few people.</p>

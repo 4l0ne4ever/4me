@@ -2079,6 +2079,7 @@ body.daytime .tray .state-dot {
 }
 .wr-tabs {
   display: flex;
+  flex-shrink: 0;
   gap: 2px;
   padding: 8px 10px 0;
   border-bottom: 1px solid var(--chrome-edge);
@@ -4054,4 +4055,351 @@ body.busy * {
   margin: 0;
   font-size: 12px;
   color: var(--chrome-dim);
+}
+
+/* ---------- easier to use ---------- */
+
+/* Text size (Display Properties): every window's contents and the Start menu, one step up by default. */
+body {
+  --ui-zoom: 1.06;
+}
+body[data-text="large"] {
+  --ui-zoom: 1.2;
+}
+.win > .body,
+.startmenu {
+  zoom: var(--ui-zoom);
+}
+.disp-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  border: 0;
+}
+.disp-text legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.disp-text label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 1px solid var(--chrome-edge);
+  background: var(--field);
+  cursor: pointer;
+}
+.disp-text label.on {
+  border-color: var(--amber);
+  box-shadow: inset 0 0 0 1px var(--amber);
+}
+.disp-text input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.disp-text label:has(input:focus-visible) {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+.disp-text-normal {
+  font-size: 14px;
+}
+.disp-text-large {
+  font-size: 18px;
+}
+
+/* Read me.txt, the first visit's window */
+.w-readme {
+  left: calc(50% - 250px);
+  top: 54px;
+  width: min(500px, calc(100vw - 32px));
+}
+.readme {
+  padding: 18px 20px 16px;
+  background: var(--panel);
+  line-height: 1.55;
+}
+.rm-lead {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.rm-steps {
+  list-style: none;
+  counter-reset: step;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rm-steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  column-gap: 10px;
+  row-gap: 4px;
+  align-items: start;
+}
+.rm-steps li::before {
+  content: counter(step);
+  grid-row: span 3;
+  font-family: var(--font-lcd), monospace;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--amber);
+  text-align: center;
+}
+.rm-steps span {
+  color: var(--chrome-dim);
+  font-size: 13px;
+}
+.rm-steps .btn {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 2px;
+  text-decoration: none;
+}
+.rm-tip {
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px dashed var(--chrome-edge);
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.rm-phone {
+  display: none;
+}
+@media (max-width: 899px) {
+  .rm-desk {
+    display: none;
+  }
+  .rm-phone {
+    display: inline;
+  }
+}
+.rm-end {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* the taskbar's one thing to do, and the member's picture for My account */
+.tb-write {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--amber) 60%, var(--chrome-edge));
+  background: color-mix(in srgb, var(--amber) 14%, var(--chrome));
+  color: var(--chrome-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tb-write:hover {
+  background: color-mix(in srgb, var(--amber) 24%, var(--chrome));
+}
+.tb-write svg {
+  width: 20px;
+  height: 20px;
+}
+@media (max-width: 1180px) {
+  .tb-write span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+.tray .tray-me {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+}
+.tray-me img {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+}
+
+/* short words on what each kind of talking is for */
+.cm-hint,
+.chats-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--paper-dim);
+}
+.chats-hint {
+  margin: 0;
+  padding: 0 12px 6px;
+  color: var(--chrome-dim);
+}
+.gb-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+
+/* "Notes (3) ↓": waits at the bottom of the diary window while the page is being read */
+.d-notes-dock {
+  position: sticky;
+  bottom: 14px;
+  z-index: 2;
+  height: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+.d-notes-pill {
+  display: block;
+  padding: 7px 14px;
+  border: 1px solid color-mix(in srgb, var(--amber) 60%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 88%, var(--amber));
+  color: var(--paper-ink);
+  font: inherit;
+  font-size: 13px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+/* the phone's places, hidden on a computer */
+.mnav {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  :root {
+    --task-h: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+  /* one window at a time, filling the screen; the icons only when nothing is open */
+  .win:not(.front) {
+    display: none !important;
+  }
+  .win.front {
+    min-height: calc(100svh - var(--task-h) - 74px);
+    animation: none;
+  }
+  .desk.has-front .icons {
+    display: none;
+  }
+  .desk {
+    padding-bottom: calc(var(--task-h) + 52px);
+  }
+  /* the taskbar becomes the menu button and five places */
+  .task {
+    gap: 4px;
+    padding-top: 2px;
+  }
+  .task > .tb-write,
+  .task > .addr,
+  .task > .tasks {
+    display: none;
+  }
+  .task > .start {
+    flex: 0 0 auto;
+    height: 46px;
+    padding: 0 10px;
+  }
+  .mnav {
+    flex: 1;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    height: 52px;
+    min-width: 0;
+  }
+  .mnav > button,
+  .mnav > a {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    position: relative;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--chrome-dim);
+    font: inherit;
+    font-size: 11px;
+    text-decoration: none;
+  }
+  .mnav svg,
+  .mnav img,
+  .mnav-guest {
+    width: 22px;
+    height: 22px;
+  }
+  .mnav img {
+    object-fit: cover;
+  }
+  .mnav-guest {
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--chrome-edge);
+    font-weight: 700;
+  }
+  .mnav [aria-current] {
+    color: var(--chrome-ink);
+    box-shadow: inset 0 2px 0 var(--amber);
+  }
+  .mnav .chat-n {
+    position: absolute;
+    top: 4px;
+    right: 18%;
+  }
+  /* the tray keeps only the bell, at the top of the screen */
+  .tray {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 120;
+    height: 40px;
+    padding: 0 4px;
+    border: 1px solid var(--chrome-edge);
+    background: var(--chrome);
+  }
+  .tray > span,
+  .tray .preview,
+  .tray .tray-me {
+    display: none;
+  }
+  .tray:not(:has(.bell)) {
+    display: none;
+  }
+  /* a sill above the taskbar for Ink, so she never sits on the words */
+  .task::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 34px;
+    background: var(--task);
+    border-top: 1px solid var(--chrome-edge);
+    pointer-events: none;
+  }
+  .d-notes-pill {
+    position: fixed;
+    right: 16px;
+    bottom: calc(var(--task-h) + 46px);
+    z-index: 90;
+  }
 }

@@ -154,3 +154,11 @@ export const Eq = () => (
     <i />
   </span>
 );
+/** Three windows stepping down: tidy up. */
+export const IconTidy = ({ className }: P) => (
+  <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
+    <rect x="3" y="3" width="17" height="13" fill="#2e4c7a" stroke="#9cc2ff" strokeWidth="1.5" />
+    <rect x="8" y="9" width="17" height="13" fill="#1f3a63" stroke="#9cc2ff" strokeWidth="1.5" />
+    <rect x="13" y="15" width="16" height="13" fill="#22304a" stroke="#f0ac5c" strokeWidth="1.5" />
+  </svg>
+);

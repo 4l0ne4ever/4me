@@ -84,6 +84,20 @@ The body uses a small markup that never produces raw HTML:
 | `[the song](https://…)`, or just `https://…` | a link (http and https only; it opens in a new tab) |
 | `[photo 2]` | the second photo, inline |
 
+## Finding your way
+
+- **Read me.txt** opens by itself on a first visit: what 4me is, and the three things to do (read tonight's pages,
+  answer one, keep your own), each a button. The Start menu opens it again.
+- A page opens with one window to read; Messenger and the mixtape wait on the taskbar. *Tidy up windows* (Start
+  menu, or right-click the desktop) puts everything open in a neat cascade.
+- The taskbar always has the one thing to do: *Write tonight's page* for a member, *Start your diary* for a guest,
+  and a member's picture opens My account. Every desktop icon says what it opens.
+- Notes, the guestbook and Messenger each say in a line what they are for. A *Notes (3) ↓* button waits at the
+  bottom of a page while it is being read.
+- Text is a step larger than 2006 had it, and *Display Properties → Text size → Large* goes further.
+- **On a phone** one window fills the screen at a time, and the taskbar becomes the menu button and five places:
+  Tonight, Diary, Write, Messages and Me. Ink is a little smaller and sits on a sill above it, never on the words.
+
 ## One computer, everyone's diaries
 
 Whoever is reading is always on their own computer: their wallpaper, skin, Ink, Notepad and notifications. Opening

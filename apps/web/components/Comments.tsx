@@ -377,6 +377,7 @@ export function Comments({ entry, initial, me }: { entry: Entry; initial: Note[]
       <h2 id="notes-h">
         {notes.length === 0 ? "No notes yet" : `${notes.length} ${notes.length === 1 ? "note" : "notes"}`}
       </h2>
+      <p className="cm-hint">Answers to this page, for everyone who reads it. No account needed.</p>
       {threads.map(({ root, replies }) => (
         <div className="cm-thread" key={root.id}>
           {item(root, root.id)}
