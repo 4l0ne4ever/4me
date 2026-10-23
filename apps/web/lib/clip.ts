@@ -8,7 +8,16 @@ const EVENT = "4me-audio";
 /** Says this player is about to make sound; every other one stops. */
 export function claimAudio(who: string) {
   window.dispatchEvent(new CustomEvent<string>(EVENT, { detail: who }));
+  window.dispatchEvent(new CustomEvent<{ who: string; on: boolean }>(PLAYING, { detail: { who, on: true } }));
 }
+
+/** Says this player has gone quiet (paused, ended), so the night sounds can come back up. */
+export function releaseAudio(who: string) {
+  window.dispatchEvent(new CustomEvent<{ who: string; on: boolean }>(PLAYING, { detail: { who, on: false } }));
+}
+
+/** Music starting and stopping anywhere on the desktop: the night sounds listen, and step back while it plays. */
+export const PLAYING = "4me-playing";
 
 /** Stops this player whenever another one starts. */
 export function useOtherAudio(who: string, stop: () => void) {
@@ -27,6 +36,7 @@ let current: string | null = null;
 const listeners = new Set<() => void>();
 const set = (url: string | null) => {
   current = url;
+  if (!url) releaseAudio("clip");
   for (const l of listeners) l();
 };
 const subscribe = (l: () => void) => {

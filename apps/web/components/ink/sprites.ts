@@ -174,6 +174,9 @@ export const FRAMES = { walkA, walkB, sit, blink, happy, groom, sleep, eat, crou
 export type FrameName = keyof typeof FRAMES;
 
 export const YARN = [".yYy..", "yYyyy.", "yyYyy.", "yyyYy.", ".yyy.."];
+/** A page torn from a diary: what Ink brings back when she fetches one. */
+export const PAGE = ["PPPPPp", "PLLLPp", "PPPPPp", "PLLPPp", "PPPPpp"];
+export const PAGE_PALETTE: Record<string, string> = { P: "#efe6d6", p: "#c9bda6", L: "#8a7f6b" };
 export const FISH = ["..ff....", ".ffff.f.", "fkffffff", ".ffff.f.", "..ff...."];
 export const BOWL = ["BBBBBBBB", "bbbbbbbb", ".bbbbbb."];
 

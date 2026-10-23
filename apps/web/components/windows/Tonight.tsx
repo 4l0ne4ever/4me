@@ -1,6 +1,6 @@
 "use client";
 
-import type { EntrySummary, Me } from "@4me/shared";
+import { type EntrySummary, type Me, promptFor } from "@4me/shared";
 import { useEffect, useState } from "react";
 import { API_URL, dayOf, hhmm, shortDate } from "@/lib/api";
 import { useFresh, useLiveEvent } from "@/lib/live";
@@ -8,6 +8,8 @@ import { myFeed } from "@/lib/member-actions";
 import { DeskLink } from "../DeskLink";
 import { useDesk } from "../DeskShell";
 import { Eq } from "../Icons";
+import { nudgeInk } from "../ink/Ink";
+import { skyLine, TONES } from "../night/sky";
 
 function when(iso: string): string {
   return dayOf(iso) === dayOf(new Date()) ? `tonight, ${hhmm(iso)}` : `${shortDate(iso)}, ${hhmm(iso)}`;
@@ -63,8 +65,10 @@ function Pages({ list, fresh, ranked = false }: { list: EntrySummary[]; fresh: S
 
 /** Everyone's newest pages, like a LiveJournal friends page: who wrote, what, and the song that was on. */
 export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: Me | null; onWrite: () => void }) {
-  const { subscriptions } = useDesk();
-  const [tab, setTab] = useState<"everyone" | "loved" | "subs">("everyone");
+  const { subscriptions, night, sky, answer, awake, navigate } = useDesk();
+  const [tab, setTab] = useState<"everyone" | "loved" | "question" | "subs">("everyone");
+  const [answers, setAnswers] = useState<EntrySummary[] | null>(null);
+  const [turning, setTurning] = useState(false);
   const [loved, setLoved] = useState<EntrySummary[] | null>(null);
   const [list, setList] = useState(recent);
   const [feed, setFeed] = useState<EntrySummary[] | null>(null);
@@ -80,11 +84,33 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
         .then(setLoved, () => setLoved([]));
   }, [tab, me]);
 
+  // The answers to tonight's question: counted for the button, listed in their tab.
+  useEffect(() => {
+    if (!night) return;
+    void fetch(`${API_URL}/entries?prompt=${night}&limit=30`, { cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<EntrySummary[]>) : []))
+      .then(setAnswers, () => setAnswers([]));
+  }, [night]);
+
+  /** A page, any page: Ink goes and fetches one when she is awake; asleep, it just opens. */
+  const turnPage = async () => {
+    if (awake) return nudgeInk("fetch");
+    setTurning(true);
+    try {
+      const r = await fetch(`${API_URL}/entries/random`);
+      const page = r.ok ? ((await r.json()) as { handle: string; slug: string }) : null;
+      if (page) navigate(`/u/${page.handle}/${page.slug}`);
+    } finally {
+      setTurning(false);
+    }
+  };
+
   // New pages arrive while the window is open; ones from subscribed diaries join that list too.
   useLiveEvent((e) => {
     if (e.type !== "entry") return;
     const add = (l: EntrySummary[]) => (l.some((x) => x.id === e.entry.id) ? l : [e.entry, ...l].slice(0, 30));
     setList(add);
+    if (night && e.entry.prompt === night) setAnswers((a) => (a ? add(a) : a));
     if (following.has(e.entry.author.handle)) setFeed((f) => (f ? add(f) : f));
     setFresh((f) => new Set(f).add(e.entry.id));
   });
@@ -95,6 +121,16 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
         <>
           {list.length === 0 && <p className="tn-empty">Nobody has written yet. The first page could be yours.</p>}
           <Pages list={list} fresh={fresh} />
+        </>
+      ) : tab === "question" ? (
+        <>
+          {answers === null && <p className="tn-empty">Loading…</p>}
+          {answers?.length === 0 && (
+            <p className="tn-empty">
+              Nobody has answered tonight&apos;s question yet. The first answer could be yours.
+            </p>
+          )}
+          {answers && answers.length > 0 && <Pages list={answers} fresh={fresh} />}
         </>
       ) : tab === "loved" ? (
         <>
@@ -156,6 +192,41 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
           </>
         )}
       </div>
+      {night && (
+        <section className="tn-night" aria-label="Tonight">
+          <p className="tn-q-k">Tonight&apos;s question</p>
+          <p className="tn-q">{promptFor(night)}</p>
+          <div className="tn-q-acts">
+            {me ? (
+              <button type="button" className="btn" onClick={answer}>
+                Answer it
+              </button>
+            ) : (
+              <a className="btn" href="/welcome?start=register">
+                Answer it
+              </a>
+            )}
+            <button type="button" className="linkish" onClick={() => setTab("question")}>
+              {answers?.length ? `read ${answers.length} ${answers.length === 1 ? "answer" : "answers"}` : "answers"}
+            </button>
+            <span className="tn-q-sep" aria-hidden="true">
+              ·
+            </span>
+            <button type="button" className="linkish" onClick={() => void turnPage()} disabled={turning}>
+              {awake ? "ask Ink for a random page" : "turn to a random page"}
+            </button>
+          </div>
+          {skyLine(sky) && (
+            <p className="tn-sky">
+              <i
+                style={{ background: sky?.tones[0] ? TONES[sky.tones[0].tone].color : undefined }}
+                aria-hidden="true"
+              />
+              {skyLine(sky)}
+            </p>
+          )}
+        </section>
+      )}
       <div className="wr-tabs" role="tablist" aria-label="Which pages">
         <button
           type="button"
@@ -178,6 +249,17 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
           onClick={() => setTab("loved")}
         >
           Loved this week
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className="wr-tab"
+          id="tn-tab-question"
+          aria-selected={tab === "question"}
+          aria-controls="tn-panel"
+          onClick={() => setTab("question")}
+        >
+          Answers{answers?.length ? ` (${answers.length})` : ""}
         </button>
         {me && (
           <button

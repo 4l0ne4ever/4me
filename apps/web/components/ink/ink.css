@@ -563,3 +563,38 @@
     width: auto;
   }
 }
+
+/* the page she carries in her mouth, and the one she drops for the reader */
+.ink-carry {
+  position: absolute;
+  left: 52px;
+  top: 14px;
+  width: 18px;
+  height: 15px;
+  pointer-events: none;
+}
+.ink-paper {
+  width: 24px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: auto;
+  cursor: pointer;
+  animation: ink-paper-land 420ms cubic-bezier(0.3, 1.5, 0.6, 1) both;
+}
+.ink-paper:hover canvas,
+.ink-paper:focus-visible canvas {
+  filter: drop-shadow(0 0 4px rgba(240, 172, 92, 0.9));
+}
+.ink-paper:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+@keyframes ink-paper-land {
+  from {
+    opacity: 0;
+    translate: 0 -14px;
+    rotate: -20deg;
+  }
+}

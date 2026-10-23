@@ -1,4 +1,4 @@
-import { type entryInput, searchable, slugify } from "@4me/shared";
+import { type entryInput, nightOf, searchable, slugify } from "@4me/shared";
 import { and, eq, gt, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import type { Context } from "hono";
 import type { z } from "zod";
@@ -52,7 +52,7 @@ export const positiveId = (raw: string | undefined) => {
 };
 
 type EntryInput = z.output<typeof entryInput>;
-type Existing = { slug: string } | undefined;
+type Existing = { slug: string; prompt?: string | null; createdAt?: Date } | undefined;
 
 /**
  * The columns for a member's page. Photos must be their own uploads; leaving the song out keeps the one already on
@@ -89,6 +89,10 @@ export async function entryValues(
     searchText: searchable(`${input.title} ${input.body}`),
     updatedAt: new Date(),
   };
+  // Answering the night's question: a new page answers the night it is written in; an edit keeps that night, or
+  // (if it never answered) takes the night it was first written.
+  if (input.answering === false) values.prompt = null;
+  else if (input.answering) values.prompt = existing?.prompt ?? nightOf(existing?.createdAt ?? new Date());
   if (input.opensAt !== undefined) {
     const opens = input.opensAt ? new Date(input.opensAt) : null;
     if (opens && opens.getTime() > Date.now() + 10 * 366 * 86_400_000)

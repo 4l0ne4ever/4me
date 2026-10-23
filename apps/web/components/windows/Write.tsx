@@ -1,6 +1,16 @@
 "use client";
 
-import type { Almost, Blast, Entry, InboxNote, Me, MyEntry, Visibility } from "@4me/shared";
+import {
+  type Almost,
+  type Blast,
+  type Entry,
+  type InboxNote,
+  type Me,
+  type MyEntry,
+  nightOf,
+  promptFor,
+  type Visibility,
+} from "@4me/shared";
 import { type FormEvent, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { count, hhmm, shortDate } from "@/lib/api";
 import {
@@ -36,6 +46,9 @@ type Draft = {
   /** A letter to the future: sealed until `opensAt` (local date and time). */
   seal: boolean;
   opensAt: string;
+  /** The page answers its night's question; `promptNight` is that night once saved. */
+  answering: boolean;
+  promptNight: string | null;
 };
 type Msg = { kind: "ok" | "err"; text: string; field?: string } | null;
 
@@ -51,6 +64,8 @@ const BLANK: Draft = {
   photos: [],
   seal: false,
   opensAt: "",
+  answering: false,
+  promptNight: null,
 };
 
 /** "2026-10-20T22:05" in the writer's own time, for a datetime-local field. */
@@ -81,6 +96,8 @@ function fromEntry(e: Entry & { songId: number | null }): Draft {
       : null,
     seal: Boolean(e.sealedUntil),
     opensAt: e.sealedUntil ? toLocalInput(e.sealedUntil) : "",
+    answering: Boolean(e.prompt),
+    promptNight: e.prompt,
     // Only uploaded photos can be saved again; the path is what the API stored.
     photos: e.photos.flatMap((p) => {
       const at = p.url.indexOf("/media/u/");
@@ -156,9 +173,12 @@ export function Write({
   onEditing,
   onSaved,
   onDeleted,
+  answerAsk = 0,
 }: {
   me: Me;
   editing: number | null;
+  /** Goes up each time the reader presses "Answer it" on tonight's question. */
+  answerAsk?: number;
   onEditing: (id: number | null) => void;
   onSaved: (entry: Entry) => void;
   onDeleted: () => void;
@@ -231,6 +251,11 @@ export function Write({
     };
   }, [editing, onEditing, opened]);
 
+  // "Answer it": a new page is marked as answering tonight's question.
+  useEffect(() => {
+    if (answerAsk && !editing) setDraft((d) => ({ ...d, answering: true }));
+  }, [answerAsk, editing]);
+
   const loadTab = useCallback((t: Tab) => {
     if (t === "mine") void myEntries().then(setMine);
     if (t === "bits") {
@@ -273,6 +298,7 @@ export function Write({
           : null,
         photos: draft.photos.map((p) => ({ url: p.path, caption: p.caption })),
         opensAt: draft.seal && draft.opensAt ? new Date(draft.opensAt).toISOString() : null,
+        answering: draft.answering,
       });
       if (!res.ok) return setMsg({ kind: "err", text: res.error, field: res.field });
       setMsg({
@@ -378,6 +404,14 @@ export function Write({
               </button>
             </p>
           )}
+          <div className={`wr-prompt${draft.answering ? " on" : ""}`}>
+            <span className="wr-prompt-k">{draft.promptNight ? "That night's question" : "Tonight's question"}</span>
+            <p>{promptFor(draft.promptNight ?? nightOf(new Date()))}</p>
+            <label className="wr-prompt-check">
+              <input type="checkbox" checked={draft.answering} onChange={(e) => set({ answering: e.target.checked })} />
+              This page answers it
+            </label>
+          </div>
           <label htmlFor="wr-title">Title</label>
           <input
             id="wr-title"

@@ -7,12 +7,15 @@ import {
   type Entry,
   isAwakeHour,
   type Me,
+  type NightSky,
   type NowPlaying,
+  nightOf,
   type Profile,
   type Subscription,
 } from "@4me/shared";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  type CSSProperties,
   createContext,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
@@ -43,7 +46,9 @@ import {
   IconHeart,
   IconMessenger,
   IconMixtape,
+  IconNightSounds,
   IconPhotos,
+  IconPoem,
   IconRss,
   IconSearch,
   IconTidy,
@@ -52,6 +57,12 @@ import {
 } from "./Icons";
 import { feedInkAt, Ink, inkName, nudgeInk } from "./ink/Ink";
 import { Notifications } from "./Notifications";
+import { NightSounds } from "./night/NightSounds";
+import { OnThisNight } from "./night/OnThisNight";
+import { Poem } from "./night/Poem";
+import { Screensaver } from "./night/Screensaver";
+import { Seasons } from "./night/Seasons";
+import { skyColours } from "./night/sky";
 import { Skyline } from "./Skyline";
 import { type Pos, Window } from "./Window";
 import { Account } from "./windows/Account";
@@ -77,7 +88,8 @@ export type WinId =
   | "search"
   | "display"
   | "account"
-  | "readme";
+  | "readme"
+  | "poem";
 type WinState = { open: boolean; min: boolean; z: number; pos?: Pos };
 
 export const WINDOWS: Record<
@@ -151,6 +163,12 @@ export const WINDOWS: Record<
     icon: (c) => <IconMessenger className={c} />,
     className: "w-account",
   },
+  poem: {
+    title: "Tonight's poem.txt",
+    task: "Poem",
+    icon: (c) => <IconPoem className={c} />,
+    className: "w-poem",
+  },
   readme: {
     title: "Read me.txt",
     task: "Read me",
@@ -169,6 +187,7 @@ const ICONS: Array<[WinId, string, string]> = [
   ["photos", "Photos", "The pictures from this diary"],
   ["almost", "Almost posted", "Lines the writer wrote and took back"],
   ["archive", "Archive", "Every night, by month or by mood"],
+  ["poem", "Poem", "Tonight's poem: everyone adds one line"],
   ["write", "Notepad", "Write tonight's page"],
   ["search", "Search", "Find a diary or a page"],
 ];
@@ -176,6 +195,8 @@ const ICONS: Array<[WinId, string, string]> = [
 /** Set once Read me has been seen, so it opens by itself only on a first visit. */
 const README_SEEN = "4me-readme-seen";
 const TEXT_SIZES = ["normal", "large"] as const;
+const ON_OFF = ["on", "off"] as const;
+const SAVER = ["off", "2", "5", "10"] as const;
 
 export const SKINS = [
   { id: "midnight", name: "Midnight", swatch: "#22304a", wall: "/photos/pic-229.jpg" },
@@ -199,6 +220,8 @@ type Desk = {
   raise: (id: WinId) => void;
   patch: (id: WinId, p: Partial<WinState>) => void;
   write: (id: number | null) => void;
+  /** Opens Notepad on a new page that answers tonight's question. */
+  answer: () => void;
   awake: boolean;
   /** What the person this page is about is playing on Last.fm. */
   listening: NowPlaying | null;
@@ -217,6 +240,9 @@ type Desk = {
   searchFor: (q: string) => void;
   /** The one window a phone shows: the focused one, or the highest one still open. */
   front: WinId | null;
+  /** Tonight, as "2026-10-22" (null until the browser has worked it out), and its sky. */
+  night: string | null;
+  sky: NightSky | null;
 };
 
 const DeskContext = createContext<Desk | null>(null);
@@ -297,6 +323,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
     display: { open: false, min: false, z: 10 },
     account: { open: false, min: false, z: 10 },
     readme: { open: false, min: false, z: 10 },
+    poem: { open: false, min: false, z: 10 },
   }));
   const [focus, setFocus] = useState<WinId>(path === "/" ? "tonight" : "diary");
   const zTop = useRef(20);
@@ -311,6 +338,10 @@ export function DeskShell({ children }: { children: ReactNode }) {
   }, []);
   const [rssOpen, setRssOpen] = useState(false);
   const [textSize, setTextSize] = useLocal<"normal" | "large">("4me-text", "normal", TEXT_SIZES);
+  const [seasons, setSeasons] = useLocal<"on" | "off">("4me-seasons", "on", ON_OFF);
+  const [saver, setSaver] = useLocal<"off" | "2" | "5" | "10">("4me-saver", "5", SAVER);
+  const [soundsOpen, setSoundsOpen] = useState(false);
+  const closeSounds = useCallback(() => setSoundsOpen(false), []);
   const [skin, setSkin] = useLocal<SkinId>(
     "4me-skin",
     "midnight",
@@ -332,6 +363,8 @@ export function DeskShell({ children }: { children: ReactNode }) {
   const [settled, setSettled] = useState(false);
   const [subscriptions, setSubscriptions] = useState<Subscription[] | null>(null);
   const [query, setQuery] = useState("");
+  const [night, setNight] = useState<string | null>(null);
+  const [sky, setSky] = useState<NightSky | null>(null);
   const [pending, startTransition] = useTransition();
   const startBtn = useRef<HTMLButtonElement>(null);
   const startMenu = useRef<HTMLDivElement>(null);
@@ -532,6 +565,18 @@ export function DeskShell({ children }: { children: ReactNode }) {
     (id: WinId, p: Partial<WinState>) => setWins((w) => ({ ...w, [id]: { ...w[id], ...p } })),
     [],
   );
+  /** Any public page, at once (Ink's way, with her fetching it, is in her menu and in Tonight). */
+  const turnPage = useCallback(async () => {
+    setStartOpen(false);
+    try {
+      const r = await fetch(`${API_URL}/entries/random`);
+      const page = r.ok ? ((await r.json()) as { handle: string; slug: string }) : null;
+      if (page) startTransition(() => router.push(`/u/${page.handle}/${page.slug}`));
+    } catch {
+      // no page this time
+    }
+  }, [router]);
+
   /** Puts every open window in a neat cascade from the top left, the focused one on top. */
   const tidy = useCallback(() => {
     setDeskMenu(null);
@@ -589,6 +634,12 @@ export function DeskShell({ children }: { children: ReactNode }) {
     },
     [open],
   );
+  const [answerAsk, setAnswerAsk] = useState(0);
+  const answer = useCallback(() => {
+    setEditing(null);
+    setAnswerAsk((n) => n + 1);
+    open("write");
+  }, [open]);
 
   useEffect(() => {
     if (me) void mySubscriptions().then(setSubscriptions);
@@ -637,6 +688,31 @@ export function DeskShell({ children }: { children: ReactNode }) {
     [entryId, ownerHandle],
   );
   const liveState = useLiveConnection(topics, me ? liveTicket : null);
+
+  /* tonight (worked out here, never while the page is prerendered) and the sky its moods make */
+  useEffect(() => {
+    const tick = () => setNight(nightOf(new Date()));
+    tick();
+    const t = window.setInterval(tick, 5 * 60_000);
+    return () => window.clearInterval(t);
+  }, []);
+  const loadSky = useCallback(() => {
+    if (!night) return;
+    fetch(`${API_URL}/nights/${night}/sky`, { cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<NightSky>) : null))
+      .then((v) => v && setSky(v))
+      .catch(() => undefined);
+  }, [night]);
+  useEffect(() => {
+    loadSky();
+    const t = window.setInterval(loadSky, 10 * 60_000);
+    return () => window.clearInterval(t);
+  }, [loadSky]);
+  useLiveEvent((e) => {
+    if (e.type === "entry") loadSky();
+  });
+  const tint = skyColours(sky);
+
   useLiveEvent((e) => {
     // A BUZZ from someone else reading the same page shakes this screen too (mine already did).
     if (e.type === "buzz" && e.entryId === entryId && Date.now() - ownBuzz.current > 2500) buzz();
@@ -654,6 +730,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
     raise,
     patch,
     write,
+    answer,
     awake,
     listening,
     buzz,
@@ -665,6 +742,8 @@ export function DeskShell({ children }: { children: ReactNode }) {
     subscribe,
     searchFor,
     front,
+    night,
+    sky,
   };
 
   const visible = (Object.keys(WINDOWS) as WinId[]).filter((id) => wins[id].open);
@@ -683,7 +762,13 @@ export function DeskShell({ children }: { children: ReactNode }) {
           >
             <div className="wall" aria-hidden="true">
               <div className={`paint ${paintClass}`} style={paintStyle(background)} />
+              {/* tonight's moods, as a colour in the sky */}
+              <div
+                className={`sky-tint${tint ? " on" : ""}`}
+                style={tint ? ({ "--tint-a": tint[0], "--tint-b": tint[1] } as CSSProperties) : undefined}
+              />
             </div>
+            <Seasons on={seasons === "on"} awake={awake} />
             <Skyline />
             <nav className="icons" aria-label="Desktop">
               {ICONS.map(([id, label, about]) => (
@@ -714,6 +799,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
                     navigate(`/u/${e.author.handle}/${e.slug}`);
                   }}
                   onDeleted={() => navigate(`/u/${me.handle}`)}
+                  answerAsk={answerAsk}
                 />
               ) : (
                 <div className="body acc">
@@ -738,6 +824,9 @@ export function DeskShell({ children }: { children: ReactNode }) {
                 onDone={readmeDone}
               />
             </DeskWindow>
+            <DeskWindow id="poem">
+              <Poem me={me} night={night} />
+            </DeskWindow>
             <DeskWindow id="search">
               <Search query={query} onQuery={setQuery} />
             </DeskWindow>
@@ -752,6 +841,10 @@ export function DeskShell({ children }: { children: ReactNode }) {
                 onRemoveUpload={removeUpload}
                 textSize={textSize}
                 onTextSize={setTextSize}
+                seasons={seasons === "on"}
+                onSeasons={(on) => setSeasons(on ? "on" : "off")}
+                saver={saver}
+                onSaver={setSaver}
               />
             </DeskWindow>
             <DeskWindow id="account">
@@ -808,6 +901,31 @@ export function DeskShell({ children }: { children: ReactNode }) {
                   <button type="button" role="menuitem" onClick={() => open("search")}>
                     {WINDOWS.search.icon()}
                     Search…
+                  </button>
+                </li>
+                <li>
+                  <button type="button" role="menuitem" onClick={() => void turnPage()}>
+                    {WINDOWS.diary.icon()}
+                    Turn to a random page
+                  </button>
+                </li>
+                <li>
+                  <button type="button" role="menuitem" onClick={() => open("poem")}>
+                    {WINDOWS.poem.icon()}
+                    Tonight&apos;s poem
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setStartOpen(false);
+                      setSoundsOpen(true);
+                    }}
+                  >
+                    <IconNightSounds />
+                    Night sounds…
                   </button>
                 </li>
                 <li>
@@ -960,7 +1078,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
             </div>
           )}
 
-          <Ink awake={awake} stats={cat} onStats={setCat} me={me} />
+          <Ink awake={awake} stats={cat} onStats={setCat} me={me} onNavigate={navigate} />
 
           <footer className="task">
             <button
@@ -1002,6 +1120,16 @@ export function DeskShell({ children }: { children: ReactNode }) {
               ))}
             </div>
             <div className="tray">
+              <button
+                type="button"
+                className="ns-btn"
+                title="Night sounds"
+                aria-label="Night sounds"
+                aria-expanded={soundsOpen}
+                onClick={() => setSoundsOpen((o) => !o)}
+              >
+                <IconNightSounds />
+              </button>
               {me && <Notifications me={me} />}
               {me && (
                 <button
@@ -1088,6 +1216,9 @@ export function DeskShell({ children }: { children: ReactNode }) {
             </nav>
           </footer>
           {rssOpen && <RssDialog owner={owner} onClose={() => setRssOpen(false)} />}
+          <NightSounds open={soundsOpen} onClose={closeSounds} />
+          <OnThisNight me={me} night={night} onOpen={navigate} />
+          <Screensaver minutes={saver === "off" ? null : Number(saver)} />
         </ChatProvider>
       </ConfirmHost>
     </DeskContext.Provider>

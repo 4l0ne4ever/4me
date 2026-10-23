@@ -3,7 +3,7 @@
 import { type Author, type EntrySummary, type NowPlaying, type Song, searchSongs } from "@4me/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { API_URL } from "@/lib/api";
-import { claimAudio, useOtherAudio } from "@/lib/clip";
+import { claimAudio, releaseAudio, useOtherAudio } from "@/lib/clip";
 import { IconNext, IconPause, IconPlay, IconPrev } from "../Icons";
 
 /**
@@ -284,7 +284,10 @@ export function Mixtape({
                   setPlaying(true);
                   setBlocked(false);
                 }
-                if (e.data === 2) setPlaying(false);
+                if (e.data === 2 || e.data === 0) {
+                  setPlaying(false);
+                  releaseAudio("mixtape");
+                }
               },
             },
           });
@@ -319,6 +322,7 @@ export function Mixtape({
     player.current?.pauseVideo();
     audio.current?.pause();
     setPlaying(false);
+    releaseAudio("mixtape");
   }, []);
   useOtherAudio("mixtape", hush);
 

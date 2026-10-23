@@ -9,11 +9,12 @@ import {
   type Note,
   type Profile,
   parseBody,
+  promptFor,
   type ReactionKind,
 } from "@4me/shared";
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { API_URL, apiSend, count, hhmm, longDate } from "@/lib/api";
-import { claimAudio, useOtherAudio } from "@/lib/clip";
+import { claimAudio, releaseAudio, useOtherAudio } from "@/lib/clip";
 import { useLiveEvent } from "@/lib/live";
 import { myReactions, reactAsMember } from "@/lib/member-actions";
 import { reportAsMember } from "@/lib/writer-actions";
@@ -114,16 +115,21 @@ function useClip(url: string | null | undefined) {
     useCallback(() => {
       audio.current?.pause();
       setPlaying(false);
+      releaseAudio("ticket");
     }, []),
   );
   const toggle = () => {
     if (!url) return false;
     audio.current ??= new Audio(url);
     const a = audio.current;
-    a.onended = () => setPlaying(false);
+    a.onended = () => {
+      setPlaying(false);
+      releaseAudio("ticket");
+    };
     if (playing) {
       a.pause();
       setPlaying(false);
+      releaseAudio("ticket");
     } else {
       claimAudio("ticket");
       void a.play().then(
@@ -343,6 +349,11 @@ function DiaryPage({
       <span className="d-date">
         {longDate(entry.writtenAt)} <span className="d-time">— {hhmm(entry.writtenAt)}</span>
       </span>
+      {entry.prompt && (
+        <p className="d-prompt">
+          <span>answering that night&apos;s question</span> {promptFor(entry.prompt)}
+        </p>
+      )}
       <h1 className="d-title">{entry.title}</h1>
       <div className="d-cur">
         {entry.mood && (

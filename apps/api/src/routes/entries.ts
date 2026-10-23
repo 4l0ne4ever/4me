@@ -1,4 +1,4 @@
-import { noteInput, reactInput, reportInput, toSticker } from "@4me/shared";
+import { NIGHT, noteInput, parseBody, reactInput, reportInput, toSticker } from "@4me/shared";
 import { and, asc, desc, eq, lt, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { entries, notes, users } from "../db/schema";
@@ -42,8 +42,11 @@ export const entryRoutes = new Hono<AppEnv>()
     const before = c.req.query("before");
     const beforeDate = before ? new Date(before) : null;
     const older = beforeDate && !Number.isNaN(beforeDate.getTime()) ? lt(entries.writtenAt, beforeDate) : undefined;
+    // ?prompt=2026-10-22: the pages that answered that night's question.
+    const night = c.req.query("prompt");
+    const answering = night && NIGHT.test(night) ? eq(entries.prompt, night) : undefined;
     const rows = await readable(c)
-      .where(and(isReadable, byAuthor(c.req.query("author")), older))
+      .where(and(isReadable, byAuthor(c.req.query("author")), older, answering))
       .orderBy(desc(entries.writtenAt))
       .limit(limit);
     c.header("Cache-Control", cache(30));
@@ -85,6 +88,48 @@ export const entryRoutes = new Hono<AppEnv>()
       .limit(Math.min(Math.max(Number(c.req.query("limit")) || 5, 1), 10));
     c.header("Cache-Control", cache(120));
     return c.json(rows.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, origin(c))));
+  })
+  /** One public page, any one: for "turn to a random page" (and Ink, who fetches it). */
+  .get("/random", async (c) => {
+    const [row] = await c
+      .get("db")
+      .select({ handle: users.handle, slug: entries.slug, title: entries.title, author: users.displayName })
+      .from(entries)
+      .innerJoin(users, eq(users.id, entries.authorId))
+      .where(and(isReadable, isOpen))
+      .orderBy(sql`random()`)
+      .limit(1);
+    c.header("Cache-Control", "no-store");
+    return row ? c.json(row) : c.json({ error: "no pages yet" }, 404);
+  })
+  /**
+   * A handful of single sentences from recent public pages, for the screensaver to drift across the dark: short
+   * enough to read in passing, each with whose page it came from.
+   */
+  .get("/lines", async (c) => {
+    const rows = await c
+      .get("db")
+      .select({ body: entries.body, handle: users.handle, slug: entries.slug, author: users.displayName })
+      .from(entries)
+      .innerJoin(users, eq(users.id, entries.authorId))
+      .where(and(isReadable, isOpen))
+      .orderBy(desc(entries.writtenAt))
+      .limit(60);
+    const lines = rows.flatMap((r) =>
+      parseBody(r.body)
+        .flatMap((b) => (b.kind === "p" ? [b.parts.map((p) => p.text).join("")] : b.kind === "note" ? [b.text] : []))
+        .flatMap((p) => p.split(/(?<=[.!?…])\s+/))
+        .map((t) => t.trim())
+        .filter((t) => t.length >= 18 && t.length <= 110)
+        .map((text) => ({ text, author: r.author, href: `/u/${r.handle}/${r.slug}` })),
+    );
+    // A different few each time.
+    for (let i = lines.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [lines[i], lines[j]] = [lines[j]!, lines[i]!];
+    }
+    c.header("Cache-Control", "no-store");
+    return c.json(lines.slice(0, 14));
   })
   .get("/latest", async (c) => {
     const [row] = await readable(c)

@@ -2,7 +2,7 @@ import { moderationInput, userStatusInput } from "@4me/shared";
 import { desc, eq, gt, ilike, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Hono } from "hono";
-import { entries, errorEvents, noteReports, notes, reports, shouts, users } from "../db/schema";
+import { entries, errorEvents, nightLines, noteReports, notes, reports, shouts, users } from "../db/schema";
 import type { AppEnv } from "../env";
 import { positiveId } from "../lib/entries";
 import { sameSecret } from "../lib/guard";
@@ -21,6 +21,12 @@ export const adminRoutes = new Hono<AppEnv>()
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     if (!token || !(await sameSecret(token, c.env.ADMIN_TOKEN))) return c.json({ error: "unauthorised" }, 401);
     await next();
+  })
+  /** A line in a night's poem taken down. */
+  .delete("/lines/:id", async (c) => {
+    const id = positiveId(c.req.param("id"));
+    if (id) await c.get("db").update(nightLines).set({ status: "hidden" }).where(eq(nightLines.id, id));
+    return c.json({ ok: true });
   })
   /** What has gone wrong on the site lately, newest first. */
   .get("/errors", async (c) => {

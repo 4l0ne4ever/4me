@@ -162,3 +162,28 @@ export const IconTidy = ({ className }: P) => (
     <rect x="13" y="15" width="16" height="13" fill="#22304a" stroke="#f0ac5c" strokeWidth="1.5" />
   </svg>
 );
+/** A sheet with a few lines and a quill: tonight's shared poem. */
+export const IconPoem = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <rect x="8" y="5" width="22" height="30" fill="#efe6d6" />
+    <rect x="8" y="5" width="22" height="3" fill="#c9bda6" />
+    <rect x="12" y="13" width="14" height="2" fill="#8a7f6b" />
+    <rect x="12" y="18" width="10" height="2" fill="#8a7f6b" />
+    <rect x="12" y="23" width="12" height="2" fill="#8a7f6b" />
+    <path d="M34 4 C26 8 22 16 21 26 L23 26 C25 18 29 11 34 4 Z" fill="#f0ac5c" />
+    <path d="M21 26 L20 31 L22.5 27 Z" fill="#5c2a20" />
+  </svg>
+);
+/** A crescent moon with sound waves: the night sounds. */
+export const IconNightSounds = ({ className }: P) => (
+  <svg viewBox="0 0 20 20" className={className} aria-hidden="true">
+    <path d="M8 3a6 6 0 1 0 6 9 5 5 0 0 1-6-9z" fill="currentColor" />
+    <path
+      d="M14.5 6.5c1 .8 1 2.2 0 3M16.5 5c1.8 1.6 1.8 4.4 0 6"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      fill="none"
+      strokeLinecap="round"
+    />
+  </svg>
+);

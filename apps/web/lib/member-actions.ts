@@ -11,9 +11,11 @@ import {
   type Me,
   type MyNote,
   type MyReactions,
+  memberLineInput,
   memberNoteInput,
   memberReactInput,
   memberShoutInput,
+  type NightLine,
   type Note,
   password as passwordSchema,
   profileInput,
@@ -63,6 +65,35 @@ export async function deleteNote(noteId: number): Promise<Ok<object> | Fail> {
   try {
     await internalApi(`/users/${me.id}/notes/${noteId}`, { method: "DELETE" });
     return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export type ThenPage = { title: string; slug: string; writtenAt: string };
+
+/** The member's pages from this night a year ago (and a month ago), for a quiet reminder. */
+export async function onThisNight(): Promise<{ year: ThenPage[]; month: ThenPage[] }> {
+  const me = await getMe();
+  if (!me) return { year: [], month: [] };
+  try {
+    return await internalApi(`/users/${me.id}/on-this-night`);
+  } catch {
+    return { year: [], month: [] };
+  }
+}
+
+/** The member's line for tonight's shared poem. */
+export async function addMyLine(body: string): Promise<Ok<{ line: NightLine }> | Fail> {
+  const me = await getMe();
+  if (!me) return signedOut;
+  const input = memberLineInput.safeParse({ body });
+  if (!input.success) return { ok: false, error: input.error.issues[0]?.message ?? "one short line" };
+  try {
+    return {
+      ok: true,
+      ...(await internalApi<{ line: NightLine }>(`/users/${me.id}/lines`, { method: "POST", body: input.data })),
+    };
   } catch (e) {
     return fail(e);
   }

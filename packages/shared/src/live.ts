@@ -1,4 +1,4 @@
-import type { ChatMessage, EntrySummary, Note, Reactions, Shout } from "./schemas";
+import type { ChatMessage, EntrySummary, NightLine, Note, Reactions, Shout } from "./schemas";
 
 // What travels over the live connection. Topics a browser can listen to:
 //   entry:<id>      notes, BUZZes and how many are reading one page
@@ -33,7 +33,9 @@ export type LiveEvent =
   | { type: "entry"; entry: EntrySummary }
   | { type: "notify"; notification: Notification }
   /** A private message in one of the member's conversations (theirs too, so their other tabs show it). */
-  | { type: "message"; message: ChatMessage };
+  | { type: "message"; message: ChatMessage }
+  /** Someone added their line to tonight's shared poem. */
+  | { type: "line"; line: NightLine };
 
 export const PUBLIC_TOPIC = /^(entry:\d{1,10}|guest:[a-z0-9][a-z0-9_]{1,19}|tonight)$/;
 export const MAX_TOPICS = 6;

@@ -56,6 +56,7 @@ export function toSummary(row: EntryRow, author: AuthorRow, origin: string, reve
     cover: cover ? withOrigin(cover, origin) : null,
     noteCount: Number(row.noteCount ?? 0),
     sealedUntil: sealed ? row.opensAt!.toISOString() : null,
+    prompt: row.prompt ?? null,
   };
 }
 

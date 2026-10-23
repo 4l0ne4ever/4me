@@ -10,13 +10,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { apiSend } from "@/lib/api";
+import { API_URL, apiSend } from "@/lib/api";
 import { saveInk, saveInkLook } from "@/lib/member-actions";
 import { IconHeart } from "../Icons";
 import { DEFAULT_LOOK, framesFor, HAT_PALETTE, HAT_ROOM, hatFor, loadLook, outfitToday, paletteFor } from "./looks";
 import * as N from "./needs";
 import * as Sound from "./sounds";
-import { BOWL, FISH, type FrameName, H, paint, W, YARN } from "./sprites";
+import { BOWL, FISH, type FrameName, H, PAGE, PAGE_PALETTE, paint, W, YARN } from "./sprites";
 import { Wardrobe } from "./Wardrobe";
 import { CLIMB_INSET, findPlat, GROUND, landing, type Plat, plan, readPlatforms, type Step } from "./world";
 import "./ink.css";
@@ -46,7 +46,10 @@ type Task =
   | { kind: "play"; kicks: number; self?: boolean }
   | { kind: "call" }
   | { kind: "beg" }
+  /** Off to an edge of the screen and back with a page in her mouth. */
+  | { kind: "fetch"; stage: "out" | "back"; from: number; page: FetchedPage }
   | null;
+type FetchedPage = { href: string; title: string; author: string };
 type Pop = { id: number; kind: "heart" | "fish"; dx: number };
 type Press = {
   sx: number;
@@ -72,7 +75,7 @@ type Goal = { on: string; x: number; mode: Mode };
 /** Pixels per second squared when she drops. */
 const GRAVITY = 2600;
 
-export type InkEvent = "buzz" | "note" | "call" | "feed" | "play" | "dress";
+export type InkEvent = "buzz" | "note" | "call" | "feed" | "play" | "dress" | "fetch";
 
 /** Let the rest of the desktop poke Ink: a buzz startles her, a note earns her a snack. */
 export function nudgeInk(event: InkEvent) {
@@ -88,13 +91,21 @@ export function feedInkAt(x: number, y: number) {
   window.dispatchEvent(new CustomEvent("ink-feed", { detail: { x, y } }));
 }
 
-function Sprite({ rows, className }: { rows: readonly string[]; className?: string }) {
+function Sprite({
+  rows,
+  className,
+  palette,
+}: {
+  rows: readonly string[];
+  className?: string;
+  palette?: Record<string, string>;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
   const w = rows[0]?.length ?? 1;
   useEffect(() => {
     const ctx = ref.current?.getContext("2d");
-    if (ctx) paint(ctx, rows);
-  }, [rows]);
+    if (ctx) paint(ctx, rows, 0, 0, palette);
+  }, [rows, palette]);
   return <canvas ref={ref} width={w} height={rows.length} className={className} />;
 }
 
@@ -107,9 +118,16 @@ const OLD_LOOK_STORE = "4me-ink-look";
 const YARN_STORE = "4me-ink-yarn";
 const taskTop = () => document.querySelector(".task")?.getBoundingClientRect().top ?? window.innerHeight - 48;
 
-type InkProps = { awake: boolean; stats: CatStats; onStats: (s: CatStats) => void; me: Me | null };
+type InkProps = {
+  awake: boolean;
+  stats: CatStats;
+  onStats: (s: CatStats) => void;
+  me: Me | null;
+  /** Opens a page (the one she fetched) without reloading the desktop. */
+  onNavigate: (href: string) => void;
+};
 
-export function Ink({ awake, stats, onStats, me }: InkProps) {
+export function Ink({ awake, stats, onStats, me, onNavigate }: InkProps) {
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const hatCanvas = useRef<HTMLCanvasElement>(null);
@@ -122,6 +140,9 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
   const foodEl = useRef<HTMLDivElement>(null);
   const goRef = useRef<(on: string, x: number, speed?: number, mode?: Mode) => void>(() => undefined);
   const [yarnOut, setYarnOut] = useState(false);
+  /** The page she is carrying, and the one she has dropped for the reader (where it lies). */
+  const [carrying, setCarrying] = useState(false);
+  const [dropped, setDropped] = useState<(FetchedPage & { x: number }) | null>(null);
   const yarnEl = useRef<HTMLButtonElement>(null);
   const [look, setLook] = useState<InkLook>(DEFAULT_LOOK);
   const [wardrobe, setWardrobe] = useState(false);
@@ -386,6 +407,29 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     goRef.current(GROUND, window.innerWidth / 2 - CAT_W / 2, 120, "run");
   }, [say]);
 
+  /** "Bring me a page": she finds one (any public page), runs off to the edge of the screen, and brings it back. */
+  const fetchNow = useCallback(async () => {
+    setMenuLeft(null);
+    if (!awakeRef.current) return say("zzz… (dreams of paper)");
+    const s = st.current;
+    if (s.task?.kind === "fetch") return;
+    let page: FetchedPage | null = null;
+    try {
+      const r = await fetch(`${API_URL}/entries/random`);
+      const v = r.ok ? ((await r.json()) as { handle: string; slug: string; title: string; author: string }) : null;
+      if (v) page = { href: `/u/${v.handle}/${v.slug}`, title: v.title, author: v.author };
+    } catch {
+      // nothing to fetch
+    }
+    if (!page) return say("…no pages yet. write one?");
+    setDropped(null);
+    Sound.mrrp();
+    say("!", 900);
+    s.task = { kind: "fetch", stage: "out", from: s.x, page };
+    const edge = s.x > window.innerWidth / 2 ? window.innerWidth - CAT_W - 8 : 8;
+    goRef.current(GROUND, edge, 170, "run");
+  }, [say]);
+
   const snack = useCallback(() => {
     if (!awakeRef.current) return say("zzz… (smells fish)");
     saveNeeds(N.feed(needsRef.current, 10));
@@ -511,6 +555,16 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
         return;
       }
       if (task?.kind === "play") return setMode("crouch", 450);
+      if (task?.kind === "fetch") {
+        // At the edge: a rummage. Back where she started: the page goes down for the reader.
+        if (task.stage === "out") return setMode("crouch", 1100);
+        s.task = null;
+        setCarrying(false);
+        setDropped({ ...task.page, x: Math.max(8, Math.min(width() - 30, s.x + (s.dir > 0 ? CAT_W - 6 : -18))) });
+        Sound.mrrp();
+        say(`mrrp. “${task.page.title}”`, 4200);
+        return setMode("happy", 1600);
+      }
       if (task?.kind === "call") {
         s.task = null;
         setMode("sit", 3000);
@@ -540,6 +594,11 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
         return setMode("groom", 1800);
       }
       if (task?.kind === "feed") return goEat();
+      if (task?.kind === "fetch" && task.stage === "out" && s.mode === "crouch") {
+        task.stage = "back";
+        setCarrying(true);
+        return go(GROUND, task.from, 150, "run");
+      }
       if (task?.kind === "play" && s.mode === "crouch") {
         if (!yarnRef.current) {
           s.task = null;
@@ -830,6 +889,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
       else if (kind === "feed") feedNow();
       else if (kind === "play") playNow();
       else if (kind === "dress") dressUp();
+      else if (kind === "fetch") void fetchNow();
     };
     const onFeedAt = (e: Event) => {
       const { x, y } = (e as CustomEvent<{ x: number; y: number }>).detail;
@@ -881,6 +941,7 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
     s.climb = null;
     s.vx = 0;
     s.leaving = null;
+    setCarrying(false);
     setMenuLeft(null);
     setMode("held");
     Sound.mrrp();
@@ -1043,6 +1104,11 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
           <span className="ink-art">
             <canvas ref={canvas} width={W} height={H} />
             <canvas ref={hatCanvas} className="ink-hat" width={W} height={H + HAT_ROOM} />
+            {carrying && (
+              <span className="ink-carry">
+                <Sprite rows={PAGE} palette={PAGE_PALETTE} />
+              </span>
+            )}
           </span>
         </button>
         <span className="ink-name" aria-hidden="true">
@@ -1099,6 +1165,21 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
           <Sprite rows={YARN} />
         </button>
       )}
+      {dropped && (
+        <button
+          type="button"
+          className="ink-prop ink-paper"
+          style={{ transform: `translateX(${dropped.x}px)` }}
+          title={`“${dropped.title}” by ${dropped.author}`}
+          aria-label={`A page Ink brought: “${dropped.title}” by ${dropped.author}. Open it.`}
+          onClick={() => {
+            setDropped(null);
+            onNavigate(dropped.href);
+          }}
+        >
+          <Sprite rows={PAGE} palette={PAGE_PALETTE} />
+        </button>
+      )}
       {wardrobe && <Wardrobe look={look} onSave={saveLook} onClose={() => setWardrobe(false)} />}
 
       {menuLeft !== null && (
@@ -1133,6 +1214,11 @@ export function Ink({ awake, stats, onStats, me }: InkProps) {
             <li>
               <button type="button" role="menuitem" onClick={playNow}>
                 Play with the wool <small>+happy</small>
+              </button>
+            </li>
+            <li>
+              <button type="button" role="menuitem" onClick={() => void fetchNow()}>
+                Bring me a page <small>any page, from anyone</small>
               </button>
             </li>
             {yarnOut && (

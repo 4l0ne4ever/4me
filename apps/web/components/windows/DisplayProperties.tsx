@@ -24,6 +24,12 @@ type Props = {
   /** How big the words in every window are; applied at once, kept in this browser. */
   textSize: "normal" | "large";
   onTextSize: (size: "normal" | "large") => void;
+  /** The season drifting across the desktop: on or off. */
+  seasons: boolean;
+  onSeasons: (on: boolean) => void;
+  /** Minutes before the screensaver, or "off". */
+  saver: "off" | "2" | "5" | "10";
+  onSaver: (v: "off" | "2" | "5" | "10") => void;
 };
 
 type Option = { key: string; label: string; swatch: CSSProperties; pref: WallpaperPref["wallpaper"] };
@@ -53,6 +59,10 @@ export function DisplayProperties({
   onRemoveUpload,
   textSize,
   onTextSize,
+  seasons,
+  onSeasons,
+  saver,
+  onSaver,
 }: Props) {
   const [draft, setDraft] = useState(pref);
   const [busy, setBusy] = useState(false);
@@ -199,6 +209,25 @@ export function DisplayProperties({
             </label>
           ))}
         </fieldset>
+
+        <div className="disp-more">
+          <label className="disp-check">
+            <input type="checkbox" checked={seasons} onChange={(e) => onSeasons(e.target.checked)} />
+            <span>
+              The season on the desktop
+              <small>drizzle in winter, blossom at Tết, lanterns at Mid-Autumn, fireflies in summer…</small>
+            </span>
+          </label>
+          <label className="disp-saver">
+            <span>Screen saver</span>
+            <select className="field" value={saver} onChange={(e) => onSaver(e.target.value as Props["saver"])}>
+              <option value="off">(None)</option>
+              <option value="2">Fireflies and lines, after 2 minutes</option>
+              <option value="5">Fireflies and lines, after 5 minutes</option>
+              <option value="10">Fireflies and lines, after 10 minutes</option>
+            </select>
+          </label>
+        </div>
 
         <p className="disp-hint">
           Pick one, drop a picture on the screen, or browse for a file. Your picture stays in this browser and is never

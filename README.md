@@ -98,6 +98,30 @@ The body uses a small markup that never produces raw HTML:
 - **On a phone** one window fills the screen at a time, and the taskbar becomes the menu button and five places:
   Tonight, Diary, Write, Messages and Me. Ink is a little smaller and sits on a sill above it, never on the words.
 
+## Every night
+
+A night on 4me runs from evening until six the next morning, by the date in Vietnam (`packages/shared/src/nights.ts`).
+
+- **Tonight's question.** One question a night, the same for everyone (fifty of them, none twice in a row), at the
+  top of Tonight and in Notepad. A page can say it answers it; it then shows the question above its title, and the
+  night's answers have their own tab in Tonight (`/entries?prompt=2026-10-22`).
+- **Tonight's sky.** The moods of tonight's public pages, read in English or Vietnamese ("tired", "buồn", "bình
+  yên"…), tint the sky above the rooftops and give Tonight a line: *Tonight the sky is mostly tired: 4 of 7 pages*
+  (`/nights/:night/sky`).
+- **Tonight's poem.** Everyone adds one line a night (no links), in the order they come; at six it closes, and last
+  night's reads as a finished piece (`night_lines`; a guest by hashed address, a member by account).
+- **A random page.** Ask Ink and she runs to the edge of the screen and brings one back in her mouth; the Start menu
+  just opens one (`/entries/random`).
+- **Night sounds.** Rain on the tin roof, a ceiling fan, crickets, motorbikes a few streets away, all made in the
+  browser with the Web Audio API; quieter while a song plays, silent in a hidden tab (`components/night/ambience.ts`).
+- **A year ago tonight.** A member who wrote on this night a year ago (or, for now, a month ago) gets a balloon by
+  the clock once that night.
+- **The season.** Hà Nội's winter drizzle, apricot blossom at Tết, star lanterns at Mid-Autumn, bats at Halloween,
+  snow only at Christmas, petals in spring, fireflies on summer nights, leaves in autumn; off for readers who ask for
+  less motion, and in Display Properties.
+- **The screen saver.** After a while untouched (Display Properties: 2, 5 or 10 minutes, or none), fireflies and
+  single lines from recent public pages drift in the dark (`/entries/lines`). Never while someone is typing.
+
 ## One computer, everyone's diaries
 
 Whoever is reading is always on their own computer: their wallpaper, skin, Ink, Notepad and notifications. Opening

@@ -29,6 +29,10 @@ export default function Privacy() {
           which pages were opened, from roughly which country, and how fast they loaded.
         </li>
         <li>
+          A line you add to tonight&apos;s poem is public, with the name you give. For a guest, a salted one-way hash of
+          the IP address is kept with it so one person adds one line a night; it is never shown.
+        </li>
+        <li>
           When something breaks, the error&apos;s message and the page it happened on are kept for us to fix it, for the
           site as a whole and never with your name, address or anything you typed.
         </li>

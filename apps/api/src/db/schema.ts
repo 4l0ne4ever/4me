@@ -43,6 +43,8 @@ export const entries = pgTable(
     visibility: text("visibility").$type<Visibility>().notNull().default("public"),
     /** "hidden" by the site's moderator, or by enough reports; only the author still sees it. */
     status: text("status").$type<"visible" | "hidden">().notNull().default("visible"),
+    /** The night whose question the page answers ("2026-10-22"). */
+    prompt: text("prompt"),
     /** A sealed letter: nobody but its writer reads it before this moment. */
     opensAt: timestamp("opens_at", { withTimezone: true }),
     /** When the letter opened and its readers were told (so they are told once). */
@@ -58,6 +60,7 @@ export const entries = pgTable(
     index("entries_visibility_written_idx").on(t.visibility, t.writtenAt),
     index("entries_author_written_idx").on(t.authorId, t.writtenAt),
     uniqueIndex("entries_author_slug_idx").on(t.authorId, t.slug),
+    index("entries_prompt_idx").on(t.prompt),
   ],
 );
 
@@ -417,5 +420,26 @@ export const diaryBans = pgTable(
   (t) => [
     uniqueIndex("diary_bans_owner_user_idx").on(t.ownerId, t.userId),
     uniqueIndex("diary_bans_owner_ip_idx").on(t.ownerId, t.ipHash),
+  ],
+);
+
+/** Tonight's shared poem: everyone adds one line a night, and in the morning it reads as one piece. */
+export const nightLines = pgTable(
+  "night_lines",
+  {
+    id: serial("id").primaryKey(),
+    /** The evening's date in Vietnam ("2026-10-22"). */
+    night: text("night").notNull(),
+    userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+    ipHash: text("ip_hash"),
+    name: text("name").notNull(),
+    body: text("body").notNull(),
+    status: text("status").$type<"visible" | "hidden">().notNull().default("visible"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("night_lines_night_idx").on(t.night, t.createdAt),
+    uniqueIndex("night_lines_night_user_idx").on(t.night, t.userId),
+    uniqueIndex("night_lines_night_ip_idx").on(t.night, t.ipHash),
   ],
 );

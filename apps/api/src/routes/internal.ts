@@ -79,6 +79,7 @@ import { banRoutes } from "./bans";
 import { chatRoutes } from "./chat";
 import { errorRoutes } from "./errors";
 import { mailRoutes } from "./mail";
+import { nightMemberRoutes } from "./nights";
 import { activeMember } from "./social";
 
 // Account storage for the web server. Every route needs the server token; browsers never reach these.
@@ -1045,4 +1046,5 @@ export const internalRoutes = new Hono<AppEnv>()
   .route("/", chatRoutes)
   .route("/", mailRoutes)
   .route("/", errorRoutes)
-  .route("/", banRoutes);
+  .route("/", banRoutes)
+  .route("/", nightMemberRoutes);

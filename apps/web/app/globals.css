@@ -245,7 +245,25 @@ body[data-skin="snow"] .wall .paint:not(.color) {
   top: 16px;
   display: flex;
   flex-direction: column;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  max-height: calc(100% - 24px);
   gap: 2px;
+}
+/* a shorter screen: the same icons, a little closer together, so they all fit in one column */
+@media (min-width: 900px) and (max-height: 960px) {
+  .icons {
+    top: 10px;
+    gap: 0;
+  }
+  .icons .icon {
+    padding: 4px 4px 5px;
+    gap: 3px;
+  }
+  .icons .icon svg {
+    width: 34px;
+    height: 34px;
+  }
 }
 .icon {
   width: 96px;
@@ -4384,6 +4402,13 @@ body[data-text="large"] {
   .tray:not(:has(.bell)) {
     display: none;
   }
+  /* the window starts below the bell, so the bell never covers its close button */
+  body:has(.tray .bell) .desk {
+    padding-top: 62px;
+  }
+  .tn-q-sep {
+    display: none;
+  }
   /* a sill above the taskbar for Ink, so she never sits on the words */
   .task::before {
     content: "";
@@ -4401,5 +4426,510 @@ body[data-text="large"] {
     right: 16px;
     bottom: calc(var(--task-h) + 46px);
     z-index: 90;
+  }
+}
+
+/* ---------- the night ---------- */
+
+/* tonight's moods tint the sky: strongest at the top, gone by the rooftops */
+.sky-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tint-a, transparent) 70%, transparent) 0%,
+    color-mix(in srgb, var(--tint-b, transparent) 40%, transparent) 38%,
+    transparent 72%
+  );
+  mix-blend-mode: soft-light;
+  transition: opacity 2.4s ease;
+}
+.sky-tint.on {
+  opacity: 1;
+}
+body.daytime .sky-tint {
+  opacity: 0;
+}
+
+/* Tonight's question, the way a diary prompt sits at the top of a blank page */
+.tn-night {
+  flex-shrink: 0;
+  padding: 12px 14px 12px;
+  border-bottom: 1px solid var(--chrome-edge);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--amber) 7%, var(--panel)), var(--panel));
+}
+.tn-q-k {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.tn-q {
+  margin: 4px 0 8px;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 20px;
+  line-height: 1.3;
+  color: var(--chrome-ink);
+}
+.tn-q-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 13px;
+}
+.tn-q-acts .btn {
+  min-height: 32px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.tn-q-sep {
+  color: var(--chrome-dim);
+}
+.tn-sky {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.tn-sky i {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* Notepad: the question this page might answer */
+.wr-prompt {
+  margin: 0 0 4px;
+  padding: 10px 12px;
+  border: 1px dashed var(--chrome-edge);
+  background: var(--field);
+}
+.wr-prompt.on {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--amber) 60%, var(--chrome-edge));
+}
+.wr-prompt-k {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.wr-prompt p {
+  margin: 3px 0 6px;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 17px;
+  color: var(--chrome-ink);
+}
+.wr-prompt-check {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--chrome-ink) !important;
+  cursor: pointer;
+}
+.wr-prompt-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--amber);
+}
+
+/* a page that answers its night's question says so, above its title, like a prompt copied at the top of the page */
+.d-prompt {
+  margin: 14px 0 -4px;
+  font-family: var(--font-serif), Georgia, serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--paper-dim);
+}
+.d-prompt span {
+  display: block;
+  font-family: var(--ui);
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+/* the season, drifting behind the windows */
+.seasons {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* the night sounds: a button by the clock, and its panel */
+.tray .ns-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  color: var(--chrome-dim);
+}
+.tray .ns-btn[aria-expanded="true"],
+.tray .ns-btn:hover {
+  color: var(--amber);
+}
+.ns-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.ns-panel {
+  position: fixed;
+  right: 12px;
+  bottom: calc(var(--task-h) + 10px);
+  z-index: 140;
+  width: min(300px, calc(100vw - 24px));
+  background: var(--chrome);
+  border: 1px solid var(--chrome-edge);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  animation: rise 200ms ease both;
+  font-size: 13px;
+}
+.ns-panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 12px;
+  background: var(--chrome-hi);
+}
+.ns-panel header span {
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.ns-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+}
+.ns-panel li label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.ns-panel li label:hover {
+  background: var(--chrome-hi);
+}
+.ns-panel li input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--amber);
+}
+/* three bars that breathe while a sound is on */
+.ns-wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  width: 14px;
+  height: 12px;
+}
+.ns-wave i {
+  width: 3px;
+  height: 3px;
+  background: var(--chrome-edge);
+}
+.ns-panel label.on .ns-wave i {
+  background: var(--amber);
+  animation: ns-breathe 1.6s ease-in-out infinite;
+}
+.ns-panel label.on .ns-wave i:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.ns-panel label.on .ns-wave i:nth-child(3) {
+  animation-delay: 0.6s;
+}
+@keyframes ns-breathe {
+  50% {
+    height: 12px;
+  }
+}
+.ns-vol {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 14px 10px;
+  color: var(--chrome-dim);
+}
+.ns-vol input {
+  flex: 1;
+  accent-color: var(--amber);
+}
+.ns-note {
+  margin: 0;
+  padding: 8px 14px 12px;
+  border-top: 1px solid var(--chrome-edge);
+  font-size: 11px;
+  color: var(--chrome-dim);
+}
+
+/* "a year ago tonight": a balloon with a small moon */
+.then-balloon .balloon-body {
+  align-items: flex-start;
+}
+.then-moon {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  box-shadow: inset -7px -2px 0 0 #e7c86b;
+  transform: rotate(-20deg);
+}
+.then-balloon b {
+  display: block;
+}
+
+/* tonight's poem: one sheet, one line from each person */
+.w-poem {
+  left: calc(50% - 230px);
+  top: 36px;
+  width: min(460px, calc(100vw - 32px));
+  height: min(620px, calc(100% - 72px));
+}
+.poem {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  overflow: auto;
+}
+.poem-paper {
+  flex: 1;
+  margin: 12px;
+  padding: 22px 24px 26px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+.poem-date {
+  margin: 0;
+  font-family: var(--font-hand), cursive;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--amber);
+  transform: rotate(-1.5deg);
+  transform-origin: left;
+}
+.poem-title {
+  margin: 8px 0 2px;
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 400;
+  font-size: 26px;
+}
+.poem-rule {
+  margin: 0 0 18px;
+  font-size: 12px;
+  color: var(--paper-dim);
+}
+.poem-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.poem-lines li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 3px 0;
+  animation: rise 400ms ease both;
+}
+.poem-line {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 18px;
+  line-height: 1.5;
+}
+.poem-who {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--paper-dim);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.poem-lines li:hover .poem-who,
+.poem-lines li:focus-within .poem-who {
+  opacity: 1;
+}
+.poem-empty {
+  margin: 0;
+  font-family: var(--font-serif), Georgia, serif;
+  font-style: italic;
+  color: var(--paper-dim);
+}
+.poem-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+.poem-form .field {
+  flex: 1 1 200px;
+}
+.poem-form .poem-name {
+  flex: 0 0 110px;
+}
+.poem-form .ts-box,
+.poem-form .err {
+  flex-basis: 100%;
+}
+.poem-done {
+  margin: 0;
+  padding: 0 14px 14px;
+  font-size: 13px;
+  color: var(--chrome-dim);
+}
+
+/* the screensaver: the dark, fireflies, and lines surfacing */
+.saver {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: radial-gradient(ellipse at 50% 120%, #0d1424 0%, #04060a 60%);
+  cursor: none;
+  animation: saver-in 1.6s ease both;
+}
+@keyframes saver-in {
+  from {
+    opacity: 0;
+  }
+}
+.saver canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.saver-clock {
+  position: absolute;
+  top: 24px;
+  right: 30px;
+  font-family: var(--font-lcd), monospace;
+  font-size: 34px;
+  color: rgba(240, 172, 92, 0.55);
+}
+.saver-line {
+  position: absolute;
+  max-width: min(520px, 80vw);
+  margin: 0;
+  animation: saver-line 10s ease-in-out both;
+}
+.saver-line blockquote {
+  margin: 0;
+  font-family: var(--font-hand), cursive;
+  font-size: clamp(26px, 3.4vw, 40px);
+  line-height: 1.15;
+  color: #efe6d6;
+  text-shadow: 0 0 18px rgba(240, 172, 92, 0.35);
+}
+.saver-line figcaption {
+  margin-top: 6px;
+  font-family: var(--ui);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: rgba(239, 230, 214, 0.45);
+}
+.saver-line figcaption::before {
+  content: "— ";
+}
+@keyframes saver-line {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  18%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+}
+.saver-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(239, 230, 214, 0.25);
+}
+@media (prefers-reduced-motion: reduce) {
+  .saver-line {
+    animation-name: saver-line-still;
+  }
+  @keyframes saver-line-still {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    15%,
+    85% {
+      opacity: 1;
+    }
+  }
+}
+
+/* Display Properties: the season and the screen saver */
+.disp-more {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.disp-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+.disp-check input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--amber);
+}
+.disp-check span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.disp-check small {
+  color: var(--chrome-dim);
+}
+.disp-saver {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.disp-saver select {
+  color: var(--chrome-ink);
+}
+@media (max-width: 899px) {
+  .tray .ns-btn {
+    display: none;
+  }
+  .ns-panel {
+    bottom: calc(var(--task-h) + 44px);
   }
 }

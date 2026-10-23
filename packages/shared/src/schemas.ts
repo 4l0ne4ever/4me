@@ -68,6 +68,23 @@ export const shoutInput = z.object({
 });
 export type ShoutInput = z.input<typeof shoutInput>;
 
+/** One line for tonight's shared poem: short, and no links (it is a poem, not a noticeboard). */
+const lineBody = z
+  .string()
+  .trim()
+  .min(2, "a line, at least")
+  .max(120, "one line: 120 characters at most")
+  .refine((v) => !/https?:\/\/|www\.|\.(com|net|org|vn)\b/i.test(v), "no links in the poem")
+  .transform((v) => v.replace(/\s+/g, " "));
+export const lineInput = z.object({
+  name: name.default("a stranger"),
+  body: lineBody,
+  turnstileToken: z.string().max(2048).optional(),
+});
+export const memberLineInput = z.object({ body: lineBody });
+/** A line in a night's shared poem, and who added it. */
+export type NightLine = { id: number; night: string; name: string; body: string; member: Member; createdAt: string };
+
 const photo = z.object({
   url: z.string().trim().min(1).max(500),
   caption: z.string().trim().max(120).default(""),
@@ -103,6 +120,8 @@ export const entryInput = z.object({
   visibility: visibility.default("public"),
   /** Seals the page until then, a letter to the future; null opens it now. */
   opensAt: z.iso.datetime({ offset: true }).nullable().optional(),
+  /** The page answers its night's question; false takes that back, leaving it out keeps it as it is. */
+  answering: z.boolean().optional(),
 });
 export type EntryInput = z.input<typeof entryInput>;
 
@@ -166,6 +185,8 @@ export type EntrySummary = {
   noteCount: number;
   /** Set while the page is a sealed letter: until then only its title, writer and dates show. */
   sealedUntil: string | null;
+  /** The night whose question the page answers ("2026-10-22"), if it does. */
+  prompt: string | null;
 };
 
 export type Entry = EntrySummary & {
