@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: `${owner.name}'s desktop`,
     description: owner.bio || `${owner.name}'s night diary on 4me.`,
-    alternates: { types: { "application/rss+xml": `/u/${owner.handle}/rss.xml` } },
+    alternates: { canonical: `/u/${owner.handle}`, types: { "application/rss+xml": `/u/${owner.handle}/rss.xml` } },
     openGraph: { type: "profile", title: owner.name },
     twitter: { card: "summary_large_image", title: `${owner.name}'s diary` },
   };
