@@ -57,3 +57,32 @@ export async function clearErrors() {
   await adminApi("/errors", { method: "DELETE" });
   redirect("/admin#errors");
 }
+
+/** Plans a night: a name and a line on everyone's desktop, perhaps a question, perhaps a night shift. */
+export async function planNight(form: FormData) {
+  await guard();
+  let problem = "";
+  try {
+    await adminApi("/nights", {
+      method: "POST",
+      body: {
+        night: str(form, "night"),
+        title: str(form, "title"),
+        body: str(form, "body"),
+        question: str(form, "question"),
+        start: str(form, "start"),
+        minutes: Number(str(form, "minutes")) || 45,
+        shift: form.get("shift") === "on",
+      },
+    });
+  } catch (e) {
+    problem = e instanceof Error ? e.message : "that didn't work";
+  }
+  redirect(problem ? `/admin?night=${encodeURIComponent(problem)}#nights` : "/admin#nights");
+}
+
+export async function cancelNight(form: FormData) {
+  await guard();
+  await adminApi(`/nights/${str(form, "id")}`, { method: "DELETE" });
+  redirect("/admin#nights");
+}

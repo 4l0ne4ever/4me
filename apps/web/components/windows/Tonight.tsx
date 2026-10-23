@@ -1,6 +1,6 @@
 "use client";
 
-import { type EntrySummary, type Me, promptFor } from "@4me/shared";
+import { type EntrySummary, type Me, nightShift, occasionOf } from "@4me/shared";
 import { useEffect, useState } from "react";
 import { API_URL, dayOf, hhmm, shortDate } from "@/lib/api";
 import { useFresh, useLiveEvent } from "@/lib/live";
@@ -9,6 +9,7 @@ import { DeskLink } from "../DeskLink";
 import { useDesk } from "../DeskShell";
 import { Eq } from "../Icons";
 import { nudgeInk } from "../ink/Ink";
+import { shiftPhase, until } from "../night/plan";
 import { skyLine, TONES } from "../night/sky";
 
 function when(iso: string): string {
@@ -47,7 +48,7 @@ function Pages({ list, fresh, ranked = false }: { list: EntrySummary[]; fresh: S
             <small>
               <DeskLink href={`/u/${e.author.handle}`}>{e.author.name}</DeskLink> · {when(e.writtenAt)}
               {e.sealedUntil
-                ? ` · ✉ sealed until ${shortDate(e.sealedUntil)}`
+                ? ` · ✉ sealed until ${dayOf(e.sealedUntil) === dayOf(new Date()) ? hhmm(e.sealedUntil) : shortDate(e.sealedUntil)}`
                 : `${e.mood ? ` · ${e.mood}` : ""} · ${e.noteCount} ${e.noteCount === 1 ? "note" : "notes"}`}
             </small>
             {e.song && (
@@ -65,8 +66,21 @@ function Pages({ list, fresh, ranked = false }: { list: EntrySummary[]; fresh: S
 
 /** Everyone's newest pages, like a LiveJournal friends page: who wrote, what, and the song that was on. */
 export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: Me | null; onWrite: () => void }) {
-  const { subscriptions, night, sky, answer, awake, navigate } = useDesk();
-  const [tab, setTab] = useState<"everyone" | "loved" | "question" | "subs">("everyone");
+  const { subscriptions, night, sky, answer, awake, navigate, plan, occasion, question, joinShift, shiftView } =
+    useDesk();
+  const [tab, setTab] = useState<"everyone" | "loved" | "question" | "shift" | "subs">("everyone");
+  const [shifted, setShifted] = useState<EntrySummary[] | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+  const event = plan?.event ?? null;
+  const phase = shiftPhase(event, now);
+  const tomorrow = plan?.next ?? (night ? occasionOf(nightShift(night, 1)) : null);
+  useEffect(() => {
+    if (shiftView) setTab("shift");
+  }, [shiftView]);
   const [answers, setAnswers] = useState<EntrySummary[] | null>(null);
   const [turning, setTurning] = useState(false);
   const [loved, setLoved] = useState<EntrySummary[] | null>(null);
@@ -92,6 +106,15 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
       .then(setAnswers, () => setAnswers([]));
   }, [night]);
 
+  // The night shift's pages: sealed while it runs, all open together when it ends.
+  const shiftId = event?.shift ? event.id : null;
+  useEffect(() => {
+    if (!shiftId || phase === "before") return;
+    void fetch(`${API_URL}/entries?shift=${shiftId}&limit=50`, { cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<EntrySummary[]>) : []))
+      .then(setShifted, () => setShifted([]));
+  }, [shiftId, phase]);
+
   /** A page, any page: Ink goes and fetches one when she is awake; asleep, it just opens. */
   const turnPage = async () => {
     if (awake) return nudgeInk("fetch");
@@ -111,6 +134,7 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
     const add = (l: EntrySummary[]) => (l.some((x) => x.id === e.entry.id) ? l : [e.entry, ...l].slice(0, 30));
     setList(add);
     if (night && e.entry.prompt === night) setAnswers((a) => (a ? add(a) : a));
+    if (shiftId && e.entry.shift === shiftId) setShifted((l) => add(l ?? []));
     if (following.has(e.entry.author.handle)) setFeed((f) => (f ? add(f) : f));
     setFresh((f) => new Set(f).add(e.entry.id));
   });
@@ -131,6 +155,21 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
             </p>
           )}
           {answers && answers.length > 0 && <Pages list={answers} fresh={fresh} />}
+        </>
+      ) : tab === "shift" ? (
+        <>
+          <p className="tn-note">
+            {phase === "after"
+              ? "Written together in tonight's night shift, and opened together when it ended."
+              : `Written in tonight's night shift. Sealed until ${event?.endsAt ? hhmm(event.endsAt) : "it ends"}, then they all open at once.`}
+          </p>
+          {shifted === null && <p className="tn-empty">Loading…</p>}
+          {shifted?.length === 0 && (
+            <p className="tn-empty">
+              {phase === "before" ? "The night shift hasn't started yet." : "No pages in the night shift yet."}
+            </p>
+          )}
+          {shifted && shifted.length > 0 && <Pages list={shifted} fresh={fresh} />}
         </>
       ) : tab === "loved" ? (
         <>
@@ -194,8 +233,48 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
       </div>
       {night && (
         <section className="tn-night" aria-label="Tonight">
+          {(event || occasion) && (
+            <div className={`tn-occ${occasion ? ` tn-occ-${occasion.key}` : ""}`}>
+              <p className="tn-occ-t">
+                <span className="tn-occ-k">Tonight</span>
+                <b>{event?.title ?? occasion?.title}</b>
+                {event?.startsAt && (
+                  <span className="tn-occ-time">
+                    {hhmm(event.startsAt)}
+                    {event.endsAt ? `–${hhmm(event.endsAt)}` : ""}
+                  </span>
+                )}
+              </p>
+              {(event?.body || (!event && occasion)) && <p className="tn-occ-line">{event?.body || occasion?.line}</p>}
+              {event?.shift && phase && (
+                <p className="tn-occ-acts">
+                  {phase === "before" && event.startsAt && <span>starts in {until(event.startsAt, now)}</span>}
+                  {phase === "during" && (
+                    <>
+                      {me ? (
+                        <button type="button" className="btn" onClick={joinShift}>
+                          Write with everyone
+                        </button>
+                      ) : (
+                        <a className="btn" href="/welcome?start=register">
+                          Write with everyone
+                        </a>
+                      )}
+                      <span>{event.endsAt && `${until(event.endsAt, now)} left`}</span>
+                    </>
+                  )}
+                  {phase !== "before" && (
+                    <button type="button" className="linkish" onClick={() => setTab("shift")}>
+                      {phase === "after" ? "read the night shift" : "who's writing"}
+                      {shifted?.length ? ` (${shifted.length})` : ""}
+                    </button>
+                  )}
+                </p>
+              )}
+            </div>
+          )}
           <p className="tn-q-k">Tonight&apos;s question</p>
-          <p className="tn-q">{promptFor(night)}</p>
+          <p className="tn-q">{question}</p>
           <div className="tn-q-acts">
             {me ? (
               <button type="button" className="btn" onClick={answer}>
@@ -223,6 +302,12 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
                 aria-hidden="true"
               />
               {skyLine(sky)}
+            </p>
+          )}
+          {tomorrow && (
+            <p className="tn-tomorrow">
+              Tomorrow night: <b>{tomorrow.title}</b>
+              {"startsAt" in tomorrow && tomorrow.startsAt ? `, ${hhmm(tomorrow.startsAt)}` : ""}
             </p>
           )}
         </section>
@@ -261,6 +346,19 @@ export function Tonight({ recent, me, onWrite }: { recent: EntrySummary[]; me: M
         >
           Answers{answers?.length ? ` (${answers.length})` : ""}
         </button>
+        {shiftId && phase !== "before" && (
+          <button
+            type="button"
+            role="tab"
+            className="wr-tab"
+            id="tn-tab-shift"
+            aria-selected={tab === "shift"}
+            aria-controls="tn-panel"
+            onClick={() => setTab("shift")}
+          >
+            Night shift{shifted?.length ? ` (${shifted.length})` : ""}
+          </button>
+        )}
         {me && (
           <button
             type="button"

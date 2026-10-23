@@ -4,13 +4,16 @@ import {
   memberLineInput,
   moodTone,
   NIGHT,
+  type NightEvent,
   type NightLine,
+  type NightPlan,
   type NightSky,
   nightOf,
+  nightShift,
 } from "@4me/shared";
-import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { type Context, Hono } from "hono";
-import { entries, nightLines, users } from "../db/schema";
+import { entries, nightEvents, nightLines, users } from "../db/schema";
 import type { AppEnv } from "../env";
 import { isUniqueViolation as dup, isOpen, isReadable, positiveId } from "../lib/entries";
 import { allow, allowKey, humanCheck, ipHash } from "../lib/guard";
@@ -34,6 +37,17 @@ const toLine = (
   body: r.body,
   member: r.userId && m?.handle ? { avatar: avatarUrl(m.avatar), handle: m.handle } : null,
   createdAt: r.createdAt.toISOString(),
+});
+
+export const toEvent = (r: typeof nightEvents.$inferSelect): NightEvent => ({
+  id: r.id,
+  night: r.night,
+  title: r.title,
+  body: r.body,
+  question: r.question,
+  startsAt: r.startsAt?.toISOString() ?? null,
+  endsAt: r.endsAt?.toISOString() ?? null,
+  shift: r.shift,
 });
 
 async function linesOf(c: Context<AppEnv>, night: string): Promise<NightLine[]> {
@@ -80,6 +94,24 @@ async function member(c: Context<AppEnv>, id: number) {
 
 /** The night as everyone sees it: its sky (from tonight's moods) and its shared poem. */
 export const nightRoutes = new Hono<AppEnv>()
+  /** What the moderator has planned for this night and the next, to pin on the desktop and say "tomorrow night". */
+  .get("/nights/:night/plan", async (c) => {
+    const night = c.req.param("night");
+    if (!NIGHT.test(night)) return c.json({ error: "not found" }, 404);
+    const next = nightShift(night, 1);
+    const rows = await c
+      .get("db")
+      .select()
+      .from(nightEvents)
+      .where(inArray(nightEvents.night, [night, next]));
+    const of = (n: string) => {
+      const r = rows.find((x) => x.night === n);
+      return r ? toEvent(r) : null;
+    };
+    const plan: NightPlan = { night, event: of(night), next: of(next) };
+    c.header("Cache-Control", "public, max-age=60, s-maxage=60");
+    return c.json(plan);
+  })
   .get("/nights/:night/sky", async (c) => {
     const night = c.req.param("night");
     if (!NIGHT.test(night)) return c.json({ error: "not found" }, 404);

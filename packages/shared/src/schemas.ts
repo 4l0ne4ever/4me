@@ -122,6 +122,8 @@ export const entryInput = z.object({
   opensAt: z.iso.datetime({ offset: true }).nullable().optional(),
   /** The page answers its night's question; false takes that back, leaving it out keeps it as it is. */
   answering: z.boolean().optional(),
+  /** Written in this night shift: sealed until it ends, then opened with everyone else's. Only a new page. */
+  shift: z.number().int().positive().optional(),
 });
 export type EntryInput = z.input<typeof entryInput>;
 
@@ -187,6 +189,8 @@ export type EntrySummary = {
   sealedUntil: string | null;
   /** The night whose question the page answers ("2026-10-22"), if it does. */
   prompt: string | null;
+  /** The night shift it was written in (an event id), if any. */
+  shift: number | null;
 };
 
 export type Entry = EntrySummary & {

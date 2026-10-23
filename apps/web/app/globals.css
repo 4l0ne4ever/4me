@@ -4933,3 +4933,235 @@ body.daytime .sky-tint {
     bottom: calc(var(--task-h) + 44px);
   }
 }
+
+/* the nights that are not like the others: a note pinned to the desktop, only on those nights */
+.notice {
+  position: absolute;
+  z-index: 3;
+  top: 22px;
+  right: max(28px, env(safe-area-inset-right, 0px));
+  width: 248px;
+  padding: 20px 18px 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 40%), #f1e7d3;
+  color: #2a2118;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.15),
+    0 12px 26px rgba(0, 0, 0, 0.5);
+  transform: rotate(1.4deg);
+  transform-origin: 50% 0;
+  animation: notice-in 420ms cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) rotate(-3deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notice {
+    animation: none;
+  }
+}
+.notice-pin {
+  position: absolute;
+  top: 7px;
+  left: calc(50% - 7px);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff9a8a, #b8322a 55%, #6d1712);
+  box-shadow: 1px 3px 3px rgba(0, 0, 0, 0.35);
+}
+.notice-halloween .notice-pin {
+  background: radial-gradient(circle at 35% 30%, #ffc27a, #d9661c 55%, #7a330a);
+}
+.notice-fullmoon .notice-pin,
+.notice-midautumn .notice-pin {
+  background: radial-gradient(circle at 35% 30%, #fff3c4, #e0b64a 55%, #8a6514);
+}
+.notice-solstice .notice-pin {
+  background: radial-gradient(circle at 35% 30%, #b9d3ff, #3d6fc0 55%, #1b3566);
+}
+.notice-x {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 30px;
+  height: 30px;
+  background: none;
+  border: 0;
+  font-size: 18px;
+  color: #8a7a66;
+  cursor: pointer;
+}
+.notice-x:hover {
+  color: #2a2118;
+}
+.notice-k {
+  margin: 0;
+  font-family: var(--font-hand), cursive;
+  font-size: 24px;
+  line-height: 1;
+  color: #9e392f;
+  transform: rotate(-2deg);
+  transform-origin: left;
+}
+.notice-t {
+  margin: 4px 0 2px;
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 400;
+  font-size: 23px;
+  line-height: 1.15;
+}
+.notice-time {
+  margin: 2px 0 0;
+  font: 12px / 1.4 var(--ui);
+  color: #6b5d4c;
+  font-variant-numeric: tabular-nums;
+}
+.notice-line {
+  margin: 8px 0 0;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.notice-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #cdbd9f;
+}
+.notice .btn {
+  background: #2a2118;
+  border-color: #2a2118;
+  color: #f1e7d3;
+}
+.notice .btn:hover {
+  background: #4a3a2a;
+}
+.notice .linkish {
+  color: #7a3b2e;
+  font-size: 12px;
+}
+@media (max-width: 899px) {
+  .notice {
+    display: none;
+  }
+}
+
+/* the full moon, on the nights it is full */
+.full-moon {
+  position: absolute;
+  top: 9%;
+  right: 24%;
+  width: clamp(54px, 6vw, 92px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 40%, rgba(214, 205, 180, 0.55) 0 9%, transparent 10%),
+    radial-gradient(circle at 62% 62%, rgba(214, 205, 180, 0.5) 0 12%, transparent 13%),
+    radial-gradient(circle at 58% 30%, rgba(214, 205, 180, 0.4) 0 6%, transparent 7%),
+    radial-gradient(circle at 45% 45%, #fffbea, #f3e7c0 60%, #e2cf98);
+  box-shadow:
+    0 0 24px 6px rgba(255, 244, 205, 0.35),
+    0 0 90px 30px rgba(255, 236, 180, 0.14);
+  opacity: 0.92;
+}
+
+/* Tonight: what is on, when it is not an ordinary night */
+.tn-occ {
+  margin: 0 0 12px;
+  padding: 8px 10px 9px 12px;
+  border-left: 3px solid var(--amber);
+  background: color-mix(in srgb, var(--amber) 9%, transparent);
+}
+.tn-occ-halloween {
+  border-left-color: #e0782a;
+}
+.tn-occ-solstice {
+  border-left-color: #6f9be0;
+}
+.tn-occ-t {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0;
+}
+.tn-occ-k {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.tn-occ-t b {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--chrome-ink);
+}
+.tn-occ-time {
+  font-size: 12px;
+  color: var(--chrome-dim);
+  font-variant-numeric: tabular-nums;
+}
+.tn-occ-line {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: var(--chrome-dim);
+}
+.tn-occ-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.tn-tomorrow {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.tn-tomorrow b {
+  font-weight: 400;
+  color: var(--chrome-ink);
+}
+
+/* Notepad: joining tonight's night shift */
+.wr-shift {
+  margin: 0 0 4px;
+  padding: 8px 12px;
+  border: 1px dashed var(--chrome-edge);
+  background: var(--field);
+}
+.wr-shift.on {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--name) 60%, var(--chrome-edge));
+}
+.wr-shift .wr-prompt-k {
+  color: var(--name);
+}
+.wr-shift .wr-prompt-check {
+  margin-top: 4px;
+}
+
+/* the night shift, by the clock */
+.shift-balloon .balloon-body {
+  align-items: flex-start;
+}
+.shift-lamp {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin: 4px 6px 0 4px;
+  border-radius: 50%;
+  background: #ffd27a;
+  box-shadow:
+    0 0 6px 2px rgba(255, 196, 90, 0.8),
+    0 0 18px 6px rgba(255, 180, 70, 0.35);
+}

@@ -2,7 +2,7 @@ import { type entryInput, nightOf, searchable, slugify } from "@4me/shared";
 import { and, eq, gt, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import type { Context } from "hono";
 import type { z } from "zod";
-import { entries, noteReports, notes, reports, uploads, users } from "../db/schema";
+import { entries, nightEvents, noteReports, notes, reports, uploads, users } from "../db/schema";
 import type { AppEnv } from "../env";
 
 // Written out with explicit table names: inside the subquery an unqualified "id" would mean notes.id.
@@ -100,6 +100,15 @@ export async function entryValues(
     // A date already past simply opens the page; a new date in the future seals it again.
     const sealed = opens && opens.getTime() > Date.now() ? opens : null;
     Object.assign(values, { opensAt: sealed, openedAt: null });
+  }
+  // A new page written in a night shift waits for the shift to end, and opens with everyone else's.
+  if (input.shift && !existing) {
+    const [ev] = await c.get("db").select().from(nightEvents).where(eq(nightEvents.id, input.shift)).limit(1);
+    const now = Date.now();
+    if (ev?.shift && ev.startsAt && ev.endsAt && now >= ev.startsAt.getTime()) {
+      values.eventId = ev.id;
+      if (now < ev.endsAt.getTime()) Object.assign(values, { opensAt: ev.endsAt, openedAt: null });
+    }
   }
   if (input.song === null) {
     Object.assign(values, {

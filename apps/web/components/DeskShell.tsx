@@ -6,11 +6,16 @@ import {
   type CatStats,
   type Entry,
   isAwakeHour,
+  isFullMoon,
   type Me,
+  type NightPlan,
   type NightSky,
   type NowPlaying,
   nightOf,
+  type Occasion,
+  occasionOf,
   type Profile,
+  questionFor,
   type Subscription,
 } from "@4me/shared";
 import { usePathname, useRouter } from "next/navigation";
@@ -57,9 +62,11 @@ import {
 } from "./Icons";
 import { feedInkAt, Ink, inkName, nudgeInk } from "./ink/Ink";
 import { Notifications } from "./Notifications";
+import { NightNotice } from "./night/NightNotice";
 import { NightSounds } from "./night/NightSounds";
 import { OnThisNight } from "./night/OnThisNight";
 import { Poem } from "./night/Poem";
+import { loadPlan } from "./night/plan";
 import { Screensaver } from "./night/Screensaver";
 import { Seasons } from "./night/Seasons";
 import { skyColours } from "./night/sky";
@@ -222,6 +229,11 @@ type Desk = {
   write: (id: number | null) => void;
   /** Opens Notepad on a new page that answers tonight's question. */
   answer: () => void;
+  /** Opens Notepad on a new page for tonight's night shift. */
+  joinShift: () => void;
+  /** Opens Tonight on the night shift's pages; `shiftView` goes up each time. */
+  readShift: () => void;
+  shiftView: number;
   awake: boolean;
   /** What the person this page is about is playing on Last.fm. */
   listening: NowPlaying | null;
@@ -243,6 +255,11 @@ type Desk = {
   /** Tonight, as "2026-10-22" (null until the browser has worked it out), and its sky. */
   night: string | null;
   sky: NightSky | null;
+  /** What the moderator planned for tonight and tomorrow night, and what the calendar makes of tonight. */
+  plan: NightPlan | null;
+  occasion: Occasion | null;
+  /** Tonight's question: the moderator's, the calendar's, or the rotation's. */
+  question: string | null;
 };
 
 const DeskContext = createContext<Desk | null>(null);
@@ -365,6 +382,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const [night, setNight] = useState<string | null>(null);
   const [sky, setSky] = useState<NightSky | null>(null);
+  const [plan, setPlan] = useState<NightPlan | null>(null);
   const [pending, startTransition] = useTransition();
   const startBtn = useRef<HTMLButtonElement>(null);
   const startMenu = useRef<HTMLDivElement>(null);
@@ -640,6 +658,12 @@ export function DeskShell({ children }: { children: ReactNode }) {
     setAnswerAsk((n) => n + 1);
     open("write");
   }, [open]);
+  const [shiftAsk, setShiftAsk] = useState(0);
+  const joinShift = useCallback(() => {
+    setEditing(null);
+    setShiftAsk((n) => n + 1);
+    open("write");
+  }, [open]);
 
   useEffect(() => {
     if (me) void mySubscriptions().then(setSubscriptions);
@@ -671,6 +695,12 @@ export function DeskShell({ children }: { children: ReactNode }) {
     },
     [router],
   );
+  const [shiftView, setShiftView] = useState(0);
+  const readShift = useCallback(() => {
+    setShiftView((n) => n + 1);
+    if (path === "/") open("tonight");
+    else navigate("/");
+  }, [open, path, navigate]);
 
   const buzz = useCallback((mine = false) => {
     if (mine) ownBuzz.current = Date.now();
@@ -712,6 +742,22 @@ export function DeskShell({ children }: { children: ReactNode }) {
     if (e.type === "entry") loadSky();
   });
   const tint = skyColours(sky);
+  // What tonight holds: the moderator's plan (looked at again now and then, it rarely changes) and the calendar's.
+  useEffect(() => {
+    if (!night) return;
+    let live = true;
+    const load = (fresh: boolean) => void loadPlan(night, fresh).then((p) => live && setPlan(p));
+    load(false);
+    const t = window.setInterval(() => load(true), 15 * 60_000);
+    return () => {
+      live = false;
+      window.clearInterval(t);
+    };
+  }, [night]);
+  const occasion = useMemo(() => (night ? occasionOf(night) : null), [night]);
+  const tonightPlan = plan?.night === night ? plan : null;
+  const question = night ? questionFor(night, tonightPlan?.event) : null;
+  const fullMoon = night ? isFullMoon(night) || occasion?.key === "midautumn" : false;
 
   useLiveEvent((e) => {
     // A BUZZ from someone else reading the same page shakes this screen too (mine already did).
@@ -731,6 +777,9 @@ export function DeskShell({ children }: { children: ReactNode }) {
     patch,
     write,
     answer,
+    joinShift,
+    readShift,
+    shiftView,
     awake,
     listening,
     buzz,
@@ -744,6 +793,9 @@ export function DeskShell({ children }: { children: ReactNode }) {
     front,
     night,
     sky,
+    plan: tonightPlan,
+    occasion,
+    question,
   };
 
   const visible = (Object.keys(WINDOWS) as WinId[]).filter((id) => wins[id].open);
@@ -767,6 +819,8 @@ export function DeskShell({ children }: { children: ReactNode }) {
                 className={`sky-tint${tint ? " on" : ""}`}
                 style={tint ? ({ "--tint-a": tint[0], "--tint-b": tint[1] } as CSSProperties) : undefined}
               />
+              {/* the full moon, on the nights it is full */}
+              {fullMoon && awake && <div className="full-moon" />}
             </div>
             <Seasons on={seasons === "on"} awake={awake} />
             <Skyline />
@@ -800,6 +854,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
                   }}
                   onDeleted={() => navigate(`/u/${me.handle}`)}
                   answerAsk={answerAsk}
+                  shiftAsk={shiftAsk}
                 />
               ) : (
                 <div className="body acc">
@@ -825,7 +880,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
               />
             </DeskWindow>
             <DeskWindow id="poem">
-              <Poem me={me} night={night} />
+              <Poem me={me} night={night} title={occasion?.poem} />
             </DeskWindow>
             <DeskWindow id="search">
               <Search query={query} onQuery={setQuery} />
@@ -1218,6 +1273,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
           {rssOpen && <RssDialog owner={owner} onClose={() => setRssOpen(false)} />}
           <NightSounds open={soundsOpen} onClose={closeSounds} />
           <OnThisNight me={me} night={night} onOpen={navigate} />
+          <NightNotice />
           <Screensaver minutes={saver === "off" ? null : Number(saver)} />
         </ChatProvider>
       </ConfirmHost>

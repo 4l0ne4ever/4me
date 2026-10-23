@@ -1,4 +1,12 @@
-import { type EntrySummary, type NightLine, type NightSky, nightOf, nightShift } from "@4me/shared";
+import {
+  type EntrySummary,
+  type NightEvent,
+  type NightLine,
+  type NightPlan,
+  type NightSky,
+  nightOf,
+  nightShift,
+} from "@4me/shared";
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
@@ -12,6 +20,7 @@ import { seedIfEmpty } from "../src/seed";
 const env: Bindings = { DATABASE_URL: "pglite", ADMIN_TOKEN: "server-token", WEB_ORIGIN: "https://4me.example" };
 const HASH = "scrypt$32768$8$1$c2FsdHNhbHRzYWx0$aGFzaGhhc2hoYXNoaGFzaA";
 let app: ReturnType<typeof createApp>;
+let db: DB;
 let n = 0;
 function call(path: string, init: RequestInit & { ip?: string; internal?: boolean } = {}) {
   const headers = new Headers(init.headers);
@@ -29,7 +38,7 @@ let owl: Who;
 const tonight = nightOf(new Date());
 
 beforeAll(async () => {
-  const db = drizzle(new PGlite(), { schema }) as unknown as DB;
+  db = drizzle(new PGlite(), { schema }) as unknown as DB;
   await migrate(db as never, { migrationsFolder: "./drizzle" });
   await seedIfEmpty(db);
   app = createApp(() => db);
@@ -121,5 +130,54 @@ describe("this night a year ago", () => {
       call(`/internal/users/${owl.id}/on-this-night`),
     );
     expect(found.year.map((e) => e.title)).toEqual(["Last year"]);
+  });
+});
+
+describe("the nights the moderator hosts", () => {
+  const tomorrow = nightShift(tonight, 1);
+
+  it("plans one a night, never a past one, and tells everyone the night before", async () => {
+    const res = await post("/admin/nights", {
+      night: tomorrow,
+      title: "Night shift",
+      body: "Write for 45 minutes with everyone.",
+      start: "23:00",
+      minutes: 45,
+      shift: true,
+    });
+    expect(res.status).toBe(201);
+    const ev = (await res.json()) as NightEvent;
+    expect(ev.startsAt).toBe(`${tomorrow}T16:00:00.000Z`);
+    expect(ev.endsAt).toBe(`${tomorrow}T16:45:00.000Z`);
+    expect((await post("/admin/nights", { night: tomorrow, title: "Again" })).status).toBe(409);
+    expect((await post("/admin/nights", { night: nightShift(tonight, -2), title: "Late" })).status).toBe(400);
+    expect(
+      (await post("/admin/nights", { night: tomorrow, title: "x", shift: true }, { internal: false })).status,
+    ).toBe(401);
+    const plan = await json<NightPlan>(call(`/nights/${tonight}/plan`, { internal: false }));
+    expect(plan.next?.title).toBe("Night shift");
+    expect(plan.event).toBeNull();
+  });
+
+  it("seals the pages written in a night shift until it ends, and lists them together", async () => {
+    const endsAt = new Date(Date.now() + 40 * 60_000);
+    const [ev] = await db
+      .insert(schema.nightEvents)
+      .values({
+        night: tonight,
+        title: "Night shift",
+        startsAt: new Date(Date.now() - 5 * 60_000),
+        endsAt,
+        shift: true,
+      })
+      .returning();
+    const page = await json<EntrySummary>(
+      post(`/internal/users/${owl.id}/entries`, { title: "On the shift", body: "the fan, again.", shift: ev!.id }),
+    );
+    expect(page.shift).toBe(ev!.id);
+    expect(page.sealedUntil).toBe(endsAt.toISOString());
+    const listed = await json<EntrySummary[]>(call(`/entries?shift=${ev!.id}`, { internal: false }));
+    expect(listed.map((e) => e.title)).toEqual(["On the shift"]);
+    expect(listed[0]?.sealedUntil).toBeTruthy();
   });
 });

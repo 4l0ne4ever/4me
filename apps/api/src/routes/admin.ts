@@ -1,13 +1,24 @@
-import { moderationInput, userStatusInput } from "@4me/shared";
-import { desc, eq, gt, ilike, or, sql } from "drizzle-orm";
+import { moderationInput, nightEventInput, nightOf, nightShift, nightTime, userStatusInput } from "@4me/shared";
+import { asc, desc, eq, gt, gte, ilike, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Hono } from "hono";
-import { entries, errorEvents, nightLines, noteReports, notes, reports, shouts, users } from "../db/schema";
+import {
+  entries,
+  errorEvents,
+  nightEvents,
+  nightLines,
+  noteReports,
+  notes,
+  reports,
+  shouts,
+  users,
+} from "../db/schema";
 import type { AppEnv } from "../env";
-import { positiveId } from "../lib/entries";
+import { isUniqueViolation, positiveId } from "../lib/entries";
 import { sameSecret } from "../lib/guard";
 import { toNote, toShout } from "../lib/map";
 import { json } from "../lib/validate";
+import { toEvent } from "./nights";
 
 const writer = alias(users, "writer");
 
@@ -21,6 +32,49 @@ export const adminRoutes = new Hono<AppEnv>()
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     if (!token || !(await sameSecret(token, c.env.ADMIN_TOKEN))) return c.json({ error: "unauthorised" }, 401);
     await next();
+  })
+  /** The nights the moderator has planned, from last night on. */
+  .get("/nights", async (c) => {
+    const from = nightShift(nightOf(new Date()), -1);
+    const rows = await c
+      .get("db")
+      .select()
+      .from(nightEvents)
+      .where(gte(nightEvents.night, from))
+      .orderBy(asc(nightEvents.night))
+      .limit(100);
+    return c.json(rows.map(toEvent));
+  })
+  /** Plans a night: one a night, and not one already past. */
+  .post("/nights", json(nightEventInput), async (c) => {
+    const v = c.req.valid("json");
+    if (v.night < nightOf(new Date())) return c.json({ error: "that night has passed" }, 400);
+    const startsAt = v.start ? nightTime(v.night, v.start) : null;
+    const endsAt = startsAt && v.shift ? new Date(startsAt.getTime() + v.minutes * 60_000) : null;
+    try {
+      const [row] = await c
+        .get("db")
+        .insert(nightEvents)
+        .values({
+          night: v.night,
+          title: v.title,
+          body: v.body,
+          question: v.question,
+          startsAt,
+          endsAt,
+          shift: v.shift,
+        })
+        .returning();
+      return c.json(toEvent(row!), 201);
+    } catch (e) {
+      if (isUniqueViolation(e)) return c.json({ error: "that night already has something planned" }, 409);
+      throw e;
+    }
+  })
+  .delete("/nights/:id", async (c) => {
+    const id = positiveId(c.req.param("id"));
+    if (id) await c.get("db").delete(nightEvents).where(eq(nightEvents.id, id));
+    return c.json({ ok: true });
   })
   /** A line in a night's poem taken down. */
   .delete("/lines/:id", async (c) => {

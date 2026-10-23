@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  type Almost,
-  type Blast,
-  type Entry,
-  type InboxNote,
-  type Me,
-  type MyEntry,
-  nightOf,
-  promptFor,
-  type Visibility,
-} from "@4me/shared";
+import type { Almost, Blast, Entry, InboxNote, Me, MyEntry, Visibility } from "@4me/shared";
 import { type FormEvent, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { count, hhmm, shortDate } from "@/lib/api";
 import {
@@ -28,7 +18,9 @@ import {
   saveEntry,
 } from "@/lib/writer-actions";
 import { DeskLink } from "../DeskLink";
+import { useDesk } from "../DeskShell";
 import { useConfirm } from "../Dialog";
+import { shiftPhase, useNightQuestion } from "../night/plan";
 import { type DraftPhoto, PhotoPicker } from "../PhotoPicker";
 import { type PickedSong, SongPicker } from "../SongPicker";
 
@@ -49,6 +41,8 @@ type Draft = {
   /** The page answers its night's question; `promptNight` is that night once saved. */
   answering: boolean;
   promptNight: string | null;
+  /** A new page written in tonight's night shift: sealed until it ends, opened with everyone's. */
+  inShift: boolean;
 };
 type Msg = { kind: "ok" | "err"; text: string; field?: string } | null;
 
@@ -66,6 +60,7 @@ const BLANK: Draft = {
   opensAt: "",
   answering: false,
   promptNight: null,
+  inShift: false,
 };
 
 /** "2026-10-20T22:05" in the writer's own time, for a datetime-local field. */
@@ -98,6 +93,7 @@ function fromEntry(e: Entry & { songId: number | null }): Draft {
     opensAt: e.sealedUntil ? toLocalInput(e.sealedUntil) : "",
     answering: Boolean(e.prompt),
     promptNight: e.prompt,
+    inShift: false,
     // Only uploaded photos can be saved again; the path is what the API stored.
     photos: e.photos.flatMap((p) => {
       const at = p.url.indexOf("/media/u/");
@@ -174,11 +170,14 @@ export function Write({
   onSaved,
   onDeleted,
   answerAsk = 0,
+  shiftAsk = 0,
 }: {
   me: Me;
   editing: number | null;
   /** Goes up each time the reader presses "Answer it" on tonight's question. */
   answerAsk?: number;
+  /** Goes up each time the reader joins tonight's night shift. */
+  shiftAsk?: number;
   onEditing: (id: number | null) => void;
   onSaved: (entry: Entry) => void;
   onDeleted: () => void;
@@ -200,6 +199,16 @@ export function Write({
   const baseline = useRef(JSON.stringify(BLANK));
   const [restorable, setRestorable] = useState<Kept | null>(null);
   const key = draftKey(me.id, editing);
+  const desk = useDesk();
+  const thatNight = useNightQuestion(draft.promptNight);
+  const asked = draft.promptNight ? thatNight : desk.question;
+  // Tonight's night shift, while it is under way (looked at again each minute).
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+  const shift = !editing && shiftPhase(desk.plan?.event, now) === "during" ? desk.plan!.event! : null;
 
   /** A page was opened: remember it as saved, and offer back any unsaved changes this browser kept for it. */
   const opened = useCallback(
@@ -255,6 +264,10 @@ export function Write({
   useEffect(() => {
     if (answerAsk && !editing) setDraft((d) => ({ ...d, answering: true }));
   }, [answerAsk, editing]);
+  // "Write with everyone": a new page joins tonight's night shift.
+  useEffect(() => {
+    if (shiftAsk && !editing) setDraft((d) => ({ ...d, inShift: true }));
+  }, [shiftAsk, editing]);
 
   const loadTab = useCallback((t: Tab) => {
     if (t === "mine") void myEntries().then(setMine);
@@ -299,15 +312,19 @@ export function Write({
         photos: draft.photos.map((p) => ({ url: p.path, caption: p.caption })),
         opensAt: draft.seal && draft.opensAt ? new Date(draft.opensAt).toISOString() : null,
         answering: draft.answering,
+        shift: shift && draft.inShift ? shift.id : undefined,
       });
       if (!res.ok) return setMsg({ kind: "err", text: res.error, field: res.field });
       setMsg({
         kind: "ok",
-        text: res.entry.sealedUntil
-          ? `Sealed. It opens on ${shortDate(res.entry.sealedUntil)} at ${hhmm(res.entry.sealedUntil)}; until then only you can read it.`
-          : res.entry.visibility === "public"
-            ? "Posted. Opening your page…"
-            : "Saved. Only you can see it.",
+        text:
+          res.entry.shift && res.entry.sealedUntil
+            ? `In the night shift. It opens with everyone's at ${hhmm(res.entry.sealedUntil)}.`
+            : res.entry.sealedUntil
+              ? `Sealed. It opens on ${shortDate(res.entry.sealedUntil)} at ${hhmm(res.entry.sealedUntil)}; until then only you can read it.`
+              : res.entry.visibility === "public"
+                ? "Posted. Opening your page…"
+                : "Saved. Only you can see it.",
       });
       forget(key);
       baseline.current = JSON.stringify(draft);
@@ -406,12 +423,21 @@ export function Write({
           )}
           <div className={`wr-prompt${draft.answering ? " on" : ""}`}>
             <span className="wr-prompt-k">{draft.promptNight ? "That night's question" : "Tonight's question"}</span>
-            <p>{promptFor(draft.promptNight ?? nightOf(new Date()))}</p>
+            <p>{asked}</p>
             <label className="wr-prompt-check">
               <input type="checkbox" checked={draft.answering} onChange={(e) => set({ answering: e.target.checked })} />
               This page answers it
             </label>
           </div>
+          {shift && (
+            <div className={`wr-shift${draft.inShift ? " on" : ""}`}>
+              <span className="wr-prompt-k">The night shift · until {hhmm(shift.endsAt!)}</span>
+              <label className="wr-prompt-check">
+                <input type="checkbox" checked={draft.inShift} onChange={(e) => set({ inShift: e.target.checked })} />
+                Part of the night shift: it stays sealed until {hhmm(shift.endsAt!)}, then opens with everyone&apos;s
+              </label>
+            </div>
+          )}
           <label htmlFor="wr-title">Title</label>
           <input
             id="wr-title"

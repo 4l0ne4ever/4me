@@ -49,6 +49,8 @@ export const entries = pgTable(
     opensAt: timestamp("opens_at", { withTimezone: true }),
     /** When the letter opened and its readers were told (so they are told once). */
     openedAt: timestamp("opened_at", { withTimezone: true }),
+    /** Written in a night shift: sealed until it ends, then opened with everyone else's. */
+    eventId: integer("event_id").references((): AnyPgColumn => nightEvents.id, { onDelete: "set null" }),
     /** Reports made before this moment no longer count (the moderator looked and kept the page up). */
     clearedAt: timestamp("cleared_at", { withTimezone: true }),
     readCount: integer("read_count").notNull().default(0),
@@ -61,6 +63,7 @@ export const entries = pgTable(
     index("entries_author_written_idx").on(t.authorId, t.writtenAt),
     uniqueIndex("entries_author_slug_idx").on(t.authorId, t.slug),
     index("entries_prompt_idx").on(t.prompt),
+    index("entries_event_idx").on(t.eventId),
   ],
 );
 
@@ -442,4 +445,22 @@ export const nightLines = pgTable(
     uniqueIndex("night_lines_night_user_idx").on(t.night, t.userId),
     uniqueIndex("night_lines_night_ip_idx").on(t.night, t.ipHash),
   ],
+);
+
+/** A night the moderator hosts: a line on everyone's desktop, perhaps its own question, perhaps a night shift. */
+export const nightEvents = pgTable(
+  "night_events",
+  {
+    id: serial("id").primaryKey(),
+    /** The evening's date in Vietnam; one event a night. */
+    night: text("night").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    question: text("question"),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    shift: boolean("shift").notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("night_events_night_idx").on(t.night)],
 );

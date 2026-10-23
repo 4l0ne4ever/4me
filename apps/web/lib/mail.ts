@@ -33,6 +33,9 @@ export function sendCheckMail(to: string, name: string, link: string): Promise<b
   return send({ to, subject: "Confirm your email for 4me", text });
 }
 
+/** What is on tonight, when it is not an ordinary night: a line at the end of the morning email. */
+export type Tonight = { title: string; line: string; time: string | null };
+
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /** The subject line: one writer by name, or how many pages. */
@@ -48,7 +51,12 @@ export function digestSubject(d: Digest): string {
  * reads like the diary (warm paper, a serif, no pictures to load). One-click unsubscribe in the headers and the
  * footer.
  */
-export function digestMail(d: Digest, site: string, stop: { page: string; oneClick: string }): Mail {
+export function digestMail(
+  d: Digest,
+  site: string,
+  stop: { page: string; oneClick: string },
+  tonight?: Tonight | null,
+): Mail {
   const unsubscribe = stop.page;
   const link = (p: Digest["pages"][number]) => `${site}/u/${p.handle}/${p.slug}`;
   const text = [
@@ -63,6 +71,9 @@ export function digestMail(d: Digest, site: string, stop: { page: string; oneCli
       link(p),
       "",
     ]),
+    ...(tonight
+      ? [`Tonight on 4me: ${tonight.title}${tonight.time ? `, ${tonight.time}` : ""}.`, tonight.line, site, ""]
+      : []),
     "— 4me",
     "",
     `You get this because you asked for new pages by email. Stop: ${unsubscribe}`,
@@ -83,6 +94,15 @@ export function digestMail(d: Digest, site: string, stop: { page: string; oneCli
 <tr><td style="padding:22px 26px 6px;font:700 15px Verdana,Tahoma,sans-serif;color:#9e392f;letter-spacing:.04em">4me</td></tr>
 <tr><td style="padding:0 26px 18px;font:15px/1.5 Verdana,Tahoma,sans-serif;color:#5d5144">Hi ${esc(d.name)}, new on the diaries you subscribe to:</td></tr>
 <tr><td style="padding:6px 26px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${pages}</table></td></tr>
+${
+  tonight
+    ? `<tr><td style="padding:4px 26px 20px"><div style="padding:12px 14px;background:#efe5d2;border-left:3px solid #9e392f">
+<div style="font:12px Verdana,Tahoma,sans-serif;color:#9e392f;letter-spacing:.06em;text-transform:uppercase">Tonight on 4me${tonight.time ? ` · ${esc(tonight.time)}` : ""}</div>
+<div style="margin-top:4px;font:19px/1.3 Georgia,'Times New Roman',serif;color:#2a2118">${esc(tonight.title)}</div>
+${tonight.line ? `<div style="margin-top:4px;font:15px/1.5 Georgia,'Times New Roman',serif;color:#3b3127">${esc(tonight.line)}</div>` : ""}
+</div></td></tr>`
+    : ""
+}
 <tr><td style="padding:16px 26px 22px;border-top:1px dashed #d8ccb8;font:12px/1.5 Verdana,Tahoma,sans-serif;color:#8a7a66">You get this because you asked for new pages by email, one email a morning at most. <a href="${esc(unsubscribe)}" style="color:#8a7a66">Stop these emails</a>.</td></tr>
 </table></td></tr></table></body></html>`;
   return {
@@ -95,8 +115,12 @@ export function digestMail(d: Digest, site: string, stop: { page: string; oneCli
   };
 }
 
-export const sendDigest = (d: Digest, site: string, stop: { page: string; oneClick: string }) =>
-  send(digestMail(d, site, stop));
+export const sendDigest = (
+  d: Digest,
+  site: string,
+  stop: { page: string; oneClick: string },
+  tonight?: Tonight | null,
+) => send(digestMail(d, site, stop, tonight));
 
 export type ErrorLine = { source: string; message: string; path: string; count: number; lastAt: string };
 

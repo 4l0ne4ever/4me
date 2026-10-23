@@ -1,6 +1,6 @@
 // How Ink looks: her colours, the collar with her name tag, and a hat for the season. Pure, so it is easy to test.
 
-import { type Breed, type InkLook, inkLook, type Outfit } from "@4me/shared";
+import { type Breed, type InkLook, inkLook, type Outfit, TET } from "@4me/shared";
 import { breedFrame } from "./breeds";
 import { FRAMES, type FrameName, PALETTE } from "./sprites";
 
@@ -206,8 +206,6 @@ export function hatFor(outfit: Outfit, frame: FrameName): { rows: string[]; x: n
 
 /* ---------- the seasons ---------- */
 
-/** Tết, the first day of the lunar year, for the years this site is likely to see. */
-const TET = ["2025-01-29", "2026-02-17", "2027-02-06", "2028-01-26", "2029-02-13", "2030-02-03", "2031-01-23"];
 const DAY = 86_400_000;
 
 /** What Ink wears on a day in Vietnam: a hat for the festival if there is one, otherwise one for the season. */

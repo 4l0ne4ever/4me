@@ -1,9 +1,10 @@
+import { type NightEvent, nightOf, nightShift, occasionOf } from "@4me/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { adminApi } from "@/lib/admin-api";
-import { hhmm, shortDate } from "@/lib/api";
+import { hhmm, longDate, shortDate } from "@/lib/api";
 import { isAuthor } from "@/lib/session";
-import { clearErrors, login, logout, moderate, moderateEntry, setUserStatus } from "./actions";
+import { cancelNight, clearErrors, login, logout, moderate, moderateEntry, planNight, setUserStatus } from "./actions";
 import "./admin.css";
 
 export const metadata: Metadata = { title: "Moderation", robots: { index: false } };
@@ -124,7 +125,14 @@ export default async function Admin({ searchParams }: Search) {
   if (!(await isAuthor())) return <Login failed={q.error === "password"} />;
   const query = (q.q ?? "").trim();
 
-  const [reports, noteReports, hidden, members, notes, shouts, errors] = await Promise.all([
+  const tonight = nightOf(new Date());
+  // The calendar's nights over the next six weeks, for reference: they come by themselves.
+  const calendar = Array.from({ length: 45 }, (_, i) => nightShift(tonight, i))
+    .map((n) => ({ night: n, occasion: occasionOf(n) }))
+    .filter((x) => x.occasion);
+  const dayName = (n: string) => longDate(`${n}T12:00:00+07:00`);
+
+  const [reports, noteReports, hidden, members, notes, shouts, errors, nights] = await Promise.all([
     adminApi<Report[]>("/reports"),
     adminApi<NoteReport[]>("/note-reports"),
     adminApi<Hidden[]>("/entries/hidden"),
@@ -132,6 +140,7 @@ export default async function Admin({ searchParams }: Search) {
     adminApi<HeldNote[]>("/notes?status=pending"),
     adminApi<HeldShout[]>("/shouts?status=pending"),
     adminApi<ErrorRow[]>("/errors").catch(() => [] as ErrorRow[]),
+    adminApi<NightEvent[]>("/nights").catch(() => [] as NightEvent[]),
   ]);
 
   return (
@@ -257,6 +266,94 @@ export default async function Admin({ searchParams }: Search) {
         </div>
 
         <div className="admin-side">
+          <section className="win admin-win" id="nights" aria-labelledby="h-nights">
+            <div className="bar">
+              <b id="h-nights">Nights</b>
+            </div>
+            <p className="admin-note">
+              Most nights are ordinary, and nothing is pinned on them. The calendar&apos;s nights come by themselves;
+              plan a few of your own, two or three a month, so they stay special.
+            </p>
+            <ul className="admin-list">
+              {nights.length === 0 && <li>Nothing planned.</li>}
+              {nights.map((n) => (
+                <li key={n.id}>
+                  <span>
+                    {n.title}
+                    <small>
+                      {dayName(n.night)}
+                      {n.startsAt && ` · ${hhmm(n.startsAt)}`}
+                      {n.endsAt && `–${hhmm(n.endsAt)}`}
+                      {n.shift && " · night shift"}
+                      {n.question && ` · asks “${n.question}”`}
+                      {n.night < tonight && " · over"}
+                    </small>
+                  </span>
+                  <form action={cancelNight}>
+                    <input type="hidden" name="id" value={n.id} />
+                    <button className="btn" type="submit">
+                      {n.night < tonight ? "Remove" : "Cancel"}
+                    </button>
+                  </form>
+                </li>
+              ))}
+              {calendar.map(({ night, occasion }) => (
+                <li key={night} className="admin-cal">
+                  <span>
+                    {occasion!.title}
+                    <small>
+                      {dayName(night)} · from the calendar · asks “{occasion!.question}”
+                    </small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <form action={planNight} className="admin-form admin-plan">
+              <b>Plan a night</b>
+              {q.night && <p className="err">{q.night}</p>}
+              <div className="admin-row">
+                <label>
+                  Night of
+                  <input name="night" type="date" className="field" min={tonight} defaultValue={tonight} required />
+                </label>
+                <label>
+                  At (optional)
+                  <input name="start" type="time" className="field" defaultValue="23:00" />
+                </label>
+              </div>
+              <label>
+                Name
+                <input name="title" className="field" maxLength={60} placeholder="Night shift" required />
+              </label>
+              <label>
+                One line about it
+                <input
+                  name="body"
+                  className="field"
+                  maxLength={160}
+                  placeholder="Write for 45 minutes with everyone; the pages open together."
+                />
+              </label>
+              <label>
+                Its own question (optional, replaces tonight&apos;s)
+                <input name="question" className="field" maxLength={160} placeholder="What did this year teach you?" />
+              </label>
+              <div className="admin-row">
+                <label className="admin-check">
+                  <input name="shift" type="checkbox" /> Night shift: everyone writes until it ends, and the pages open
+                  together
+                </label>
+                <label>
+                  For (minutes)
+                  <input name="minutes" type="number" className="field" min={10} max={240} defaultValue={45} />
+                </label>
+              </div>
+              <button className="btn" type="submit">
+                Pin it for that night
+              </button>
+            </form>
+          </section>
+
           <section className="win admin-win" id="members" aria-labelledby="h-members">
             <div className="bar">
               <b id="h-members">Members</b>

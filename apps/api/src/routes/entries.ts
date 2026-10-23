@@ -45,8 +45,11 @@ export const entryRoutes = new Hono<AppEnv>()
     // ?prompt=2026-10-22: the pages that answered that night's question.
     const night = c.req.query("prompt");
     const answering = night && NIGHT.test(night) ? eq(entries.prompt, night) : undefined;
+    // ?shift=12: the pages written in that night shift.
+    const shiftId = positiveId(c.req.query("shift"));
+    const inShift = shiftId ? eq(entries.eventId, shiftId) : undefined;
     const rows = await readable(c)
-      .where(and(isReadable, byAuthor(c.req.query("author")), older, answering))
+      .where(and(isReadable, byAuthor(c.req.query("author")), older, answering, inShift))
       .orderBy(desc(entries.writtenAt))
       .limit(limit);
     c.header("Cache-Control", cache(30));

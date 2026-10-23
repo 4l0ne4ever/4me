@@ -13,7 +13,7 @@ const dayOfNight = (night: string) => longDate(`${night}T12:00:00+07:00`);
  * Tonight's poem: everyone who comes by adds one line, and the lines stand in the order they came. It closes at six
  * in the morning; last night's reads as a finished piece.
  */
-export function Poem({ me, night }: { me: Me | null; night: string | null }) {
+export function Poem({ me, night, title }: { me: Me | null; night: string | null; title?: string }) {
   const [tab, setTab] = useState<"tonight" | "last">("tonight");
   const [lines, setLines] = useState<NightLine[] | null>(null);
   const [last, setLast] = useState<NightLine[] | null>(null);
@@ -102,7 +102,7 @@ export function Poem({ me, night }: { me: Me | null; night: string | null }) {
       </div>
       <div className="poem-paper">
         {shownNight && <p className="poem-date">{dayOfNight(shownNight)}</p>}
-        <h2 className="poem-title">{tab === "tonight" ? "Tonight's poem" : "Last night's poem"}</h2>
+        <h2 className="poem-title">{tab === "tonight" ? (title ?? "Tonight's poem") : "Last night's poem"}</h2>
         <p className="poem-rule">
           {tab === "tonight"
             ? "Everyone adds one line. It closes at six in the morning."

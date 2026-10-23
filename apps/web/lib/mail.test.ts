@@ -39,4 +39,15 @@ describe("the morning email", () => {
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     });
   });
+
+  it("says what is on tonight, when something is", () => {
+    const m = digestMail(d([page("Rain")]), "https://2die429.com", stop, {
+      title: "Halloween",
+      line: "The bats are out.",
+      time: null,
+    });
+    expect(m.text).toContain("Tonight on 4me: Halloween.");
+    expect(m.html).toContain("Tonight on 4me");
+    expect(digestMail(d([page("Rain")]), "https://2die429.com", stop).text).not.toContain("Tonight on 4me");
+  });
 });

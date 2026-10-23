@@ -9,7 +9,6 @@ import {
   type Note,
   type Profile,
   parseBody,
-  promptFor,
   type ReactionKind,
 } from "@4me/shared";
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
@@ -21,6 +20,7 @@ import { reportAsMember } from "@/lib/writer-actions";
 import { Comments } from "../Comments";
 import { DeskLink } from "../DeskLink";
 import { Eq, IconPause, IconPlay } from "../Icons";
+import { useNightQuestion } from "../night/plan";
 import { ReactionBar, shift } from "../Reactions";
 import { Report } from "../Report";
 import { Subscribe } from "../Subscribe";
@@ -299,6 +299,7 @@ function DiaryPage({
 }: Props & { onOpened: (e: Entry) => void }) {
   const clip = useClip(entry?.song?.previewUrl);
   const feelings = useEntryReactions(entry, me);
+  const asked = useNightQuestion(entry?.prompt ?? null);
   if (!entry) {
     const mine = owner && me?.handle === owner.handle;
     return (
@@ -351,7 +352,7 @@ function DiaryPage({
       </span>
       {entry.prompt && (
         <p className="d-prompt">
-          <span>answering that night&apos;s question</span> {promptFor(entry.prompt)}
+          <span>answering that night&apos;s question</span> {asked}
         </p>
       )}
       <h1 className="d-title">{entry.title}</h1>

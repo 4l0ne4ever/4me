@@ -122,6 +122,19 @@ A night on 4me runs from evening until six the next morning, by the date in Viet
 - **The screen saver.** After a while untouched (Display Properties: 2, 5 or 10 minutes, or none), fireflies and
   single lines from recent public pages drift in the dark (`/entries/lines`). Never while someone is typing.
 
+### The nights that are not like the others
+
+Most nights are ordinary and nothing is announced on them. On a few, a note is pinned to the desktop (Tonight has it
+too, phones see it there), the night gets its own question, and the morning email says what is on
+(`packages/shared/src/occasions.ts`, `/nights/:night/plan`).
+
+- **From the calendar, by themselves:** the full moon (worked out to the minute; the moon shows on the wallpaper),
+  Mid-Autumn, the last night of the lunar year (with a countdown to midnight), Halloween, and the longest night.
+- **Planned by the moderator** in `/admin` → Nights, one a night: a name, a line, an optional question of its own,
+  an optional time. A **night shift** has a start and a length: members who join write together, their pages stay
+  sealed until it ends and then all open at once (they are ordinary sealed letters, `entries.event_id`), with a
+  balloon by the clock when it starts and when its pages open, and a tab in Tonight (`/entries?shift=12`).
+
 ## One computer, everyone's diaries
 
 Whoever is reading is always on their own computer: their wallpaper, skin, Ink, Notepad and notifications. Opening
