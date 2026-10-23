@@ -1219,10 +1219,32 @@ body[data-skin="snow"] .wall .paint:not(.color) {
   left: max(6px, env(safe-area-inset-left, 0px));
   bottom: calc(var(--task-h) + 4px);
   width: 310px;
+  /* never taller than the screen above the taskbar (the menu is zoomed with the text size, so divide by it) */
+  max-height: calc((100dvh - var(--task-h) - 12px) / var(--ui-zoom, 1));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--chrome);
   border: 1px solid var(--chrome-edge);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
   animation: rise 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* laptop screens: the same menu, a little tighter, so it usually fits without scrolling */
+@media (min-width: 900px) and (max-height: 1000px) {
+  .startmenu .sm-list button,
+  .startmenu .sm-list a {
+    min-height: 34px;
+    padding: 4px 8px;
+  }
+  .startmenu .sm-list svg {
+    width: 20px;
+    height: 20px;
+  }
+  .startmenu .sm-head {
+    padding: 8px 12px;
+  }
+  .startmenu .sm-sep {
+    margin: 4px;
+  }
 }
 @keyframes rise {
   from {

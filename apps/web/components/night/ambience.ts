@@ -25,7 +25,15 @@ function audio(): AudioContext | null {
       ctx = new AudioContext();
       master = ctx.createGain();
       master.gain.value = 0;
-      master.connect(ctx.destination);
+      // A gentle compressor before the speakers: the sounds can sit at a level a laptop can be heard at, and a
+      // passing bike over the rain never clips.
+      const squeeze = ctx.createDynamicsCompressor();
+      squeeze.threshold.value = -20;
+      squeeze.knee.value = 8;
+      squeeze.ratio.value = 3;
+      squeeze.attack.value = 0.02;
+      squeeze.release.value = 0.4;
+      master.connect(squeeze).connect(ctx.destination);
     }
     if (ctx.state === "suspended") void ctx.resume();
     return ctx;
@@ -58,7 +66,8 @@ function noiseBuffer(a: AudioContext): AudioBuffer {
 function level() {
   const a = ctx;
   if (!a || !master) return;
-  const target = voices.size ? volume * (ducked ? 0.3 : 1) : 0;
+  // Squared, so the slider's steps sound even; the compressor keeps the top end in hand.
+  const target = voices.size ? 2 * volume * volume * (ducked ? 0.3 : 1) : 0;
   master.gain.cancelScheduledValues(a.currentTime);
   master.gain.setTargetAtTime(target, a.currentTime, 0.6);
 }
@@ -80,9 +89,9 @@ function rain(a: AudioContext, out: GainNode): () => void {
   hp.frequency.value = 500;
   const lp = a.createBiquadFilter();
   lp.type = "lowpass";
-  lp.frequency.value = 5200;
+  lp.frequency.value = 7500;
   const g = a.createGain();
-  g.gain.value = 0.5;
+  g.gain.value = 1.3;
   const src = loopNoise(a, hp);
   hp.connect(lp).connect(g).connect(out);
   // Ticks on the roof: short, bright bursts at uneven intervals.
@@ -102,7 +111,7 @@ function rain(a: AudioContext, out: GainNode): () => void {
     bp.Q.value = 8;
     const e = a.createGain();
     e.gain.setValueAtTime(0.0001, t);
-    e.gain.exponentialRampToValueAtTime(0.25 + Math.random() * 0.35, t + 0.004);
+    e.gain.exponentialRampToValueAtTime(0.5 + Math.random() * 0.6, t + 0.004);
     e.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
     const pan = a.createStereoPanner();
     pan.pan.value = Math.random() * 2 - 1;
@@ -121,28 +130,34 @@ function rain(a: AudioContext, out: GainNode): () => void {
 
 /** A ceiling fan: a low hum, and the blades sweeping the air about three times a second. */
 function fan(a: AudioContext, out: GainNode): () => void {
-  const hum = a.createOscillator();
-  hum.type = "sine";
-  hum.frequency.value = 50;
-  const humG = a.createGain();
-  humG.gain.value = 0.08;
-  hum.connect(humG).connect(out);
-  const lp = a.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 700;
+  // The motor's hum, with the overtones small speakers can actually play.
+  const hums = [100, 150, 200].map((f, i) => {
+    const o = a.createOscillator();
+    o.type = "sine";
+    o.frequency.value = f;
+    const g = a.createGain();
+    g.gain.value = [0.05, 0.03, 0.015][i]!;
+    o.connect(g).connect(out);
+    o.start();
+    return o;
+  });
+  // The blades moving air: a band of noise around 600 Hz that swells about three times a second.
+  const bp = a.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = 600;
+  bp.Q.value = 0.6;
   const sweep = a.createGain();
-  sweep.gain.value = 0.35;
+  sweep.gain.value = 1.4;
   const lfo = a.createOscillator();
   lfo.frequency.value = 3.1;
   const depth = a.createGain();
-  depth.gain.value = 0.18;
+  depth.gain.value = 0.6;
   lfo.connect(depth).connect(sweep.gain);
-  const src = loopNoise(a, lp);
-  lp.connect(sweep).connect(out);
-  hum.start();
+  const src = loopNoise(a, bp);
+  bp.connect(sweep).connect(out);
   lfo.start();
   return () => {
-    hum.stop();
+    for (const o of hums) o.stop();
     lfo.stop();
     src.stop();
   };
@@ -165,18 +180,18 @@ function crickets(a: AudioContext, out: GainNode): () => void {
       o.frequency.value = freq * (0.99 + Math.random() * 0.02);
       const e = a.createGain();
       e.gain.value = 0;
-      // three quick pulses
-      for (let i = 0; i < 3; i++) {
-        const at = t + i * 0.05;
+      // four quick pulses
+      for (let i = 0; i < 4; i++) {
+        const at = t + i * 0.045;
         e.gain.setValueAtTime(0.0001, at);
-        e.gain.exponentialRampToValueAtTime(0.09, at + 0.008);
-        e.gain.exponentialRampToValueAtTime(0.0001, at + 0.035);
+        e.gain.exponentialRampToValueAtTime(0.3, at + 0.006);
+        e.gain.exponentialRampToValueAtTime(0.0001, at + 0.034);
       }
       const p = a.createStereoPanner();
       p.pan.value = pan;
       o.connect(e).connect(p).connect(out);
       o.start(t);
-      o.stop(t + 0.2);
+      o.stop(t + 0.25);
       timers.push(window.setTimeout(chirp, gap * (0.8 + Math.random() * 0.5)));
     };
     timers.push(window.setTimeout(chirp, Math.random() * gap));
@@ -203,22 +218,39 @@ function bikes(a: AudioContext, out: GainNode): () => void {
     const len = 4 + Math.random() * 3;
     const o = a.createOscillator();
     o.type = "sawtooth";
-    const base = 70 + Math.random() * 40;
+    const base = 95 + Math.random() * 45;
     o.frequency.setValueAtTime(base * 1.12, t);
     o.frequency.linearRampToValueAtTime(base * 1.12, t + len * 0.45);
     o.frequency.linearRampToValueAtTime(base * 0.86, t + len * 0.6);
     const lp = a.createBiquadFilter();
     lp.type = "lowpass";
-    lp.frequency.value = 420;
+    lp.frequency.value = 1300;
+    lp.Q.value = 2;
     const e = a.createGain();
     e.gain.setValueAtTime(0.0001, t);
-    e.gain.exponentialRampToValueAtTime(0.12, t + len * 0.5);
+    e.gain.exponentialRampToValueAtTime(0.32, t + len * 0.5);
     e.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    // the tyres on wet asphalt
+    const hiss = a.createBufferSource();
+    hiss.buffer = noiseBuffer(a);
+    const hbp = a.createBiquadFilter();
+    hbp.type = "bandpass";
+    hbp.frequency.value = 1500;
+    hbp.Q.value = 0.8;
+    const hg = a.createGain();
+    hg.gain.value = 0.5;
+    hiss.connect(hbp).connect(hg).connect(e);
+    hiss.start(t, Math.random() * 3);
+    hiss.stop(t + len + 0.1);
     const p = a.createStereoPanner();
     const from = Math.random() < 0.5 ? -0.9 : 0.9;
     p.pan.setValueAtTime(from, t);
     p.pan.linearRampToValueAtTime(-from, t + len);
-    o.connect(lp).connect(e).connect(p).connect(out);
+    // its lowest note is below what small speakers play; leave it out and let the overtones carry it
+    const hp = a.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 170;
+    o.connect(hp).connect(lp).connect(e).connect(p).connect(out);
     o.start(t);
     o.stop(t + len + 0.1);
     timer = window.setTimeout(pass, 12_000 + Math.random() * 30_000);
