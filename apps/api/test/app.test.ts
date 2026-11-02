@@ -192,6 +192,20 @@ describe("reports and moderation", () => {
     expect(keep.status).toBe(200);
     expect((await call("/entries/by/lan/the-last-tram")).status).toBe(200);
     expect((await (await call("/admin/reports", { admin: true })).json()) as unknown[]).toHaveLength(0);
+
+    // The same readers may report it again after that, and they count again.
+    await report("10.5.0.1");
+    await report("10.5.0.2");
+    await report("10.5.0.3");
+    expect((await call("/entries/by/lan/the-last-tram")).status).toBe(404);
+    const again = (await (await call("/admin/reports", { admin: true })).json()) as Array<{ count: number }>;
+    expect(again[0]?.count).toBe(3);
+    await call(`/admin/entries/${tram!.id}`, {
+      method: "PATCH",
+      admin: true,
+      body: JSON.stringify({ status: "visible" }),
+    });
+    expect((await call("/entries/by/lan/the-last-tram")).status).toBe(200);
   });
 
   it("closes a suspended member's desktop and pages", async () => {

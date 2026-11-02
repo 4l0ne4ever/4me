@@ -3,6 +3,9 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { Context } from "hono";
 import { almost, blasts, entries, notes, shouts, users } from "../db/schema";
 import type { AppEnv } from "../env";
+import { links } from "./entries";
+import { isSealed } from "./map";
+import { photoLink } from "./photo-links";
 
 /**
  * Everything one member wrote, for them to keep: every page (private ones and sealed letters too), what readers
@@ -50,7 +53,10 @@ export async function diaryExport(c: Context<AppEnv>, id: number): Promise<Diary
       visibility: p.visibility,
       opensAt: p.opensAt?.toISOString() ?? null,
       song: p.songTitle ? { title: p.songTitle, artist: p.songArtist ?? "", url: p.songUrl || null } : null,
-      photos: p.photos,
+      photos: p.photos.map((ph) => ({
+        ...ph,
+        src: photoLink(links(c), ph.url, p.id, { visibility: p.visibility, status: p.status, sealed: isSealed(p) }),
+      })),
       readCount: p.readCount,
       notes: pageNotes
         .filter((n) => n.entryId === p.id)

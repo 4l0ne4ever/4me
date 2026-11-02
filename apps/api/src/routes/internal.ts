@@ -53,8 +53,8 @@ import {
   fileReport,
   isReadable,
   isUniqueViolation,
+  links,
   noteCount,
-  origin,
   photoKeys,
   positiveId,
   readableEntry,
@@ -73,6 +73,7 @@ import {
 } from "../lib/guard";
 import { isSealed, toAlmost, toAuthor, toBlast, toEntry, toNote, toShout, toSummary } from "../lib/map";
 import { notify, publish, quote, recentNotifications } from "../lib/notify";
+import { forgetCached } from "../lib/photo-links";
 import { countsFor, dropReactions, mine, react } from "../lib/reactions";
 import { json } from "../lib/validate";
 import { banRoutes } from "./bans";
@@ -404,6 +405,10 @@ export const internalRoutes = new Hono<AppEnv>()
     // Their photos go first, while the list of what they uploaded still exists.
     const files = await db.select({ key: uploads.key }).from(uploads).where(eq(uploads.userId, id));
     await Promise.allSettled(files.map((f) => c.get("media")?.delete(f.key)));
+    await forgetCached(
+      new URL(c.req.url).origin,
+      files.map((f) => f.key),
+    );
     // Their reactions go; their notes on other people's pages stay, unsigned. Their own pages go with them.
     await db.delete(reactions).where(eq(reactions.reactor, `u:${id}`));
     await db.update(notes).set({ name: "a former reader" }).where(eq(notes.userId, id));
@@ -642,7 +647,7 @@ export const internalRoutes = new Hono<AppEnv>()
       )
       .orderBy(desc(entries.writtenAt))
       .limit(30);
-    return c.json(rows.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, origin(c))));
+    return c.json(rows.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, links(c))));
   })
 
   /** A member reacts to a page or a note, counted once per account. */
@@ -735,7 +740,7 @@ export const internalRoutes = new Hono<AppEnv>()
   .get("/users/:id/entries/:entryId", async (c) => {
     const own = await ownEntry(c);
     if (own instanceof Response) return own;
-    return c.json({ ...toEntry(own.e, own.a, origin(c), {}, true), songId: own.e.songId });
+    return c.json({ ...toEntry(own.e, own.a, links(c), {}, true), songId: own.e.songId });
   })
   .post("/users/:id/entries", json(entryInput), async (c) => {
     const u = await writer(c);
@@ -753,7 +758,7 @@ export const internalRoutes = new Hono<AppEnv>()
       const author = { handle: u.handle, name: u.displayName, avatar: u.avatar };
       // A sealed letter is announced on the day it opens, not now.
       if (row!.visibility === "public" && !isSealed(row!)) {
-        publish(c, ["tonight"], { type: "entry", entry: toSummary(row!, author, origin(c)) });
+        publish(c, ["tonight"], { type: "entry", entry: toSummary(row!, author, links(c)) });
         // Subscribers hear about a new page, the way a blog emails its readers.
         const readers = await c
           .get("db")
@@ -769,7 +774,7 @@ export const internalRoutes = new Hono<AppEnv>()
             actor: { name: u.displayName, avatar: u.avatar },
           });
       }
-      return c.json(toEntry(row!, author, origin(c), {}, true), 201);
+      return c.json(toEntry(row!, author, links(c), {}, true), 201);
     } catch (e) {
       if (isUniqueViolation(e)) return c.json({ error: "you already have a page at that address", field: "slug" }, 409);
       throw e;
@@ -783,7 +788,7 @@ export const internalRoutes = new Hono<AppEnv>()
     try {
       const [row] = await c.get("db").update(entries).set(made.values).where(eq(entries.id, own.e.id)).returning();
       await dropUnusedPhotos(c, own.u.id, photoKeys(own.e.photos));
-      return c.json(toEntry(row!, own.a, origin(c), {}, true));
+      return c.json(toEntry(row!, own.a, links(c), {}, true));
     } catch (e) {
       if (isUniqueViolation(e)) return c.json({ error: "you already have a page at that address", field: "slug" }, 409);
       throw e;
@@ -941,7 +946,7 @@ export const internalRoutes = new Hono<AppEnv>()
         .where(and(eq(entries.id, e.id), isNull(entries.openedAt)))
         .returning({ id: entries.id });
       if (!claimed) continue; // another run got it
-      publish(c, ["tonight"], { type: "entry", entry: toSummary(e, a, origin(c)) });
+      publish(c, ["tonight"], { type: "entry", entry: toSummary(e, a, links(c)) });
       const link = `/u/${a.handle}/${e.slug}`;
       await notify(c, authorId, { kind: "opened", text: `Your sealed letter ${quote(e.title)} just opened`, link });
       const readers = await db
@@ -1020,18 +1025,24 @@ export const internalRoutes = new Hono<AppEnv>()
       if (!(await allow(c, "reset-consume", 10, 3600))) return c.json({ error: "too many attempts, try later" }, 429);
       const { token, passwordHash } = c.req.valid("json");
       const db = c.get("db");
-      const [reset] = await db
-        .select()
-        .from(passwordResets)
-        .where(and(eq(passwordResets.tokenHash, await sha256(token)), gt(passwordResets.expiresAt, new Date())))
-        .limit(1);
-      if (!reset) return c.json({ error: "this link has expired or was already used" }, 400);
-      await db.delete(passwordResets).where(eq(passwordResets.userId, reset.userId));
-      await db
+      // Used up and acted on in one statement: of two requests racing with the same link, only the one whose
+      // DELETE took the row changes the password; the other finds nothing to delete and changes nothing.
+      const used = db.$with("used").as(
+        db
+          .delete(passwordResets)
+          .where(and(eq(passwordResets.tokenHash, await sha256(token)), gt(passwordResets.expiresAt, new Date())))
+          .returning({ userId: passwordResets.userId }),
+      );
+      const [done] = await db
+        .with(used)
         .update(users)
         // The link went to their inbox, so the address is theirs.
         .set({ passwordHash, emailVerified: true, sessionVersion: sql`${users.sessionVersion} + 1` })
-        .where(eq(users.id, reset.userId));
+        .where(inArray(users.id, db.select({ id: used.userId }).from(used)))
+        .returning({ id: users.id });
+      if (!done) return c.json({ error: "this link has expired or was already used" }, 400);
+      // Any other link still out for them stops working too.
+      await db.delete(passwordResets).where(eq(passwordResets.userId, done.id));
       return c.json({ ok: true });
     },
   )

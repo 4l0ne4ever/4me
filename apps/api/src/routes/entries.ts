@@ -10,8 +10,8 @@ import {
   fileReport,
   isOpen,
   isReadable,
+  links,
   noteCount,
-  origin,
   positiveId,
   readableEntry,
   threadOf,
@@ -53,7 +53,7 @@ export const entryRoutes = new Hono<AppEnv>()
       .orderBy(desc(entries.writtenAt))
       .limit(limit);
     c.header("Cache-Control", cache(30));
-    return c.json(rows.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, origin(c))));
+    return c.json(rows.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, links(c))));
   })
   // Every page a search engine may list: addresses and when each last changed, nothing else. Sealed letters wait
   // until they open.
@@ -90,7 +90,7 @@ export const entryRoutes = new Hono<AppEnv>()
       .orderBy(desc(score), desc(entries.readCount), desc(entries.writtenAt))
       .limit(Math.min(Math.max(Number(c.req.query("limit")) || 5, 1), 10));
     c.header("Cache-Control", cache(120));
-    return c.json(rows.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, origin(c))));
+    return c.json(rows.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, links(c))));
   })
   /** One public page, any one: for "turn to a random page" (and Ink, who fetches it). */
   .get("/random", async (c) => {
@@ -142,7 +142,7 @@ export const entryRoutes = new Hono<AppEnv>()
     if (!row) return c.json({ error: "no entries yet" }, 404);
     c.header("Cache-Control", cache(30));
     const counts = (await countsFor(c, "entry", [row.e.id])).get(row.e.id);
-    return c.json(toEntry({ ...row.e, noteCount: row.noteCount }, row.a, origin(c), counts));
+    return c.json(toEntry({ ...row.e, noteCount: row.noteCount }, row.a, links(c), counts));
   })
   .get("/by/:handle/:slug", async (c) => {
     const [row] = await readable(c)
@@ -151,7 +151,7 @@ export const entryRoutes = new Hono<AppEnv>()
     if (!row) return c.json({ error: "not found" }, 404);
     c.header("Cache-Control", cache(30));
     const counts = (await countsFor(c, "entry", [row.e.id])).get(row.e.id);
-    return c.json(toEntry({ ...row.e, noteCount: row.noteCount }, row.a, origin(c), counts));
+    return c.json(toEntry({ ...row.e, noteCount: row.noteCount }, row.a, links(c), counts));
   })
   .post("/:id/read", async (c) => {
     const id = positiveId(c.req.param("id"));

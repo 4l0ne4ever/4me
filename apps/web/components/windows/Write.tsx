@@ -97,7 +97,7 @@ function fromEntry(e: Entry & { songId: number | null }): Draft {
     // Only uploaded photos can be saved again; the path is what the API stored.
     photos: e.photos.flatMap((p) => {
       const at = p.url.indexOf("/media/u/");
-      return at >= 0 ? [{ path: p.url.slice(at), src: p.url, caption: p.caption }] : [];
+      return at >= 0 ? [{ path: p.url.slice(at).replace(/\?.*$/, ""), src: p.url, caption: p.caption }] : [];
     }),
   };
 }

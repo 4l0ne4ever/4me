@@ -200,13 +200,18 @@ describe("photos", () => {
   it("stores the photo, serves it to other sites, and only lets its owner use it", async () => {
     const res = await upload(ticket(mai.id));
     expect(res.status).toBe(201);
-    const { path } = (await res.json()) as { path: string };
+    const { path, url } = (await res.json()) as { path: string; url: string };
     expect(path).toMatch(new RegExp(`^/media/u/${mai.id}/[a-z0-9-]+\\.jpg$`));
+    const local = (u: string) => u.replace("http://localhost", "");
 
-    const served = await call(path, { internal: false });
+    // Not on a page yet: only the signed address its writer got back shows it.
+    expect((await call(path, { internal: false })).status).toBe(404);
+    const served = await call(local(url), { internal: false });
     expect(served.status).toBe(200);
     expect(served.headers.get("cross-origin-resource-policy")).toBe("cross-origin");
+    expect(served.headers.get("cache-control")).toContain("private");
     expect(Buffer.from(await served.arrayBuffer()).includes("GPS!")).toBe(false);
+    expect((await call(local(url).replace(/s=[^&]+/, `s=${"A".repeat(43)}`), { internal: false })).status).toBe(404);
 
     const stolen = await send("POST", `/internal/users/${khoa.id}/entries`, { ...page, photos: [{ url: path }] });
     expect(stolen.status).toBe(400);
@@ -222,11 +227,37 @@ describe("photos", () => {
       photos: [{ url: path, caption: "the window" }],
     });
     const entry = (await made.json()) as { id: number; photos: Array<{ url: string }> };
+    // On a public page: a plain address, for anyone.
     expect(entry.photos[0]?.url).toBe(`http://localhost${path}`);
+    const open = await call(path, { internal: false });
+    expect(open.status).toBe(200);
+    expect(open.headers.get("cache-control")).toBe("public, max-age=300");
+
+    // Made private: the plain address stops working; its writer gets a signed one, bound to the page as it is now.
+    const priv = await send("PUT", `/internal/users/${mai.id}/entries/${entry.id}`, {
+      ...page,
+      title: "with a photo",
+      visibility: "private",
+      photos: [{ url: path, caption: "the window" }],
+    });
+    const mine = ((await priv.json()) as { photos: Array<{ url: string }> }).photos[0]!.url;
+    expect(mine).toContain(`e=${entry.id}`);
+    expect((await call(path, { internal: false })).status).toBe(404);
+    expect((await call(local(mine), { internal: false })).status).toBe(200);
+
+    // Changed again (a draft now): the address handed out while it was private is over.
+    await send("PUT", `/internal/users/${mai.id}/entries/${entry.id}`, {
+      ...page,
+      title: "with a photo",
+      visibility: "draft",
+      photos: [{ url: path, caption: "the window" }],
+    });
+    expect((await call(local(mine), { internal: false })).status).toBe(404);
 
     // Deleting the page deletes the photo it carried.
     await send("DELETE", `/internal/users/${mai.id}/entries/${entry.id}`);
     expect((await call(path, { internal: false })).status).toBe(404);
+    expect((await call(local(url), { internal: false })).status).toBe(404);
   });
 });
 

@@ -5095,16 +5095,18 @@ body.daytime .sky-tint {
 
 /* Tonight: what is on, when it is not an ordinary night */
 .tn-occ {
+  --occ: var(--amber);
   margin: 0 0 12px;
-  padding: 8px 10px 9px 12px;
-  border-left: 3px solid var(--amber);
-  background: color-mix(in srgb, var(--amber) 9%, transparent);
+  padding: 8px 12px 9px;
+  /* a slip of paper tucked into the window: a hairline dashed edge, the night's own colour faintly behind */
+  border: 1px dashed color-mix(in srgb, var(--occ) 55%, var(--chrome-edge));
+  background: color-mix(in srgb, var(--occ) 8%, transparent);
 }
 .tn-occ-halloween {
-  border-left-color: #e0782a;
+  --occ: #e0782a;
 }
 .tn-occ-solstice {
-  border-left-color: #6f9be0;
+  --occ: #6f9be0;
 }
 .tn-occ-t {
   display: flex;
@@ -5117,7 +5119,7 @@ body.daytime .sky-tint {
   font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--amber);
+  color: var(--occ);
 }
 .tn-occ-t b {
   font-family: var(--font-serif), Georgia, serif;

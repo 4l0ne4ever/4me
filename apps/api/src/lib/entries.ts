@@ -4,6 +4,7 @@ import type { Context } from "hono";
 import type { z } from "zod";
 import { entries, nightEvents, noteReports, notes, reports, uploads, users } from "../db/schema";
 import type { AppEnv } from "../env";
+import { forgetCached, type Links } from "./photo-links";
 
 // Written out with explicit table names: inside the subquery an unqualified "id" would mean notes.id.
 export const noteCount = sql<number>`(select count(*)::int from "notes" n where n."entry_id" = "entries"."id" and n."status" = 'visible')`;
@@ -18,7 +19,8 @@ export const isReadable = and(
   eq(users.status, "active"),
 );
 
-export const origin = (c: Context<AppEnv>) => new URL(c.req.url).origin;
+/** Where this API answers, and the key its signed photo addresses are made with. */
+export const links = (c: Context<AppEnv>): Links => ({ origin: new URL(c.req.url).origin, secret: c.env.ADMIN_TOKEN });
 
 /** Not a sealed letter any more (or never one): its words may be read, searched and answered. */
 export const isOpen = or(isNull(entries.opensAt), lte(entries.opensAt, sql`now()`));
@@ -144,6 +146,7 @@ export async function dropUnusedPhotos(c: Context<AppEnv>, userId: number, keys:
   const gone = [...new Set(keys)].filter((k) => !inUse.has(k));
   if (gone.length === 0) return;
   await Promise.allSettled(gone.map((k) => c.get("media")?.delete(k)));
+  await forgetCached(new URL(c.req.url).origin, gone);
   await db.delete(uploads).where(and(eq(uploads.userId, userId), inArray(uploads.key, gone)));
 }
 
@@ -217,9 +220,18 @@ export async function fileReport(
   reason: (typeof reports.$inferInsert)["reason"],
 ) {
   const db = c.get("db");
-  await db.insert(reports).values({ entryId, reporter, reason }).onConflictDoNothing();
   const [entry] = await db.select({ clearedAt: entries.clearedAt }).from(entries).where(eq(entries.id, entryId));
   const since = entry?.clearedAt ?? new Date(0);
+  // One report per reader per page, but a report the moderator already settled (from before the page was cleared)
+  // no longer counts: reporting again replaces it instead of being swallowed by the old one.
+  await db
+    .insert(reports)
+    .values({ entryId, reporter, reason })
+    .onConflictDoUpdate({
+      target: [reports.entryId, reports.reporter],
+      set: { reason, createdAt: sql`now()` },
+      setWhere: lte(reports.createdAt, since),
+    });
   const [{ n } = { n: 0 }] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(reports)

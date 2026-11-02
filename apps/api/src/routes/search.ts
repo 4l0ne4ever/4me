@@ -3,7 +3,7 @@ import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { Hono } from "hono";
 import { entries, users } from "../db/schema";
 import type { AppEnv } from "../env";
-import { authorCols, isOpen, isReadable, noteCount, origin } from "../lib/entries";
+import { authorCols, isOpen, isReadable, links, noteCount } from "../lib/entries";
 import { allow } from "../lib/guard";
 import { toAuthor, toSummary } from "../lib/map";
 
@@ -36,6 +36,6 @@ export const searchRoutes = new Hono<AppEnv>().get("/search", async (c) => {
   c.header("Cache-Control", "public, max-age=30, s-maxage=30");
   return c.json({
     people: people.map((p) => ({ ...toAuthor(p), bio: p.bio })),
-    pages: pages.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, origin(c))),
+    pages: pages.map((r) => toSummary({ ...r.e, noteCount: r.noteCount }, r.a, links(c))),
   } satisfies SearchResults);
 });

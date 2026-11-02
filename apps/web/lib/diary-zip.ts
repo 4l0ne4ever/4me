@@ -127,6 +127,8 @@ export async function diaryZip(diary: DiaryExport, onProgress?: (done: number, t
   const { strToU8, zip } = await import("fflate");
   const photos = photoPaths(diary);
   const entries = [...photos.entries()];
+  // Photos on pages that aren't public come with a signed address to fetch them from.
+  const src = new Map(diary.pages.flatMap((p) => p.photos.map((ph) => [ph.url, ph.src ?? ph.url] as const)));
   const bytes: Record<string, Uint8Array | [Uint8Array, { level: 0 }]> = {};
   const missing: string[] = [];
   let done = 0;
@@ -135,7 +137,7 @@ export async function diaryZip(diary: DiaryExport, onProgress?: (done: number, t
     for (let next = queue.shift(); next; next = queue.shift()) {
       const [url, path] = next;
       try {
-        const res = await fetch(fetchable(url));
+        const res = await fetch(fetchable(src.get(url) ?? url));
         if (!res.ok) throw new Error(String(res.status));
         // JPEGs are already compressed; storing them as they are is faster and no bigger.
         bytes[path] = [new Uint8Array(await res.arrayBuffer()), { level: 0 }];

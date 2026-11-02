@@ -280,7 +280,8 @@ export type DiaryExport = {
     /** A sealed letter's opening time. */
     opensAt: string | null;
     song: { title: string; artist: string; url: string | null } | null;
-    photos: Photo[];
+    /** `url` is where the photo is kept; `src`, when there is one, a short-lived address to fetch it from. */
+    photos: Array<Photo & { src?: string }>;
     readCount: number;
     /** What readers left on the page (visible notes only), oldest first. */
     notes: Array<{ id: number; replyTo: number | null; name: string; body: string; at: string }>;

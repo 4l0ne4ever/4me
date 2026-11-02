@@ -11,15 +11,26 @@ import {
   type Shout,
 } from "@4me/shared";
 import type { almost, blasts, entries, notes, shouts } from "../db/schema";
+import { type Links, type PageState, photoLink } from "./photo-links";
 
 type EntryRow = typeof entries.$inferSelect & { noteCount?: number };
 export type AuthorRow = { handle: string; name: string; avatar: string };
 
 export const toAuthor = (a: AuthorRow): Author => ({ handle: a.handle, name: a.name, avatar: avatarUrl(a.avatar) });
 
-/** Uploaded photos are stored as "/media/…" and served by this API; older ones are the web app's own files. */
-const photoUrl = (url: string, origin: string) => (url.startsWith("/media/") ? `${origin}${url}` : url);
-const withOrigin = (p: Photo, origin: string): Photo => ({ ...p, url: photoUrl(p.url, origin) });
+/**
+ * Uploaded photos are stored as "/media/…" and served by this API (older ones are the web app's own files). The
+ * address depends on who may see the page now: see photo-links.ts.
+ */
+const pageState = (row: EntryRow): PageState => ({
+  visibility: row.visibility,
+  status: row.status,
+  sealed: isSealed(row),
+});
+const linked = (p: Photo, row: EntryRow, links: Links): Photo => ({
+  ...p,
+  url: photoLink(links, p.url, row.id, pageState(row)),
+});
 
 function song(row: EntryRow) {
   if (!row.songUrl && !row.songTitle) return null;
@@ -41,7 +52,7 @@ export const isSealed = (row: { opensAt: Date | null }, now = Date.now()) =>
  * A page as readers see it. While it is a sealed letter only its title, writer and dates show; `reveal` is for its
  * writer, who always sees everything.
  */
-export function toSummary(row: EntryRow, author: AuthorRow, origin: string, reveal = false): EntrySummary {
+export function toSummary(row: EntryRow, author: AuthorRow, links: Links, reveal = false): EntrySummary {
   const sealed = isSealed(row);
   const cover = sealed && !reveal ? undefined : row.photos[0];
   return {
@@ -53,7 +64,7 @@ export function toSummary(row: EntryRow, author: AuthorRow, origin: string, reve
     weather: row.weather,
     writtenAt: row.writtenAt.toISOString(),
     song: sealed && !reveal ? null : song(row),
-    cover: cover ? withOrigin(cover, origin) : null,
+    cover: cover ? linked(cover, row, links) : null,
     noteCount: Number(row.noteCount ?? 0),
     sealedUntil: sealed ? row.opensAt!.toISOString() : null,
     prompt: row.prompt ?? null,
@@ -64,16 +75,16 @@ export function toSummary(row: EntryRow, author: AuthorRow, origin: string, reve
 export function toEntry(
   row: EntryRow,
   author: AuthorRow,
-  origin: string,
+  links: Links,
   reactions: Reactions = {},
   reveal = false,
 ): Entry {
   const hide = isSealed(row) && !reveal;
   return {
-    ...toSummary(row, author, origin, reveal),
+    ...toSummary(row, author, links, reveal),
     body: hide ? "" : row.body,
     reactions: hide ? {} : reactions,
-    photos: hide ? [] : row.photos.map((p) => withOrigin(p, origin)),
+    photos: hide ? [] : row.photos.map((p) => linked(p, row, links)),
     visibility: row.visibility,
     readCount: row.readCount,
     buzzCount: row.buzzCount,

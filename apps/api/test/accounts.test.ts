@@ -227,6 +227,17 @@ describe("accounts", () => {
     expect((await post("/internal/resets/consume", { token, passwordHash: HASH })).status).toBe(200);
     expect((await post("/internal/resets/consume", { token, passwordHash: HASH })).status).toBe(400);
   });
+
+  it("lets only one of two requests racing with the same reset link through", async () => {
+    const { token } = (await (await post("/internal/resets", { email: "wren@example.com" })).json()) as {
+      token: string;
+    };
+    const [a, b] = await Promise.all([
+      post("/internal/resets/consume", { token, passwordHash: HASH }),
+      post("/internal/resets/consume", { token, passwordHash: HASH }),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 400]);
+  });
 });
 
 describe("Google", () => {
