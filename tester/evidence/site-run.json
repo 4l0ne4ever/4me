@@ -1,0 +1,50 @@
+{
+  "at": "2026-10-23T08:48:19.572Z",
+  "site": "https://2die429.com",
+  "results": [
+    {
+      "status": "FAIL",
+      "id": "S-01",
+      "title": "10 wrong passwords in a row meet a limit or a lockout",
+      "seen": [
+        "1:529ms /admin?error=password",
+        "2:266ms /admin?error=password",
+        "3:260ms /admin?error=password",
+        "4:262ms /admin?error=password",
+        "5:260ms /admin?error=password",
+        "6:256ms /admin?error=password",
+        "7:259ms /admin?error=password",
+        "8:259ms /admin?error=password",
+        "9:260ms /admin?error=password",
+        "10:257ms /admin?error=password"
+      ]
+    },
+    {
+      "status": "PASS",
+      "id": "S-02",
+      "title": "no sideways scrolling on a phone",
+      "seen": {
+        "front": false,
+        "page": false
+      }
+    },
+    {
+      "status": "INFO",
+      "id": "S-02b",
+      "title": "phone browser problems",
+      "seen": []
+    },
+    {
+      "status": "INFO",
+      "id": "S-03",
+      "title": "ms per load, three loads each",
+      "seen": {
+        "2die429.com/": [179, 61, 62],
+        "2die429.com/u/hdiu": [2105, 117, 108],
+        "2die429.com/welcome": [122, 161, 134],
+        "api.2die429.com/entries?limit=20": [238, 161, 318],
+        "api.2die429.com/archive": [133, 119, 156]
+      }
+    }
+  ]
+}

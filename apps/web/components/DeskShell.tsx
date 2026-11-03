@@ -58,6 +58,7 @@ import {
   IconSearch,
   IconTidy,
   IconTonight,
+  IconWolf,
   IconWrite,
 } from "./Icons";
 import { feedInkAt, Ink, inkName, nudgeInk } from "./ink/Ink";
@@ -72,6 +73,7 @@ import { Seasons } from "./night/Seasons";
 import { skyColours } from "./night/sky";
 import { Skyline } from "./Skyline";
 import { type Pos, Window } from "./Window";
+import { Werewolf } from "./werewolf/Werewolf";
 import { Account } from "./windows/Account";
 import { DisplayProperties, paintStyle } from "./windows/DisplayProperties";
 import { Readme } from "./windows/Readme";
@@ -96,7 +98,8 @@ export type WinId =
   | "display"
   | "account"
   | "readme"
-  | "poem";
+  | "poem"
+  | "wolf";
 type WinState = { open: boolean; min: boolean; z: number; pos?: Pos };
 
 export const WINDOWS: Record<
@@ -176,6 +179,12 @@ export const WINDOWS: Record<
     icon: (c) => <IconPoem className={c} />,
     className: "w-poem",
   },
+  wolf: {
+    title: "Werewolf — the village at night",
+    task: "Werewolf",
+    icon: (c) => <IconWolf className={c} />,
+    className: "w-wolf",
+  },
   readme: {
     title: "Read me.txt",
     task: "Read me",
@@ -197,6 +206,7 @@ const ICONS: Array<[WinId, string, string]> = [
   ["poem", "Poem", "Tonight's poem: everyone adds one line"],
   ["write", "Notepad", "Write tonight's page"],
   ["search", "Search", "Find a diary or a page"],
+  ["wolf", "Werewolf", "A game for five to sixteen, with voice"],
 ];
 
 /** Set once Read me has been seen, so it opens by itself only on a first visit. */
@@ -341,7 +351,10 @@ export function DeskShell({ children }: { children: ReactNode }) {
     account: { open: false, min: false, z: 10 },
     readme: { open: false, min: false, z: 10 },
     poem: { open: false, min: false, z: 10 },
+    wolf: { open: false, min: false, z: 10 },
   }));
+  /** The werewolf table this reader sits at (from an invite link, or opened from the window). */
+  const [tableCode, setTableCode] = useState<string | null>(null);
   const [focus, setFocus] = useState<WinId>(path === "/" ? "tonight" : "diary");
   const zTop = useRef(20);
   const [startOpen, setStartOpen] = useState(false);
@@ -611,16 +624,42 @@ export function DeskShell({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // An invite to a werewolf table: /?table=k7m2qp opens the window at that table. Read once (and the address
+  // tidied), so effects that run again still know it.
+  const invite = useRef<string | null | undefined>(undefined);
+  const inviteCode = useCallback(() => {
+    if (invite.current === undefined) {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("table");
+      invite.current = code && /^[a-z0-9]{6}$/.test(code) ? code : null;
+      if (url.searchParams.has("table")) {
+        url.searchParams.delete("table");
+        window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+      }
+    }
+    return invite.current;
+  }, []);
   // A first visit opens Read me, once; after that it waits in the Start menu.
   useEffect(() => {
     try {
       if (localStorage.getItem(README_SEEN)) return;
+      // Someone who came by an invite to a werewolf table sits down first; Read me can wait for another visit.
+      if (inviteCode()) return;
     } catch {
       return;
     }
     const t = window.setTimeout(() => open("readme"), 900);
     return () => window.clearTimeout(t);
-  }, [open]);
+  }, [open, inviteCode]);
+  useEffect(() => {
+    const code = inviteCode();
+    if (!code) return;
+    setTableCode(code);
+    open("wolf");
+    // The page underneath brings its own window forward as it loads; the table goes back on top once it has.
+    const t = window.setTimeout(() => open("wolf"), 900);
+    return () => window.clearTimeout(t);
+  }, [open, inviteCode]);
   const readmeDone = useCallback(() => {
     patch("readme", { open: false, min: false });
     try {
@@ -879,6 +918,9 @@ export function DeskShell({ children }: { children: ReactNode }) {
                 onDone={readmeDone}
               />
             </DeskWindow>
+            <DeskWindow id="wolf" title={tableCode ? `Werewolf — table ${tableCode}` : undefined}>
+              <Werewolf me={me} code={tableCode} onCode={setTableCode} />
+            </DeskWindow>
             <DeskWindow id="poem">
               <Poem me={me} night={night} title={occasion?.poem} />
             </DeskWindow>
@@ -981,6 +1023,12 @@ export function DeskShell({ children }: { children: ReactNode }) {
                   >
                     <IconNightSounds />
                     Night sounds…
+                  </button>
+                </li>
+                <li>
+                  <button type="button" role="menuitem" onClick={() => open("wolf")}>
+                    {WINDOWS.wolf.icon()}
+                    Werewolf: play with friends
                   </button>
                 </li>
                 <li>

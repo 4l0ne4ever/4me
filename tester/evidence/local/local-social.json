@@ -1,0 +1,407 @@
+{
+  "at": "2026-10-23T09:16:02.799Z",
+  "site": "http://localhost:3000",
+  "results": [
+    {
+      "status": "PASS",
+      "id": "S-01",
+      "title": "members' and reserved names, empty and too-long notes are refused",
+      "seen": {
+        "no name (a stranger)": "ok",
+        "the writer's own name": "That name belongs to a member. Sign in, or pick another name.",
+        "a member's name in capitals": "That name belongs to a member. Sign in, or pick another name.",
+        "'4me'": "That name is taken. Pick another one.",
+        "'Moderator'": "That name is taken. Pick another one.",
+        "'Lan' with a Cyrillic а (homoglyph)": "ok",
+        "'Lan' with a zero-width space": "ok",
+        "'Lan.' with a dot": "ok",
+        "empty body": "invalid input",
+        "501 characters": "invalid input"
+      }
+    },
+    {
+      "status": "FAIL",
+      "id": "S-01b",
+      "title": "look-alike names of a member are refused too",
+      "seen": {
+        "homoglyph": "ok",
+        "zeroWidth": "ok",
+        "dot": "ok"
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-02",
+      "title": "a reply to a reply joins the same thread; a parent from another page is refused",
+      "seen": {
+        "deeperParent": 11,
+        "top": 11,
+        "cross": 404
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-02b",
+      "title": "the member is told about replies; the writer about notes",
+      "seen": {
+        "reader": [
+          "Night owl replied to your note on “Rain kr6ham”"
+        ],
+        "writer": [
+          "Owl two left a note on “Rain kr6ham”",
+          "Night owl left a note on “Rain kr6ham”",
+          "rd r6hep2 left a note on “Rain kr6ham”",
+          "Lan. left a note on “Rain kr6ham”"
+        ]
+      }
+    },
+    {
+      "status": "FAIL",
+      "id": "S-03",
+      "title": "love then moon = one moon; moon again takes it back; unknown kind and missing page refused",
+      "seen": {
+        "afterTwice": {
+          "reactions": {
+            "moon": 1
+          }
+        },
+        "mine": {
+          "entry": "moon",
+          "notes": {}
+        },
+        "fake": 400,
+        "missing": 404
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-03b",
+      "title": "a member reacts to a note",
+      "seen": {
+        "ok": true,
+        "reactions": {
+          "hug": 1
+        }
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-04",
+      "title": "5 BUZZes a minute then 429; reading three times counts once",
+      "seen": {
+        "codes": [
+          200,
+          200,
+          200,
+          200,
+          200,
+          429
+        ],
+        "reads": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "status": "INFO",
+      "id": "S-04b",
+      "title": "BUZZ notifications the writer got for 5 BUZZes",
+      "seen": 1
+    },
+    {
+      "status": "PASS",
+      "id": "S-05",
+      "title": "one visitor reporting 3 times doesn't hide; 3 different visitors do",
+      "seen": {
+        "visibleAfterSameIp": true,
+        "hiddenAfterThree": true
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-05b",
+      "title": "a page reported by 3 visitors is hidden, and its writer sees why",
+      "seen": {
+        "public": 404,
+        "writerSees": "hidden"
+      }
+    },
+    {
+      "status": "INFO",
+      "id": "S-05c",
+      "title": "is the writer told their page was hidden?",
+      "seen": []
+    },
+    {
+      "status": "PASS",
+      "id": "S-06",
+      "title": "a banned guest can't note or shout on that diary, but can elsewhere",
+      "seen": {
+        "again": 403,
+        "shout": 403,
+        "elsewhere": 201
+      }
+    },
+    {
+      "status": "INFO",
+      "id": "S-06b",
+      "title": "the same person from another address (phone network) gets straight back in",
+      "seen": 201
+    },
+    {
+      "status": "PASS",
+      "id": "S-07",
+      "title": "shouts: plain shows, link waits, unknown diary 404, 281 chars refused; owner deletes, others can't",
+      "seen": {
+        "ok": 201,
+        "pending": true,
+        "nobody": 404,
+        "tooLong": 400,
+        "ownerDelete": {
+          "ok": true
+        },
+        "otherDelete": {
+          "ok": false,
+          "error": "not found",
+          "field": "$undefined"
+        }
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-08",
+      "title": "one line a night per guest and per member; links refused; lines listed in order",
+      "seen": {
+        "first": 201,
+        "second": 409,
+        "link": 400,
+        "member": true,
+        "memberAgain": "you've added your line tonight; come back tomorrow night"
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-09",
+      "title": "accents optional; sealed and private pages never found; people by address",
+      "seen": {
+        "accentless": 1,
+        "accented": 1,
+        "sealed": 0,
+        "private": 0,
+        "wildcardPages": 0
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-10",
+      "title": "answers list has the page; sky counts moods; random/lines/archive answer",
+      "seen": {
+        "answers": 1,
+        "sky": {
+          "night": "2026-10-23",
+          "total": 8,
+          "tones": [
+            {
+              "tone": "tired",
+              "count": 2
+            },
+            {
+              "tone": "drifting",
+              "count": 1
+            },
+            {
+              "tone": "blue",
+              "count": 1
+            }
+          ]
+        },
+        "favourites": [
+          "Rain kr6ham",
+          "The lamps came on before I got home",
+          "R page kr6ham",
+          "Host page",
+          "Host page"
+        ],
+        "random": "Other kr6ham",
+        "lines": 14,
+        "archive": 4,
+        "limitClamp": [
+          12,
+          12,
+          12
+        ],
+        "paging": {
+          "first": 12,
+          "older": 11
+        }
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-10b",
+      "title": "favourites never list a sealed letter",
+      "seen": [
+        "Rain kr6ham",
+        "The lamps came on before I got home",
+        "R page kr6ham",
+        "Host page",
+        "Host page",
+        "Bus 18 and the fogged-up window",
+        "Thirteen minutes to three",
+        "The last tram"
+      ]
+    },
+    {
+      "status": "PASS",
+      "id": "S-11",
+      "title": "sealed: no words before; words after its time; subscriber told once",
+      "seen": {
+        "before": "",
+        "after": "the inside kr6ham",
+        "subscriberTold": 1
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-12",
+      "title": "the plan is public with its question; shift pages are sealed until the end",
+      "seen": {
+        "plan": 201,
+        "startsAt": "2026-10-23T09:06:00.000Z",
+        "endsAt": "2026-10-23T09:16:00.000Z",
+        "sealedUntil": "2026-10-23T09:16:00.000Z",
+        "listed": 2
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-12b",
+      "title": "when the shift ends, both pages open",
+      "seen": {
+        "a": "shift words A kr6ham",
+        "b": "shift words B kr6ham"
+      }
+    },
+    {
+      "status": "INFO",
+      "id": "S-12c",
+      "title": "a page that says it is in the shift, written after the shift ended",
+      "seen": {
+        "sealedUntil": null,
+        "shift": 1
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-12d",
+      "title": "a past night or a second plan for the same night is refused",
+      "seen": {
+        "past": 400,
+        "twice": 409
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-13",
+      "title": "edit shows 'edited'; adding a link holds it; the page's writer can delete it",
+      "seen": {
+        "edited": "2026-10-23T09:16:02.096Z",
+        "pending": true,
+        "writerDelete": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-13b",
+      "title": "nobody can note on a private page",
+      "seen": {
+        "ok": false,
+        "error": "not found",
+        "field": "$undefined"
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-14",
+      "title": "marking read clears the unread count",
+      "seen": {
+        "before": 17,
+        "after": 0,
+        "kept": 17
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-15",
+      "title": "the feed has the diary's public pages; you can't subscribe to yourself",
+      "seen": {
+        "feed": 7,
+        "subs": [
+          "wr_r6har1"
+        ],
+        "self": "that's your own diary"
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-15b",
+      "title": "private pages never reach a subscriber's feed"
+    },
+    {
+      "status": "ERROR",
+      "id": "S-16",
+      "title": "a year ago tonight",
+      "seen": "could not write: 429 {\"error\":\"that's ten pages today already, the rest can wait for tomorrow\"}"
+    },
+    {
+      "status": "PASS",
+      "id": "S-17",
+      "title": "petting counts; unknown actions refused",
+      "seen": {
+        "before": {
+          "pets": 1204,
+          "fish": 318,
+          "plays": 77
+        },
+        "pet": {
+          "pets": 1205,
+          "fish": 318,
+          "plays": 77
+        },
+        "bad": 404,
+        "look": 200
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "S-18",
+      "title": "now-playing, recent tracks and video lookup answer without errors",
+      "seen": {
+        "np": 200,
+        "recent": 200,
+        "video": "200 {\"videoId\":null}"
+      }
+    },
+    {
+      "status": "FAIL",
+      "id": "S-19",
+      "title": "nothing private or sealed in RSS or the sitemap",
+      "seen": {
+        "rssLeaks": [
+          "Sealed"
+        ],
+        "sitemapLeaks": []
+      }
+    },
+    {
+      "status": "INFO",
+      "id": "S-99",
+      "title": "browser problems",
+      "seen": []
+    }
+  ]
+}

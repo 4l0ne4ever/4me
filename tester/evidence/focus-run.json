@@ -1,0 +1,196 @@
+{
+  "at": "2026-10-23T08:40:52.060Z",
+  "site": "https://2die429.com",
+  "results": [
+    {
+      "status": "INFO",
+      "id": "F-11a",
+      "title": "saved",
+      "seen": {
+        "res": "opened /u/valeria/qa-mvkpyh08-l",
+        "sealChecked": true,
+        "opens": "2026-10-25T15:39"
+      }
+    },
+    {
+      "status": "INFO",
+      "id": "F-11b",
+      "title": "what the public API returns for it",
+      "seen": {
+        "sealedUntil": "2026-10-25T08:39:00.000Z",
+        "bodyShown": false,
+        "mood": "MOODSECRETmvkpyh08",
+        "weather": "WEATHERSECRETmvkpyh08"
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "F-11c",
+      "title": "the letter's words stay hidden everywhere",
+      "seen": {
+        "GET /entries/by": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "GET /entries?author": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "GET /entries (front list)": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "GET /entries/latest": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "page HTML": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "diary HTML": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "GET /archive": {
+          "body": false,
+          "mood": false,
+          "weather": false
+        }
+      }
+    },
+    {
+      "status": "FAIL",
+      "id": "F-11d",
+      "title": "the mood and weather stay hidden too (as /archive already does)",
+      "seen": {
+        "GET /entries/by": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "GET /entries?author": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "GET /entries (front list)": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "GET /entries/latest": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "page HTML": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "diary HTML": {
+          "body": false,
+          "mood": true,
+          "weather": true
+        },
+        "GET /archive": {
+          "body": false,
+          "mood": false,
+          "weather": false
+        }
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "F-15",
+      "title": "Delete removes the blast from the Notepad and the diary",
+      "seen": {
+        "stillListed": false,
+        "stillPublic": false,
+        "requests": [
+          "POST 200 /",
+          "POST 200 /",
+          "POST 200 /",
+          "GET 200 /manifest.webmanifest",
+          "GET 200 /icons/icon-192.png"
+        ],
+        "panelMsg": "Blast: one line on your Messenger, like a status\nBlast\nAlmost posted: a line you took back, shown crossed out\nBin it"
+      }
+    },
+    {
+      "status": "INFO",
+      "id": "F-15b",
+      "title": "after a reload, is it still in the list?",
+      "seen": false
+    },
+    {
+      "status": "INFO",
+      "id": "F-09a",
+      "title": "guest opened the page",
+      "seen": {
+        "ms": 133,
+        "shown": true,
+        "sockets": []
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "F-09-1",
+      "title": "note #1 reaches the open guest page live",
+      "seen": {
+        "ms": 504
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "F-09-2",
+      "title": "note #2 reaches the open guest page live",
+      "seen": {
+        "ms": 1
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "F-09-3",
+      "title": "note #3 reaches the open guest page live",
+      "seen": {
+        "ms": 1
+      }
+    },
+    {
+      "status": "PASS",
+      "id": "F-90",
+      "title": "[QA] pages deleted",
+      "seen": ["[QA] live mvkpyh08", "[QA] letter mvkpyh08"]
+    },
+    {
+      "status": "INFO",
+      "id": "F-99",
+      "title": "member browser problems",
+      "seen": [
+        {
+          "kind": "http",
+          "text": "POST 404 https://api.2die429.com/entries/19/read"
+        }
+      ]
+    },
+    {
+      "status": "INFO",
+      "id": "F-99b",
+      "title": "guest browser problems",
+      "seen": [
+        {
+          "kind": "http",
+          "text": "POST 404 https://api.2die429.com/entries/19/read"
+        }
+      ]
+    }
+  ]
+}

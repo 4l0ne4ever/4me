@@ -5189,3 +5189,1512 @@ body.daytime .sky-tint {
     0 0 6px 2px rgba(255, 196, 90, 0.8),
     0 0 18px 6px rgba(255, 180, 70, 0.35);
 }
+
+/* ---------- Werewolf: a village on the horizon ---------- */
+
+.w-wolf {
+  left: max(150px, calc(50% - 470px));
+  top: 18px;
+  width: min(940px, calc(100vw - 180px));
+  height: calc(100% - 36px);
+  min-width: 340px;
+}
+.ww {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  color: var(--chrome-ink);
+  font-size: 14px;
+}
+.ww ::selection {
+  background: rgba(240, 172, 92, 0.4);
+  color: #fff;
+}
+.ww .btn:focus-visible,
+.ww button:focus-visible,
+.ww input:focus-visible,
+.ww select:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.ww-primary {
+  background: var(--amber);
+  border-color: #c98a40;
+  color: #1b130c;
+}
+.ww-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ww .btn.on {
+  background: var(--amber);
+  border-color: #c98a40;
+  color: #1b130c;
+}
+.ww-quiet {
+  color: var(--chrome-dim);
+  margin: 4px 0;
+}
+.ww-hint {
+  color: var(--chrome-dim);
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+.ww-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ww-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  cursor: pointer;
+}
+.ww-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--amber);
+}
+.role-ic {
+  width: 1.1em;
+  height: 1.1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -0.18em;
+  flex-shrink: 0;
+}
+.role-ic.big {
+  width: 44px;
+  height: 44px;
+  stroke-width: 1.1;
+}
+
+/* the village: a fixed picture, so the houses' buttons sit exactly on the houses */
+.vl {
+  position: relative;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 250px;
+  overflow: hidden;
+  isolation: isolate;
+}
+.vl-sky {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 2400ms ease;
+  z-index: -1;
+}
+.vl-sky.on {
+  opacity: 1;
+}
+.vl-sky.s-lobby {
+  background: linear-gradient(#0f1d36 0%, #22385c 58%, #3b5376 100%);
+}
+.vl-sky.s-night {
+  background: linear-gradient(#05080f 0%, #0b1527 62%, #16243d 100%);
+}
+.vl-sky.s-dawn {
+  background: linear-gradient(#25355a 0%, #7f6680 52%, #dba06c 100%);
+}
+.vl-sky.s-day {
+  background: linear-gradient(#6a8bb3 0%, #a6bdd5 60%, #d4dbe0 100%);
+}
+.vl-sky.s-dusk {
+  background: linear-gradient(#273152 0%, #74526a 58%, #c47e58 100%);
+}
+.vl-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.vl-stars circle {
+  fill: #dfe8ff;
+  opacity: 0.75;
+  animation: vl-twinkle 5.2s ease-in-out infinite alternate;
+}
+.vl-stars.dim circle {
+  opacity: 0.35;
+}
+@keyframes vl-twinkle {
+  to {
+    opacity: 0.25;
+  }
+}
+.vl-orb {
+  transition: transform 1000ms linear;
+}
+.vl-moon {
+  fill: #efe5c8;
+}
+.vl-moon-shade {
+  fill: #1b2a45;
+  opacity: 0.22;
+}
+.vl-sun {
+  fill: #f6e6bd;
+}
+.vl-hill,
+.vl-square,
+.vl-well path,
+.vl-well rect,
+.vh-body,
+.vh-parapet,
+.vh-roof {
+  transition: fill 2400ms ease;
+}
+.vl-hill {
+  fill: #070b12;
+}
+.vl-square {
+  fill: #101824;
+}
+.vl-well rect,
+.vl-well path {
+  fill: #0b111c;
+}
+/* the square's stones: a kerb, and rings of setts round the well */
+.vl-curb {
+  fill: none;
+  stroke: #6f86ad;
+  stroke-opacity: 0.16;
+  stroke-width: 1;
+}
+.vl-paving {
+  fill: none;
+  stroke: #8aa3cc;
+  stroke-opacity: 0.07;
+  stroke-width: 0.8;
+  stroke-dasharray: 3 2;
+}
+.vl-day .vl-curb,
+.vl-dawn .vl-curb {
+  stroke: #2a3444;
+  stroke-opacity: 0.25;
+}
+.vl-day .vl-paving,
+.vl-dawn .vl-paving {
+  stroke: #3a4556;
+  stroke-opacity: 0.18;
+}
+.vl-well-rim {
+  fill: #1c2636;
+}
+.vl-lot {
+  fill: rgba(255, 255, 255, 0.03);
+  stroke: rgba(207, 222, 245, 0.32);
+  stroke-width: 0.8;
+}
+.vh-shadow {
+  fill: #000;
+  opacity: 0.35;
+}
+/* at night the houses stay a step lighter than the hill behind them, so the village reads with every light out */
+.vh-body.s0 {
+  fill: #1b2538;
+}
+.vh-body.s1 {
+  fill: #172032;
+}
+.vh-body.s2 {
+  fill: #1f2a3e;
+}
+.vh-parapet,
+.vh-roof {
+  fill: #080c14;
+}
+.vh-rim {
+  fill: #6f86ad;
+  opacity: 0.45;
+}
+.vh-edge {
+  fill: #8aa3cc;
+  opacity: 0.22;
+}
+.vh-wire,
+.vh-leaves {
+  fill: none;
+  stroke: #080c14;
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.vh-small {
+  fill: #0b111b;
+}
+.vh-door {
+  fill: #06090f;
+}
+.vh-mullion {
+  fill: #06090f;
+  opacity: 0.6;
+}
+.vh-glass {
+  transition: fill 900ms ease;
+}
+.vh-glass.off {
+  fill: #080c14;
+}
+.vh-glass.warm {
+  fill: url(#vl-warm);
+}
+/* the lamp in the window: it fades, so the lights can go out one house at a time when night falls */
+.vh-lamp {
+  fill: url(#vl-warm);
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+.vh-lamp.on {
+  opacity: 1;
+  animation: vh-flicker 7s steps(1, end) infinite;
+}
+@keyframes vh-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  31% {
+    opacity: 0.86;
+  }
+  33% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 0.92;
+  }
+  74% {
+    opacity: 1;
+  }
+}
+/* its light on the stones in front */
+.vh-pool {
+  fill: url(#vl-pool);
+  opacity: 0;
+  transition: opacity 900ms ease;
+  pointer-events: none;
+}
+.vh-pool.on {
+  opacity: 1;
+}
+.vh-pool.low {
+  opacity: 0.35;
+}
+.vl-day .vh-pool,
+.vl-dawn .vh-pool {
+  opacity: 0;
+}
+/* a thread of smoke from each lived-in house, at night and in the evening */
+.vh-smoke circle {
+  fill: #a9b4c6;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: vh-smoke 6s linear infinite;
+}
+@keyframes vh-smoke {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  15% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(5px, -22px) scale(2.2);
+  }
+}
+/* a death: the light gutters and goes out, a wisp leaves the roof, then the window is boarded up */
+.vh.dying .vh-lamp {
+  opacity: 0;
+  animation: vh-gutter 1600ms ease-out;
+}
+@keyframes vh-gutter {
+  0% {
+    opacity: 1;
+  }
+  18% {
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 0.95;
+  }
+  46% {
+    opacity: 0.15;
+  }
+  58% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.vh-wisp {
+  fill: none;
+  stroke: #dfe7f5;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: vh-wisp 3200ms ease-out 900ms both;
+}
+@keyframes vh-wisp {
+  0% {
+    opacity: 0;
+    stroke-dasharray: 0 40;
+    transform: translateY(4px);
+  }
+  30% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    stroke-dasharray: 40 0;
+    transform: translateY(-16px);
+  }
+}
+.vh.dying .vh-planks path {
+  stroke-dasharray: 20;
+  animation: vh-board 500ms ease-out 2200ms both;
+}
+@keyframes vh-board {
+  from {
+    stroke-dashoffset: 20;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.vh.dead .vh-body {
+  transition: opacity 2400ms ease;
+}
+.vh-glass.mine {
+  fill: #4a3820;
+}
+.vh-glass.eyes {
+  fill: #05070b;
+}
+.vh-glass.pale {
+  fill: #b9c9da;
+  opacity: 0.85;
+}
+.vh-spill {
+  fill: #f0b25c;
+  opacity: 0.22;
+  filter: blur(2px);
+}
+.vh-spill.warm {
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+.vh-spill.warm.on {
+  opacity: 0.22;
+}
+.vh-spill.eyes {
+  fill: #ff4a3a;
+  opacity: 0.12;
+}
+.vh-spill.mine {
+  opacity: 0.08;
+}
+.vh.speaking .vh-spill {
+  animation: vh-talk 900ms ease-in-out infinite alternate;
+}
+@keyframes vh-talk {
+  from {
+    opacity: 0.18;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+.vh-eyes rect {
+  fill: #ff5a48;
+}
+.vh-planks path {
+  stroke: #6b5a44;
+  stroke-width: 1.4;
+}
+.vh.dead .vh-body {
+  opacity: 0.72;
+}
+.vh-heart {
+  fill: #ff7a8a;
+}
+.vh-lantern path {
+  fill: none;
+  stroke: #0b0f17;
+  stroke-width: 0.8;
+}
+.vh-lantern rect {
+  fill: #ffcf7a;
+}
+/* daylight on the houses and the square */
+.vl-day .vl-hill,
+.vl-dawn .vl-hill {
+  fill: #4f6170;
+}
+.vl-day .vl-square,
+.vl-dawn .vl-square {
+  fill: #7d8278;
+}
+.vl-day .vl-well rect,
+.vl-day .vl-well path,
+.vl-dawn .vl-well rect,
+.vl-dawn .vl-well path {
+  fill: #3a4252;
+}
+.vl-day .vl-well-rim,
+.vl-dawn .vl-well-rim {
+  fill: #5d6470;
+}
+.vl-day .vh-body.s0,
+.vl-dawn .vh-body.s0 {
+  fill: #3c485b;
+}
+.vl-day .vh-body.s1,
+.vl-dawn .vh-body.s1 {
+  fill: #354153;
+}
+.vl-day .vh-body.s2,
+.vl-dawn .vh-body.s2 {
+  fill: #434f63;
+}
+.vl-day .vh-parapet,
+.vl-day .vh-roof,
+.vl-dawn .vh-parapet,
+.vl-dawn .vh-roof {
+  fill: #2a3342;
+}
+.vl-day .vh-small,
+.vl-dawn .vh-small {
+  fill: #8195ab;
+}
+
+/* the houses as buttons */
+.vh-btn {
+  position: absolute;
+  width: calc(var(--k) * 36px);
+  height: calc(var(--k) * 70px);
+  transform: translate(-50%, -100%);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: default;
+  font: inherit;
+}
+.vh-btn.pickable {
+  cursor: pointer;
+}
+.vh-hit {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  transition:
+    outline-color 150ms ease,
+    background 150ms ease;
+  outline: 1.5px dashed transparent;
+  outline-offset: 2px;
+}
+.vh-btn.pickable .vh-hit {
+  outline-color: rgba(240, 172, 92, 0.45);
+}
+.vh-btn.pickable:hover .vh-hit,
+.vh-btn.pickable:focus-visible .vh-hit {
+  outline-color: var(--amber);
+  background: rgba(240, 172, 92, 0.12);
+}
+.vh-btn.chosen .vh-hit {
+  outline: 2px solid var(--amber);
+}
+.vh-btn:focus-visible {
+  outline: none;
+}
+.vh-btn:focus-visible .vh-name {
+  box-shadow: 0 0 0 2px var(--amber);
+}
+.vh-name {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 11em;
+  padding: 1px 6px 2px;
+  background: rgba(7, 11, 18, 0.78);
+  border: 1px solid rgba(160, 180, 210, 0.22);
+  color: #eef2f8;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.vh-nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vh-btn.mine .vh-name {
+  border-color: rgba(240, 172, 92, 0.7);
+  color: #ffd9a8;
+}
+.vh-btn.chosen .vh-name {
+  background: var(--amber);
+  border-color: #c98a40;
+  color: #1b130c;
+}
+.vh-btn.dead .vh-nm {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  opacity: 0.7;
+}
+.vh-btn.away .vh-name {
+  opacity: 0.65;
+  font-style: italic;
+}
+/* someone talking: their name lights green, with a small pulse, whatever the hour */
+.vh-btn.speaking .vh-name {
+  border-color: var(--ok);
+  box-shadow: 0 0 0 1px var(--ok);
+}
+.vh-btn.speaking .vh-name::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  animation: vh-voice 700ms ease-in-out infinite alternate;
+}
+@keyframes vh-voice {
+  from {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+}
+.vh.speaking .vh-glass.warm {
+  filter: brightness(1.25);
+}
+.vh-name-role {
+  display: none;
+  width: 11px;
+  height: 11px;
+  margin-right: 2px;
+}
+.vh-badge {
+  width: 10px;
+  height: 10px;
+  fill: #ffd36b;
+  flex-shrink: 0;
+}
+.vh-role {
+  position: absolute;
+  top: calc(100% + 22px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 5px;
+  background: rgba(23, 19, 15, 0.86);
+  color: var(--paper-ink);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.vh-tally,
+.vh-claw {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-lcd), monospace;
+  font-size: 18px;
+  line-height: 1;
+  background: #efe6d6;
+  color: #1b130c;
+  border: 1px solid #b9a98e;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  animation: ww-pop 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.vh-claw {
+  right: auto;
+  left: -10px;
+  background: #8e2f28;
+  border-color: #c4473b;
+  color: #fff;
+}
+@keyframes ww-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* the top: when it is, how long is left, what the narrator says, the voice */
+.ww-game {
+  overflow: hidden;
+}
+.ww-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 6px 12px;
+  background: var(--field);
+  border-bottom: 1px solid var(--chrome-edge);
+  flex-shrink: 0;
+}
+.ww-when {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.ww-phase,
+.ww-clock {
+  font-family: var(--font-lcd), monospace;
+  font-size: 27px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #cfe0ff;
+  white-space: nowrap;
+}
+.ww-clock {
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+  min-width: 3.4ch;
+}
+.ww-clock.late {
+  color: var(--buzz);
+}
+.ww-say {
+  margin: 0;
+  font-family: var(--font-hand), cursive;
+  font-size: 23px;
+  line-height: 1.05;
+  color: var(--paper-ink);
+  text-wrap: balance;
+  /* three lines at most; the whole story is in What happened */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+.ww-voice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.ww-voice .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+}
+.ww-mic-ic {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.ww-mic.off {
+  color: var(--chrome-dim);
+  background: var(--panel);
+}
+.ww-ptt {
+  touch-action: none;
+  user-select: none;
+}
+.ww-ptt.on {
+  background: var(--ok);
+  border-color: #6fd27a;
+  color: #08130a;
+}
+.ww-linked {
+  font-size: 12px;
+  color: var(--chrome-dim);
+  white-space: nowrap;
+}
+/* push to talk: a switch with a small lamp that says whether it is on */
+.ww-mode[aria-pressed="false"] {
+  color: var(--chrome-dim);
+}
+.ww-led {
+  width: 7px;
+  height: 7px;
+  background: #33405a;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+.ww-mode.on .ww-led {
+  background: #8fe39a;
+  box-shadow: 0 0 6px rgba(143, 227, 154, 0.7);
+}
+/* the quiet ways out (leave, nothing tonight, close): in the window's own colours, not a web link */
+.ww .linkish {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  color: var(--chrome-dim);
+  text-decoration: none;
+  font-size: 13px;
+}
+.ww .linkish:hover {
+  color: var(--chrome-ink);
+  border-color: var(--chrome-edge);
+}
+
+/* the stage and the dock */
+.ww-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+.ww-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--field);
+}
+.ww-act {
+  margin-top: auto;
+  padding: 12px 14px 14px;
+  background: var(--chrome);
+  border-top: 1px solid var(--chrome-edge);
+  display: grid;
+  gap: 10px;
+}
+.ww-ask {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+.ww-ask.quiet {
+  color: var(--chrome-dim);
+}
+.ww-chosen {
+  color: #ffd9a8;
+}
+.ww-big {
+  margin: 0;
+  font-family: var(--font-hand), cursive;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--paper-ink);
+}
+.ww-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border: 1px solid #3c3226;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+.ww-card p {
+  margin: 0;
+  line-height: 1.45;
+}
+.ww-card-name {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 21px;
+  margin-bottom: 4px !important;
+  color: #f6ecd9;
+}
+.ww-card.wolves {
+  border-color: #6e2b25;
+}
+.ww-card.wolves .role-ic,
+.ww-card.wolves .ww-card-name {
+  color: #ff9a8a;
+}
+.ww-card.village .role-ic {
+  color: #9cc2ff;
+}
+.ww-card.tanner .role-ic {
+  color: #d9b878;
+}
+/* who was who, at the end: on a wide window the tags under the houses say it, so this list is for narrow ones */
+.ww-cast {
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+  font-size: 13px;
+}
+.ww-cast li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.ww-cast b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ww-cast span {
+  color: var(--chrome-dim);
+  white-space: nowrap;
+}
+.ww-cast .role-ic {
+  color: #9cc2ff;
+  flex-shrink: 0;
+}
+.ww-cast .wolves .role-ic,
+.ww-cast .wolves span {
+  color: #ff9a8a;
+}
+.ww-cast .tanner .role-ic {
+  color: #d9b878;
+}
+.ww-deal .ww-card {
+  animation: ww-turn 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: 50% 50%;
+}
+@keyframes ww-turn {
+  from {
+    transform: perspective(700px) rotateY(80deg);
+    opacity: 0;
+  }
+}
+.ww-notice {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 12px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border: 1px solid #3c3226;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+  z-index: 300;
+}
+.ww-who {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 300;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  align-items: center;
+  width: min(300px, calc(100% - 20px));
+  padding: 10px 12px;
+  background: var(--chrome);
+  border: 1px solid var(--chrome-edge);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+}
+.ww-who img {
+  width: 36px;
+  height: 36px;
+}
+.ww-who b {
+  display: block;
+}
+.ww-who span {
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.ww-who-acts {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.ww-who-acts .btn {
+  min-height: 32px;
+  display: inline-grid;
+  place-items: center;
+  text-decoration: none;
+  color: var(--chrome-ink);
+}
+
+.ww-dock {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--chrome-edge);
+  background: var(--panel);
+}
+.ww-tabs {
+  display: flex;
+  gap: 1px;
+  padding: 6px 5px 0;
+  border-bottom: 1px solid var(--chrome-edge);
+  flex-shrink: 0;
+}
+.ww-tabs button {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 7px 7px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  background: none;
+  color: var(--chrome-dim);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ww-tabs button:hover {
+  color: var(--chrome-ink);
+}
+.ww-tabs button.on {
+  background: var(--chrome-hi);
+  border-color: var(--chrome-edge);
+  color: var(--chrome-ink);
+  margin-bottom: -1px;
+}
+.ww-unread {
+  margin-left: 5px;
+  padding: 0 5px;
+  background: var(--buzz);
+  color: #fff;
+  font-size: 11px;
+}
+.ww-pane {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 12px 14px;
+}
+.ww-pane:has(.ww-chat) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+}
+
+.ww-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ww-chat ol {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 10px 12px;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+.ww-chat li {
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.ww-chat li b {
+  color: var(--name);
+}
+.ww-chat li.mine b {
+  color: var(--own);
+}
+.ww-chat li.ch-dead {
+  color: var(--chrome-dim);
+}
+.ww-chan {
+  display: inline-block;
+  margin-right: 5px;
+  padding: 0 5px;
+  font-size: 11px;
+  background: #2a3346;
+  color: #cbd5e4;
+}
+.ch-wolves .ww-chan {
+  background: #6e2b25;
+  color: #ffd6cf;
+}
+.ww-say-form {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--chrome-edge);
+}
+.ww-say-form input,
+.ww-code input,
+.ww-set select {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 10px;
+  background: var(--field);
+  border: 1px solid var(--chrome-edge);
+  color: var(--chrome-ink);
+}
+.ww-say-form input::placeholder,
+.ww-code input::placeholder {
+  color: #8796ab;
+}
+.ww-say-form input:disabled {
+  opacity: 0.7;
+}
+.ww-you {
+  display: grid;
+  gap: 10px;
+}
+.ww-you h4 {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--chrome-dim);
+}
+.ww-fact {
+  margin: 0;
+}
+.ww-notes,
+.ww-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.ww-notes li {
+  padding: 6px 8px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  line-height: 1.4;
+}
+.ww-log {
+  font-size: 13px;
+  line-height: 1.45;
+}
+.ww-log .lg-night {
+  color: #9cc2ff;
+  margin-top: 6px;
+}
+.ww-log .lg-day {
+  color: #f3d9a8;
+  margin-top: 6px;
+}
+.ww-log .lg-death {
+  color: #ffb3a7;
+}
+.ww-log .lg-end {
+  color: var(--amber);
+  font-weight: 700;
+}
+.ww-rules p {
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+.ww-rules dl {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.ww-rules dt {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ww-rules dd {
+  margin: 2px 0 0 24px;
+  color: var(--chrome-dim);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* the table's settings */
+.ww-set fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.ww-set fieldset:disabled {
+  opacity: 0.8;
+}
+.ww-set-row,
+.ww-set-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ww-set-row select {
+  flex: 0 0 110px;
+}
+.ww-set-head {
+  margin-top: 4px;
+  font-weight: 700;
+}
+.ww-set-head .ww-check {
+  font-weight: 400;
+  font-size: 13px;
+}
+.ww-roles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.ww-roles li {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 4px;
+  color: var(--chrome-dim);
+}
+.ww-roles li.in {
+  color: var(--chrome-ink);
+}
+.ww-roles input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--amber);
+  justify-self: end;
+  margin-right: 8px;
+}
+.ww-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.ww-step button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--chrome-edge);
+  background: var(--chrome-hi);
+  color: var(--chrome-ink);
+  cursor: pointer;
+  font-weight: 700;
+}
+.ww-step button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ww-n {
+  min-width: 2.2ch;
+  text-align: center;
+  font-family: var(--font-lcd), monospace;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* without a table: the open tables */
+.ww-list {
+  overflow-y: auto;
+}
+.ww-list .vl {
+  flex: 0 0 auto;
+  height: clamp(190px, 36vh, 320px);
+}
+.ww-intro {
+  padding: 16px 20px 6px;
+  display: grid;
+  gap: 8px;
+}
+.ww-intro h2 {
+  margin: 0;
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.2;
+  color: #f2ead9;
+  text-wrap: balance;
+}
+.ww-intro p {
+  margin: 0;
+  color: var(--chrome-dim);
+  max-width: 62ch;
+}
+.ww-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-top: 6px;
+}
+.ww-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 320px;
+}
+.ww-code label {
+  color: var(--chrome-dim);
+  white-space: nowrap;
+}
+.ww-guest {
+  margin-top: 6px !important;
+  color: var(--chrome-ink) !important;
+}
+.ww-tables {
+  padding: 8px 20px 20px;
+}
+.ww-tables h3 {
+  margin: 10px 0 8px;
+  font-size: 13px;
+  color: var(--chrome-dim);
+}
+.ww-tables ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--chrome-edge);
+}
+.ww-tables li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 70px 100px;
+  align-items: center;
+  gap: 14px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--chrome-edge);
+}
+.ww-tables li.playing {
+  color: var(--chrome-dim);
+}
+.ww-t-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ww-t-seats {
+  display: flex;
+  gap: 3px;
+}
+.ww-t-seats i {
+  width: 7px;
+  height: 10px;
+  background: #1a2434;
+  border: 1px solid #2c3a52;
+}
+.ww-t-seats i.on {
+  background: #f0b25c;
+  border-color: #c98a40;
+}
+.ww-t-state {
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.ww-gone {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 30px;
+  text-align: center;
+}
+
+/* who can sit down: anyone, or only with the host's password */
+.ww-lock {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -2px;
+  flex-shrink: 0;
+}
+.ww-lock.big {
+  width: 40px;
+  height: 40px;
+  stroke-width: 1.1;
+  color: var(--amber);
+}
+.ww-t-name .ww-lock {
+  margin-right: 6px;
+  color: var(--amber);
+}
+.ww-room {
+  display: grid;
+  gap: 6px;
+  padding: 8px 0 6px;
+  border-top: 1px solid var(--chrome-edge);
+  border-bottom: 1px solid var(--chrome-edge);
+}
+.ww-room-q {
+  font-weight: 700;
+}
+.ww-room-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.ww-room-opts label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--chrome-edge);
+  background: var(--field);
+  color: var(--chrome-dim);
+  font-size: 13px;
+  cursor: pointer;
+}
+.ww-room-opts label.on {
+  border-color: var(--amber);
+  color: var(--chrome-ink);
+  box-shadow: inset 0 0 0 1px rgba(240, 172, 92, 0.35);
+}
+.ww-room-opts input {
+  accent-color: var(--amber);
+  margin: 0;
+}
+.ww-pass {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+.ww-pass input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 10px;
+  background: var(--field);
+  border: 1px solid var(--chrome-edge);
+  color: var(--chrome-ink);
+}
+.ww-pass input::placeholder {
+  color: #8796ab;
+}
+.ww-room .ww-hint {
+  margin: 0;
+}
+.ww-locked .ww-pass {
+  width: min(340px, 80cqw);
+}
+.ww-locked p {
+  margin: 0;
+}
+
+/* a narrow window, or a phone: the dock goes under the stage */
+@container (max-width: 760px) {
+  /* one column that scrolls inside the window: the village and its action, then the dock */
+  .ww-main {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .ww-stage {
+    flex: none;
+    overflow: visible;
+  }
+  .vl {
+    flex: none;
+    height: clamp(260px, 62cqw, 380px);
+  }
+  .ww-dock {
+    flex: 1 0 320px;
+    border-left: 0;
+    border-top: 1px solid var(--chrome-edge);
+  }
+  .ww-top {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .ww-voice {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .ww-tables li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 8px 0;
+  }
+  .ww-t-seats {
+    grid-row: 2;
+  }
+}
+@container (max-width: 460px) {
+  .vh-name {
+    font-size: 10.5px;
+    padding: 0 4px 1px;
+  }
+  /* no room for the role's name under each house: its mark goes into the house's own name label instead */
+  .vh-role {
+    display: none;
+  }
+  .vh-name .vh-name-role {
+    display: inline-block;
+  }
+  /* beside the house, not above it: above is where the row behind keeps its names */
+  .vh-tally,
+  .vh-claw {
+    top: 28%;
+    right: -19px;
+  }
+  .ww-cast {
+    display: grid;
+  }
+  .ww-say {
+    font-size: 21px;
+  }
+  .ww-phase,
+  .ww-clock {
+    font-size: 23px;
+  }
+}
+@media (max-width: 899px) {
+  /* the game fits the screen exactly, so the page never scrolls under the bell: only the game's own parts scroll */
+  .w-wolf .body.ww-game {
+    flex: 0 0 auto;
+    /* the bell's room above, the title bar, and Ink's sill (34px) above the taskbar below */
+    height: calc((100svh - var(--task-h) - 138px) / var(--ui-zoom));
+  }
+  .win.w-wolf.front:has(.ww-game) {
+    min-height: 0;
+  }
+  body:has(.w-wolf.front .ww-game) .desk {
+    padding-bottom: calc(var(--task-h) + 38px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vh-smoke,
+  .vh-wisp {
+    display: none;
+  }
+  .vh-lamp.on,
+  .vh.dying .vh-lamp,
+  .vh.dying .vh-planks path,
+  .vl-stars circle,
+  .vh.speaking .vh-spill,
+  .vh-btn.speaking .vh-name::before,
+  .ww-deal .ww-card {
+    animation: none;
+  }
+  .vl-sky,
+  .vl-orb {
+    transition: none;
+  }
+}

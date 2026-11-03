@@ -187,3 +187,19 @@ export const IconNightSounds = ({ className }: P) => (
     />
   </svg>
 );
+/** Werewolf: a house under a full moon, two eyes in its window. */
+export const IconWolf = ({ className }: P) => (
+  <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+    <circle cx="28" cy="10" r="6.5" fill="#efe3c2" />
+    <circle cx="30.5" cy="8.5" r="6" fill="#2b3a55" opacity="0.18" />
+    <rect x="7" y="17" width="16" height="19" fill="#22304a" />
+    <rect x="6" y="15" width="18" height="3" fill="#31415a" />
+    <rect x="11" y="10" width="8" height="5" rx="2.5" fill="#31415a" />
+    <rect x="10" y="21" width="10" height="7" fill="#0b1018" />
+    <rect x="11.5" y="23.5" width="2.6" height="1.6" fill="#ff6b5e" />
+    <rect x="16" y="23.5" width="2.6" height="1.6" fill="#ff6b5e" />
+    <rect x="13" y="30" width="4" height="6" fill="#0b1018" />
+    <rect x="25" y="28" width="9" height="8" fill="#1a2538" />
+    <rect x="28" y="31" width="3" height="3" fill="#f0ac5c" />
+  </svg>
+);
