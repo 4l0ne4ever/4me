@@ -35,7 +35,7 @@ type Spot = { x: number; y: number; s: number; p: PlayerView | null; seat: numbe
 const W = 480;
 const H = 300;
 const ring = (compact: boolean) =>
-  compact ? { cx: 240, cy: 192, rx: 186, ry: 84 } : { cx: 240, cy: 196, rx: 206, ry: 68 };
+  compact ? { cx: 240, cy: 200, rx: 186, ry: 62 } : { cx: 240, cy: 196, rx: 206, ry: 68 };
 
 /**
  * Places seats on the ring with the viewer at the front and the far side smaller. Seats are spaced evenly along the
@@ -83,7 +83,9 @@ function street(seats: Array<PlayerView | null>, mine: number): Spot[] {
       return { x, y, s, p: seats[seat] ?? null, seat };
     });
   // The front row runs left to right; the back row continues round the table, right to left.
-  return [...row(back, 176, 0.72, front).reverse(), ...row(front, 268, 0.94, 0)].sort((a, b) => a.y - b.y);
+  // the back row stands behind the square, against the sky, so its names don't fall on the front row's roofs
+  const big = n > 12 ? 0.85 : 1;
+  return [...row(back, 150, 1 * big, front).reverse(), ...row(front, 268, 1.2 * big, 0)].sort((a, b) => a.y - b.y);
 }
 
 /** The well: in the middle of the square, or on the street, in the front row's gap nearest the middle. */
@@ -95,7 +97,7 @@ function wellSpot(n: number, compact: boolean): { x: number; y: number; s: numbe
   const step = (W - 76) / front;
   // with an even front row the middle is a gap; with an odd one, the gap beside the middle house
   const x = front % 2 === 0 ? cx : cx + step / 2;
-  return { x, y: 262, s: 0.72 };
+  return { x, y: 262, s: 0.95 };
 }
 
 /** Where the drawing sits in its box: the scale, and the offsets of the letterboxing (bottom-aligned). */
@@ -117,15 +119,57 @@ function useFit() {
   return { ref, fit };
 }
 
-/** The same house for the same person every game: height and roof from their id. */
+/**
+ * The same house for the same person every game, drawn from their id: a cottage in an old village, the kind the
+ * werewolf story is told in. A steep gable roof of tiles, slate or thatch with a stone chimney; plaster walls framed
+ * in dark timber, or stone; an arched wooden door, small paned windows with boxes of flowers; and, up in the gable
+ * under the roof, the player's own window.
+ *
+ * By day the plaster and the roofs show as they are; dawn warms them, dusk cools them, and at night only enough of
+ * them is left for the moon to find.
+ */
+const PLASTER = ["#f1e4c6", "#ead2a6", "#f3e9dc", "#e7c7a6", "#dfe3d0", "#ecd0c4", "#d9e2e6", "#f0dca0"];
+const STONE = ["#cfc8b8", "#bdb7ab", "#d6cbb3"];
+const ROOFS = ["#b4553a", "#9c4a36", "#5b6b82", "#c9a35a", "#b4553a", "#7d5560"];
+const DOORS = ["#7a4a2a", "#3f5f7a", "#6a2f2f", "#476b3c", "#8a5a2e"];
+const FLOWERS = ["#e0574a", "#f0b84a", "#d76fa3", "#f3f0e6"];
+
+function hash(id: number, salt: number): number {
+  let x = Math.imul(id ^ Math.imul(salt, 0x9e3779b1), 0x85ebca6b);
+  x ^= x >>> 13;
+  x = Math.imul(x, 0xc2b2ae35);
+  return (x ^ (x >>> 16)) >>> 0;
+}
+
 function build(id: number) {
-  const h = (id * 2654435761) % 997;
+  const r = (salt: number, n: number) => hash(id, salt) % n;
+  const stone = r(1, 3) === 0;
+  const roof = ROOFS[r(4, ROOFS.length)]!;
   return {
-    floors: 2 + (h % 3),
-    roof: (["tank", "antenna", "tin", "plants"] as const)[h % 4],
-    shade: h % 3,
-    wide: h % 5 === 0,
+    storeys: [1, 1, 2, 2, 2, 3][r(2, 6)]!,
+    wide: r(3, 4) === 0,
+    stone,
+    wall: stone ? STONE[r(5, STONE.length)]! : PLASTER[r(5, PLASTER.length)]!,
+    roof,
+    thatch: roof === "#c9a35a",
+    door: DOORS[r(6, DOORS.length)]!,
+    /** the door, off to one side or in the middle */
+    doorAt: [-1, 0, 1][r(7, 3)]!,
+    flowers: FLOWERS[r(8, FLOWERS.length)]!,
+    /** which storeys have window boxes (a bit for each) */
+    boxes: r(9, 8),
+    chimneyLeft: r(10, 2) === 0,
   };
+}
+
+/** The far ridge: a line of small trees along the hill behind the village. */
+function ridge(base: number): string {
+  let d = `M-1600 ${base + 8} H-40`;
+  for (let x = -40; x < 540; x += 9) {
+    const r = 3 + ((x * 37) % 5) * 0.7;
+    d += ` L${x} ${base + 2} a${r} ${r} 0 0 1 ${9} 0`;
+  }
+  return `${d} L2080 ${base + 8} V${H + 900} H-1600 z`;
 }
 const SKIES: Sky[] = ["lobby", "night", "dawn", "day", "dusk"];
 
@@ -215,7 +259,8 @@ export function Village({
   // the moon or the sun on its arc: left horizon to right
   const t = progress ?? 0.32;
   const ang = Math.PI * (1 - t);
-  const orb = { x: W / 2 + 218 * Math.cos(ang), y: cy - ry - 4 - 96 * Math.sin(ang) };
+  // (it starts a little above the ridge, so no house's chimney hides it; a wide window has more sky to climb)
+  const orb = { x: W / 2 + 218 * Math.cos(ang), y: cy - ry - 18 - (compact ? 96 : 150) * Math.sin(ang) };
 
   return (
     <div className={`vl vl-${sky}${compact ? " compact" : ""}`} ref={ref}>
@@ -253,8 +298,18 @@ export function Village({
             )}
           </g>
         ) : null}
-        {/* the far hills (running on past the picture's edges, so a wide window never shows where they end), then
-            the square with its well */}
+        {/* a few clouds by day, drifting */}
+        <g className="vl-clouds">
+          <path d="M-20 54h46v-6h10v-6h22v6h12v6h30v6H-20z" className="vl-cloud c1" />
+          <path d="M300 30h34v-5h12v-6h18v6h10v5h26v5H300z" className="vl-cloud c2" />
+          <path d="M150 78h22v-4h10v-5h14v5h8v4h18v4h-72z" className="vl-cloud c3" />
+          {/* higher up, for a tall window's sky */}
+          <path d="M60 -48h40v-6h14v-6h20v6h10v6h34v6H60z" className="vl-cloud c2" />
+          <path d="M340 -112h28v-5h12v-5h16v5h8v5h22v5h-86z" className="vl-cloud c3" />
+        </g>
+        {/* the hills: a far ridge of trees, then the near hill (both running on past the picture's edges, so a wide
+            window never shows where they end), then the square with its well */}
+        <path d={ridge(cy - ry - 22)} className="vl-far" />
         <path
           d={`M-1600 ${cy - ry - 6} H0 q60 -16 120 -7 t130 -5 t120 9 t110 -7 H2080 V${H + 900} H-1600 z`}
           className="vl-hill"
@@ -300,7 +355,7 @@ export function Village({
           <button
             key={p.id}
             type="button"
-            className={`vh-btn${m?.pickable ? " pickable" : ""}${m?.chosen ? " chosen" : ""}${m?.speaking ? " speaking" : ""}${state ? ` ${state}` : ""}${p.id === me ? " mine" : ""}`}
+            className={`vh-btn${m?.pickable ? " pickable" : ""}${m?.chosen ? " chosen" : ""}${m?.speaking ? " speaking" : ""}${state ? ` ${state}` : ""}${p.id === me ? " mine" : ""}${p.bot ? " bot" : ""}`}
             style={style}
             onClick={() => (m?.pickable ? onPick(p.id) : onHouse(p.id))}
             aria-pressed={m?.pickable ? Boolean(m.chosen) : undefined}
@@ -419,12 +474,16 @@ function House({
   smoke: number;
 }) {
   const b = build(p.id);
-  const s = spot.s;
-  const w = (b.wide ? 30 : 23) * s;
-  const fh = 15 * s;
-  const h = b.floors * fh + 8 * s;
-  const x = spot.x - w / 2;
-  const top = spot.y - h;
+  // Drawn in the house's own units, its foot at the middle of its front; the group places and scales it.
+  const half = b.wide ? 15 : 12;
+  const S = 12; // a storey
+  const wallH = b.storeys * S;
+  const ih = half * 1.5; // the gable's height: a steep roof
+  const T = 7.5; // the roof's thickness, seen from the front
+  /** The height of a point on the roof's slope (off: how far above the gable's edge). */
+  const slope = (x: number, off: number) => -wallH - (ih * (1 - Math.abs(x) / half) + off);
+  const apex = slope(0, T);
+  const eave = slope(half + 3, T);
   const wolf = p.role === "werewolf" || p.role === "wolfcub";
   // The window: lit when someone is home in the lobby, when they speak, and (at night) only the wolves' eyes, for
   // the wolves.
@@ -442,88 +501,178 @@ function House({
           : sky === "lobby" || sky === "dusk"
             ? "warm"
             : "pale";
-  const gw = 11 * s;
-  const gh = 9 * s;
-  const gx = spot.x - gw / 2;
-  const gy = top + 6 * s;
+  // the player's own window, up in the gable under the roof
+  const gw = b.wide ? 8 : 7;
+  const gh = 6.5;
+  const gx = -gw / 2;
+  const gy = -wallH - ih * 0.45;
   const lit = light === "warm";
   const wait = { transitionDelay: `${delay}ms` } as CSSProperties;
   // someone is home, keeping a fire: at night and in the evening
   const hearth = p.alive && p.connected && (sky === "night" || sky === "lobby" || sky === "dusk");
-  const chimney = { x: x + w * 0.72, y: top - 2.5 * s };
+  const cx = (b.chimneyLeft ? -1 : 1) * half * 0.5;
+  const chimneyTop = slope(cx, T) - 7;
+  const tinted = (paint: string) => ({ "--paint": paint }) as CSSProperties;
+  // the door and the windows beside it, then two windows on each storey above
+  const door = { x: b.doorAt * half * 0.5 - 2.5, w: 5, h: 8.5 };
+  const windows: Array<{ x: number; y: number; k: number }> = [];
+  const ground = b.doorAt === 0 ? [-half * 0.6, half * 0.6] : [-b.doorAt * half * 0.42];
+  for (const x of ground) windows.push({ x, y: -S + 3, k: 0 });
+  for (let k = 1; k < b.storeys; k++)
+    for (const x of [-half * 0.42, half * 0.42]) windows.push({ x, y: -(k + 1) * S + 3, k });
+  const ww = 4.6;
+  const wh = 5;
+  const collar = { y: -wallH - ih * 0.72, hw: half * 0.28 };
   return (
     <g
       className={`vh${p.alive ? "" : " dead"}${dying ? " dying" : ""}${mark?.speaking ? " speaking" : ""}${mark?.chosen ? " chosen" : ""}`}
+      transform={`translate(${spot.x} ${spot.y}) scale(${spot.s})`}
     >
-      {/* the light of its window on the square */}
+      {/* the light of its window on the square, and its shadow */}
       <ellipse
-        cx={spot.x}
-        cy={spot.y + 4 * s}
-        rx={w * 1.5}
-        ry={8 * s}
+        cx={0}
+        cy={4}
+        rx={half * 3}
+        ry={8}
         className={`vh-pool${lit ? " on" : ""}${light === "mine" ? " low" : ""}`}
         style={wait}
       />
-      {/* its shadow on the square */}
-      <ellipse cx={spot.x} cy={spot.y} rx={w * 0.62} ry={3 * s} className="vh-shadow" />
+      <ellipse cx={0} cy={0} rx={half * 1.3} ry={3} className="vh-shadow" />
       {hearth && (
         <g className="vh-smoke" style={{ animationDelay: `${-(smoke * 1.37) % 6}s` } as CSSProperties}>
           {[0, 1, 2].map((k) => (
             <circle
               key={k}
-              cx={chimney.x}
-              cy={chimney.y}
-              r={(1.6 + k * 0.5) * s}
+              cx={cx}
+              cy={chimneyTop - 1}
+              r={1.6 + k * 0.5}
               style={{ animationDelay: `${-((smoke * 1.37 + k * 2) % 6)}s` }}
             />
           ))}
         </g>
       )}
-      <rect x={x} y={top} width={w} height={h} className={`vh-body s${b.shade}`} />
-      <rect x={x} y={top - 2.5 * s} width={w} height={2.5 * s} className="vh-parapet" />
-      <rect x={x} y={top - 2.5 * s} width={w} height={0.7 * s} className="vh-rim" />
-      <rect x={x} y={top} width={0.6} height={h} className="vh-edge" />
-      {b.roof === "tank" && (
-        <rect x={spot.x - 6 * s} y={top - 8.5 * s} width={12 * s} height={5.5 * s} rx={2.7 * s} className="vh-roof" />
-      )}
-      {b.roof === "antenna" && (
+
+      {/* the chimney, then the roof in front of its foot */}
+      <rect x={cx - 2.2} y={chimneyTop} width={4.4} height={slope(cx, T) - chimneyTop + 2} className="vh-chimney" />
+      <rect x={cx - 2.8} y={chimneyTop - 1.2} width={5.6} height={1.6} className="vh-timber" />
+      <path
+        d={`M${-half - 3} ${eave} L0 ${apex} L${half + 3} ${eave} z`}
+        className={`vh-tinted vh-roofing${b.thatch ? " thatch" : ""}`}
+        style={tinted(b.roof)}
+      />
+      {[0.3, 0.62].map((at) => (
         <path
-          d={`M${spot.x} ${top - 2.5 * s} v${-14 * s} M${spot.x - 4 * s} ${top - 13 * s} h${8 * s} M${spot.x - 2.6 * s} ${top - 10 * s} h${5.2 * s}`}
-          className="vh-wire"
-        />
-      )}
-      {b.roof === "tin" && (
-        <path d={`M${x} ${top - 2.5 * s} v${-6 * s} L${x + w} ${top - 4.5 * s} v${2 * s} z`} className="vh-roof" />
-      )}
-      {b.roof === "plants" && (
-        <path
-          d={`M${x + 3 * s} ${top - 2.5 * s} q${1.5 * s} ${-6 * s} ${3 * s} 0 q${1.5 * s} ${-7 * s} ${4 * s} 0`}
-          className="vh-leaves"
-        />
-      )}
-      {/* the upper floors' small dark windows, then the player's own window */}
-      {Array.from({ length: b.floors - 1 }, (_, f) => (
-        <rect
-          // biome-ignore lint/suspicious/noArrayIndexKey: floors never reorder
-          key={f}
-          x={spot.x - 3 * s}
-          y={top + 6 * s + (f + 1) * fh}
-          width={6 * s}
-          height={5 * s}
-          className="vh-small"
+          key={at}
+          d={`M${-half - 2.4} ${slope(half + 2.4, T * at)} L0 ${slope(0, T * at)} L${half + 2.4} ${slope(half + 2.4, T * at)}`}
+          className={`vh-roof-tex${b.thatch ? " thatch" : ""}`}
         />
       ))}
+      <rect x={-1} y={apex - 1.6} width={2} height={2} className="vh-timber" />
+
+      {/* the walls and the gable */}
+      <path
+        d={`M${-half} 0 V${-wallH} L0 ${-wallH - ih} L${half} ${-wallH} V0 z`}
+        className="vh-body"
+        style={tinted(b.wall)}
+      />
+      {b.stone ? (
+        // stone: the blocks at the corners, and a few joints
+        <>
+          {Array.from({ length: Math.floor(wallH / 3) }, (_, i) => {
+            const y = -3 * (i + 1);
+            const wide = i % 2 === 0 ? 3 : 2;
+            return (
+              <g key={y}>
+                <rect x={-half} y={y} width={wide} height={2.6} className="vh-quoin" />
+                <rect x={half - wide} y={y} width={wide} height={2.6} className="vh-quoin" />
+              </g>
+            );
+          })}
+          <path
+            d={`M${-half + 4} ${-wallH * 0.3} h4 M${half - 9} ${-wallH * 0.55} h3.5 M${-half + 6} ${-wallH * 0.75} h3 M2 -3 h4`}
+            className="vh-joint"
+          />
+        </>
+      ) : (
+        // plaster in a timber frame, on a stone footing
+        <>
+          <rect x={-half} y={-3} width={half * 2} height={3} className="vh-plinth" />
+          <rect x={-half} y={-wallH} width={1.3} height={wallH - 3} className="vh-timber" />
+          <rect x={half - 1.3} y={-wallH} width={1.3} height={wallH - 3} className="vh-timber" />
+          {Array.from({ length: b.storeys }, (_, k) => {
+            const y = -(k + 1) * S;
+            return (
+              <g key={y}>
+                <rect x={-half} y={y - 0.6} width={half * 2} height={1.3} className="vh-timber" />
+                {k > 0 && (
+                  <path
+                    d={`M${-half + 1.3} ${y + 1.3} L${-half + 4.6} ${y + S - 0.6} M${half - 1.3} ${y + 1.3} L${half - 4.6} ${y + S - 0.6}`}
+                    className="vh-brace"
+                  />
+                )}
+              </g>
+            );
+          })}
+          <rect x={-collar.hw} y={collar.y - 0.6} width={collar.hw * 2} height={1.2} className="vh-timber" />
+          <path
+            d={`M${gx - 1.8} ${-wallH} L${-collar.hw + 0.4} ${collar.y} M${-gx + 1.8} ${-wallH} L${collar.hw - 0.4} ${collar.y}`}
+            className="vh-brace"
+          />
+        </>
+      )}
+      {/* the shade under the roof's edge, and on the side away from the light */}
+      <path d={`M${-half} ${-wallH + 0.4} L0 ${-wallH - ih + 0.6} L${half} ${-wallH + 0.4}`} className="vh-eave" />
+      <path d={`M${half} 0 V${-wallH} L${half * 0.82} ${-wallH - ih * 0.18} V0 z`} className="vh-side" />
+
+      {/* the windows: small panes, and a box of flowers under some */}
+      {windows.map((wi) => (
+        <g key={`${wi.x} ${wi.y}`}>
+          <rect x={wi.x - ww / 2 - 0.6} y={wi.y - 0.6} width={ww + 1.2} height={wh + 1.2} className="vh-timber" />
+          <rect x={wi.x - ww / 2} y={wi.y} width={ww} height={wh} className="vh-small" />
+          <path d={`M${wi.x} ${wi.y} v${wh} M${wi.x - ww / 2} ${wi.y + wh / 2} h${ww}`} className="vh-pane" />
+          {(b.boxes >> wi.k) & 1 ? (
+            <>
+              <rect x={wi.x - ww / 2 - 0.8} y={wi.y + wh + 0.4} width={ww + 1.6} height={1.5} className="vh-timber" />
+              {[-1.6, 0, 1.6].map((dx) => (
+                <circle
+                  key={dx}
+                  cx={wi.x + dx}
+                  cy={wi.y + wh + 0.1}
+                  r={0.85}
+                  className="vh-tinted"
+                  style={tinted(b.flowers)}
+                />
+              ))}
+            </>
+          ) : null}
+        </g>
+      ))}
+
+      {/* the door: arched, of planks */}
+      <rect x={door.x - 0.8} y={-0.8} width={door.w + 1.6} height={0.8} className="vh-plinth" />
+      <path d={`M${door.x} 0 V${-door.h + 2.5} a2.5 2.5 0 0 1 5 0 V0 z`} className="vh-tinted" style={tinted(b.door)} />
+      <path d={`M${door.x + 1.7} 0 V${-door.h + 1} M${door.x + 3.3} 0 V${-door.h + 1}`} className="vh-plank" />
+      <circle cx={door.x + 4} cy={-4} r={0.45} className="vh-knob" />
+      {p.lover && (
+        <path
+          d={`M${door.x + 2.5} -3.2 l-1.5 -1.5 a0.85 0.85 0 0 1 1.5 -0.9 a0.85 0.85 0 0 1 1.5 0.9 z`}
+          className="vh-heart"
+        />
+      )}
+
+      {/* the player's own window, up in the gable */}
       {light !== "off" && light !== "pale" && light !== "warm" && (
-        <rect x={gx - 4 * s} y={gy - 3 * s} width={gw + 8 * s} height={gh + 6 * s} className={`vh-spill ${light}`} />
+        <rect x={gx - 4} y={gy - 3} width={gw + 8} height={gh + 6} className={`vh-spill ${light}`} />
       )}
       <rect
-        x={gx - 4 * s}
-        y={gy - 3 * s}
-        width={gw + 8 * s}
-        height={gh + 6 * s}
+        x={gx - 4}
+        y={gy - 3}
+        width={gw + 8}
+        height={gh + 6}
         className={`vh-spill warm${lit ? " on" : ""}`}
         style={wait}
       />
+      <rect x={gx - 0.7} y={gy - 0.7} width={gw + 1.4} height={gh + 1.4} className="vh-timber" />
       <rect x={gx} y={gy} width={gw} height={gh} className={`vh-glass ${light === "warm" ? "off" : light}`} />
       {/* the lamp: fades in and out (so nightfall can go round the square), and gutters when someone dies */}
       <rect
@@ -536,34 +685,24 @@ function House({
       />
       {light === "eyes" && (
         <g className="vh-eyes">
-          <rect x={spot.x - 3 * s} y={gy + 3.4 * s} width={2 * s} height={1.4 * s} />
-          <rect x={spot.x + 1 * s} y={gy + 3.4 * s} width={2 * s} height={1.4 * s} />
+          <rect x={-2.6} y={gy + 2.6} width={1.8} height={1.3} />
+          <rect x={0.8} y={gy + 2.6} width={1.8} height={1.3} />
         </g>
       )}
-      <rect x={spot.x - 0.4 * s} y={gy} width={0.8 * s} height={gh} className="vh-mullion" />
-      {dying && (
-        <path
-          d={`M${spot.x} ${top - 4 * s} c${-4 * s} ${-5 * s} ${4 * s} ${-9 * s} 0 ${-14 * s} c${-4 * s} ${-5 * s} ${3 * s} ${-9 * s} ${-1 * s} ${-13 * s}`}
-          className="vh-wisp"
-        />
-      )}
+      <path d={`M0 ${gy} v${gh} M${gx} ${gy + gh / 2} h${gw}`} className="vh-mullion" />
+      <rect x={gx - 1.2} y={gy + gh + 0.3} width={gw + 2.4} height={1.1} className="vh-timber" />
       {!p.alive && (
         <g className="vh-planks">
-          <path d={`M${gx - 1.5 * s} ${gy + 1 * s} L${gx + gw + 1.5 * s} ${gy + gh - 1 * s}`} />
-          <path d={`M${gx - 1.5 * s} ${gy + gh - 1 * s} L${gx + gw + 1.5 * s} ${gy + 1 * s}`} />
+          <path d={`M${gx - 1.5} ${gy + 0.8} L${gx + gw + 1.5} ${gy + gh - 0.8}`} />
+          <path d={`M${gx - 1.5} ${gy + gh - 0.8} L${gx + gw + 1.5} ${gy + 0.8}`} />
         </g>
       )}
-      <rect x={spot.x - 3 * s} y={spot.y - 10 * s} width={6 * s} height={10 * s} className="vh-door" />
-      {p.lover && (
-        <path
-          d={`M${spot.x} ${spot.y - 4.2 * s} l${-1.8 * s} ${-1.8 * s} a${s} ${s} 0 0 1 ${1.8 * s} ${-1.1 * s} a${s} ${s} 0 0 1 ${1.8 * s} ${1.1 * s} z`}
-          className="vh-heart"
-        />
-      )}
+
+      {dying && <path d={`M${cx} ${chimneyTop - 2} c-4 -5 4 -9 0 -14 c-4 -5 3 -9 -1 -13`} className="vh-wisp" />}
       {mark?.chosen && (
         <g className="vh-lantern">
-          <path d={`M${x + w + 1.5 * s} ${top + 8 * s} h${3 * s} v${2 * s}`} />
-          <rect x={x + w + 3 * s} y={top + 10 * s} width={3.2 * s} height={4.2 * s} rx={0.8 * s} />
+          <path d={`M${half + 2} ${eave + 1} v2.6`} />
+          <rect x={half + 0.7} y={eave + 3.4} width={2.6} height={3.4} rx={0.7} />
         </g>
       )}
     </g>

@@ -115,6 +115,21 @@ export const IconMin = () => (
     <rect x="2" y="8" width="8" height="2" fill="currentColor" />
   </svg>
 );
+/** Maximise: one large window. */
+export const IconMax = () => (
+  <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+    <rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1.4" />
+    <rect x="2" y="2" width="8" height="2" fill="currentColor" />
+  </svg>
+);
+/** Restore: two windows, one behind the other. */
+export const IconRestore = () => (
+  <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+    <path d="M4 2.2h6v6" fill="none" stroke="currentColor" strokeWidth="1.3" />
+    <rect x="2" y="4.2" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.3" />
+    <rect x="2" y="4.2" width="6" height="1.6" fill="currentColor" />
+  </svg>
+);
 export const IconClose = () => (
   <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
     <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" strokeWidth="1.6" />

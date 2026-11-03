@@ -1,9 +1,12 @@
 import {
   arrive,
+  botMoves,
   command,
   listingOf,
   newTable,
   type Seat,
+  TABLE_BANNED,
+  TABLE_KICKED,
   type Table,
   type TableEvent,
   type TableListing,
@@ -32,6 +35,9 @@ export interface TableStore {
 /** An empty table is put away after this long; a table nobody touched for a day, too. */
 const EMPTY_MS = 10 * 60_000;
 const STALE_MS = 24 * 3600_000;
+/** Computer players think for a moment before they choose. */
+const BOT_THINK_MS = 1800;
+const BOT_THINK_MORE_MS = 2600;
 /** WebRTC offers are a few kilobytes; nothing a player sends is bigger. */
 const MAX_MESSAGE = 32_000;
 
@@ -65,6 +71,8 @@ export class TableRoom {
   private listed = "";
   /** Chat lines per player in the last few seconds, against flooding. */
   private chatter = new Map<number, number[]>();
+  /** When the computer players will next make their moves (kept, so a busy chat doesn't keep putting them off). */
+  private botDue: number | null = null;
 
   constructor(
     private store: TableStore,
@@ -142,8 +150,17 @@ export class TableRoom {
     }
     if (m.t === "chat" && this.flooding(uid)) return this.tell(uid, { t: "error", error: "slow down a little" });
     const r = command(t, uid, m, this.clock(), this.rand);
-    if ("error" in r) this.tell(uid, { t: "error", error: r.error });
-    else await this.commit();
+    if ("error" in r) return this.tell(uid, { t: "error", error: r.error });
+    if (m.t === "kick") {
+      // Their browser is told why, and let go; asked not to come back, it can't.
+      const reason = m.ban ? TABLE_BANNED : TABLE_KICKED;
+      for (const c of this.store.conns())
+        if (c.uid === m.id) {
+          safeSend(c, JSON.stringify({ t: "closed", reason } satisfies TableEvent));
+          c.close?.(4003, reason);
+        }
+    }
+    await this.commit();
     if (m.t === "leave") for (const c of this.store.conns()) if (c.uid === uid) c.close?.(1000, "left the table");
   }
 
@@ -164,10 +181,18 @@ export class TableRoom {
     const t = await this.get();
     if (!t) return;
     const now = this.clock();
+    let moved = false;
+    if (this.botDue === null || now >= this.botDue - 50) {
+      // (after a restart the time is forgotten: the alarm itself was the time)
+      this.botDue = null;
+      for (const { id, cmd } of botMoves(t, this.rand))
+        moved = !("error" in command(t, id, cmd, now, this.rand)) || moved;
+    }
     if (t.deadline !== null && now >= t.deadline) {
       tick(t, now, this.rand);
       return this.commit();
     }
+    if (moved) return this.commit();
     const anyone = this.store.conns().length > 0;
     if ((!anyone && now - t.updatedAt >= EMPTY_MS) || now - t.updatedAt >= STALE_MS) return this.putAway();
     await this.store.schedule(t.deadline ?? now + EMPTY_MS);
@@ -199,7 +224,8 @@ export class TableRoom {
     const t = this.table;
     if (!t) return;
     const now = this.clock();
-    if (t.players.length === 0) return this.putAway();
+    // Nobody left but computer players: the table is put away.
+    if (!t.players.some((p) => !p.bot)) return this.putAway();
     await this.store.save(t);
     const views = new Map<number, string>();
     for (const c of conns) {
@@ -210,7 +236,10 @@ export class TableRoom {
       }
       safeSend(c, data);
     }
-    await this.store.schedule(t.deadline ?? now + EMPTY_MS);
+    if (botMoves(t, () => 0.5).length > 0)
+      this.botDue ??= now + BOT_THINK_MS + Math.floor(this.rand() * BOT_THINK_MORE_MS);
+    else this.botDue = null;
+    await this.store.schedule(Math.min(t.deadline ?? now + EMPTY_MS, this.botDue ?? Number.POSITIVE_INFINITY));
     const listing = t.settings.listed ? listingOf(t) : null;
     const key = JSON.stringify(listing && { ...listing, updatedAt: 0 });
     if (key !== this.listed) {

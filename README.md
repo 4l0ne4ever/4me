@@ -149,6 +149,15 @@ narrates; the sky is the clock, and every player is a house on the ring around t
 - **The table** is one Durable Object per table (`apps/api/src/live/table-do.ts`): the players' WebSockets with the
   hibernation API, the game in its storage, the phase clock as an alarm. Another object lists the open tables.
   Development and tests keep tables in memory with the same code (`live/table.ts`).
+- **Computer players**: the host can sit night creatures down (Owl, Moth, Fox…) to fill a table, or to try a whole
+  game alone ("Fill the empty seats with computer players"). They play on the table's clock a few seconds after
+  things change (`botMoves` in the game): wolves follow their pack, voters lean towards whoever is accused. A
+  table with only computer players left is put away.
+- **Asking people to leave**: before a game or after it, the host can ask someone to leave (they may come back) or
+  ban them from the table (they may not); their browser is told and let go at once.
+- **Sounds and title cards**: a howl when night falls, a bell at daybreak and for a death, knocks for the vote, a
+  ping when it's your turn and ticks in its last seconds, all made with Web Audio (no files) and switched off with the
+  speaker in the header; a title card over the sky as the game turns.
 - **Who can sit down**: anyone with the link (and anyone at all, when the table is listed), or only who has the
   host's password. The host sets it in the table's settings; a listed table with one shows a lock. The table keeps
   only a salted PBKDF2 hash of it; a newcomer gives it through the web server (`POST

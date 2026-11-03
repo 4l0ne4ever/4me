@@ -176,4 +176,27 @@ describe("werewolf tables", () => {
     expect(host.view.locked).toBe(false);
     expect((await sit(locked, dung)).closed).toBeNull();
   });
+
+  it("the host sits computer players down, asks people to leave, and bans", async () => {
+    const [ann, bao, cuc] = people as [Who, Who, Who];
+    const res = await call(`/internal/users/${ann.id}/tables`, { method: "POST" });
+    const room = ((await res.json()) as { code: string }).code;
+    const host = await sit(room, ann);
+    const b = await sit(room, bao);
+    const c = await sit(room, cuc);
+    await host.send({ t: "bot", add: true });
+    await host.send({ t: "bot", add: true });
+    expect(host.view.players.filter((p) => p.bot).map((p) => p.name)).toEqual(["Owl", "Moth"]);
+    await b.send({ t: "bot", add: true });
+    expect(b.events.at(-1)).toEqual({ t: "error", error: "only the host, before the game" });
+    // asked to leave: told why, let go, and may come back
+    await host.send({ t: "kick", id: bao.id });
+    expect(b.closed).toBe("the host asked you to leave this table");
+    expect((await sit(room, bao)).closed).toBeNull();
+    // asked not to come back: may not
+    await host.send({ t: "kick", id: cuc.id, ban: true });
+    expect(c.closed).toBe("the host asked you not to come back to this table");
+    expect((await sit(room, cuc)).closed).toBe("the host asked you not to come back to this table");
+    expect(host.view.players.map((p) => p.name)).toEqual([ann.handle, "Owl", "Moth", bao.handle]);
+  });
 });

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { avatarUrl } from "./accounts";
 
 // Werewolf, played at a table on the desktop. The game is run here, as plain functions over one `Table` object: the
 // API's table (a Durable Object per table in production, memory in development) keeps the object, feeds it what
@@ -226,6 +227,8 @@ export type Player = Seat & {
   canVote: boolean;
   /** Ready to vote before the discussion's time is up. */
   ready: boolean;
+  /** A computer player the host sat down, so a few friends (or one person) can play a whole game. */
+  bot?: boolean;
 };
 
 export type LogLine = { at: number; day: number; text: string; kind: "night" | "day" | "death" | "info" | "end" };
@@ -279,10 +282,39 @@ export type Table = {
   lock?: { salt: string; hash: string } | null;
   /** Who gave the password, so their browser may sit down (and come back). */
   allowed?: number[];
+  /** Who the host asked not to come back to this table. */
+  banned?: number[];
 };
 
 /** Why a table turns someone away when it has a password: the browser asks for it on this. */
 export const TABLE_LOCKED = "this table has a password";
+/** What someone the host asked to leave is told, and someone asked not to come back. */
+export const TABLE_KICKED = "the host asked you to leave this table";
+export const TABLE_BANNED = "the host asked you not to come back to this table";
+
+/* ---------- computer players ---------- */
+
+/** Computer players' ids: far above any member's, so the two never meet. */
+export const BOT_BASE = 2_000_000_000;
+export const isBotId = (id: number) => id >= BOT_BASE;
+/** The village's night creatures, who sit in when there aren't enough people. */
+const BOT_NAMES = [
+  "Owl",
+  "Moth",
+  "Fox",
+  "Crow",
+  "Hare",
+  "Badger",
+  "Toad",
+  "Bat",
+  "Heron",
+  "Wren",
+  "Stoat",
+  "Newt",
+  "Mole",
+  "Lark",
+  "Vole",
+] as const;
 
 export type Rand = () => number;
 
@@ -380,6 +412,7 @@ export function arrive(t: Table, seat: Seat, now: number): Result {
     t.updatedAt = now;
     return ok;
   }
+  if (t.banned?.includes(seat.id)) return { error: TABLE_BANNED };
   if (t.phase !== "lobby") return { error: "this game has already started" };
   if (t.lock && !t.allowed?.includes(seat.id)) return { error: TABLE_LOCKED };
   if (t.players.length >= t.settings.seats) return { error: "this table is full" };
@@ -403,10 +436,16 @@ export function setConnected(t: Table, id: number, connected: boolean, now: numb
 }
 
 /** Leaving the lobby frees the seat; leaving a game only goes away (the seat stays theirs). */
+/** The next host when the host goes: someone at the table, never a computer player. */
+function nextHost(t: Table): number {
+  const people = t.players.filter((p) => !p.bot);
+  return people.find((p) => p.connected)?.id ?? people[0]?.id ?? 0;
+}
+
 function leave(t: Table, id: number, now: number) {
   if (t.phase === "lobby" || t.phase === "over") {
     t.players = t.players.filter((p) => p.id !== id);
-    if (t.host === id) t.host = t.players.find((p) => p.connected)?.id ?? t.players[0]?.id ?? 0;
+    if (t.host === id) t.host = nextHost(t);
     autoRoles(t);
   } else setConnected(t, id, false, now);
   t.updatedAt = now;
@@ -417,7 +456,8 @@ function leave(t: Table, id: number, now: number) {
 export const tableCommand = z.discriminatedUnion("t", [
   z.object({ t: z.literal("settings"), settings: tableSettings }),
   z.object({ t: z.literal("start") }),
-  z.object({ t: z.literal("kick"), id: z.number().int() }),
+  z.object({ t: z.literal("kick"), id: z.number().int(), ban: z.boolean().optional() }),
+  z.object({ t: z.literal("bot"), add: z.boolean() }),
   z.object({ t: z.literal("leave") }),
   z.object({ t: z.literal("again") }),
   z.object({ t: z.literal("ready"), ready: z.boolean() }),
@@ -445,10 +485,31 @@ export function command(t: Table, by: number, cmd: TableCommand, now: number, ra
       break;
     }
     case "kick": {
-      if (!host || t.phase !== "lobby" || cmd.id === by) return { error: "you can't do that" };
+      if (!host || (t.phase !== "lobby" && t.phase !== "over") || cmd.id === by || !find(t, cmd.id))
+        return { error: "you can't do that" };
       t.players = t.players.filter((p) => p.id !== cmd.id);
-      // Asked to leave: the password they gave no longer seats them.
+      // Asked to leave: the password they gave no longer seats them; asked not to come back: nothing does.
       if (t.allowed) t.allowed = t.allowed.filter((id) => id !== cmd.id);
+      if (cmd.ban && !isBotId(cmd.id)) t.banned = [...new Set([...(t.banned ?? []), cmd.id])].slice(-200);
+      autoRoles(t);
+      break;
+    }
+    case "bot": {
+      if (!host || t.phase !== "lobby") return { error: "only the host, before the game" };
+      if (cmd.add) {
+        if (t.players.length >= t.settings.seats) return { error: "this table is full" };
+        const taken = new Set(t.players.map((p) => p.id));
+        const k = BOT_NAMES.findIndex((_, i) => !taken.has(BOT_BASE + i));
+        if (k < 0) return { error: "no more creatures in the woods" };
+        t.players.push({
+          ...seatFor({ id: BOT_BASE + k, name: BOT_NAMES[k]!, handle: "", avatar: avatarUrl(null) }),
+          bot: true,
+        });
+      } else {
+        const last = t.players.findLast((p) => p.bot);
+        if (!last) return { error: "no computer players here" };
+        t.players = t.players.filter((p) => p !== last);
+      }
       autoRoles(t);
       break;
     }
@@ -487,12 +548,12 @@ export function command(t: Table, by: number, cmd: TableCommand, now: number, ra
       break;
     }
     case "pick": {
-      const r = pick(t, me, cmd.ids, now, rand);
+      const r = pick(t, me, cmd.ids, now);
       if ("error" in r) return r;
       break;
     }
     case "witch": {
-      const r = witch(t, me, cmd.heal, cmd.poison, now, rand);
+      const r = witch(t, me, cmd.heal, cmd.poison, now);
       if ("error" in r) return r;
       break;
     }
@@ -573,7 +634,7 @@ function deal(t: Table, now: number, rand: Rand) {
 
 function backToLobby(t: Table, now: number) {
   t.players = t.players.filter((p) => p.connected).map((p) => ({ ...seatFor(p), connected: true }) satisfies Player);
-  if (!find(t, t.host)) t.host = t.players[0]?.id ?? 0;
+  if (!find(t, t.host)) t.host = nextHost(t);
   Object.assign(t, {
     phase: "lobby",
     deadline: null,
@@ -700,7 +761,7 @@ export function askFor(t: Table, p: Player | undefined): Ask | null {
   return null;
 }
 
-function pick(t: Table, me: Player, picked: number[], now: number, rand: Rand): Result {
+function pick(t: Table, me: Player, picked: number[], now: number): Result {
   const ask = askFor(t, me);
   if (!ask) return { error: "nothing to choose right now" };
   if (ask.locked) return { error: "you've already chosen" };
@@ -727,10 +788,8 @@ function pick(t: Table, me: Player, picked: number[], now: number, rand: Rand): 
     case "vote":
     case "election":
       t.votes[String(me.id)] = one;
-      if (alive(t).every((p) => !askFor(t, p) || String(p.id) in t.votes)) {
-        if (t.phase === "vote") resolveVote(t, now);
-        else resolveElection(t, now, rand);
-      }
+      // Everyone has voted: the clock skips to its last seconds (a vote can still change until then).
+      if (alive(t).every((p) => !askFor(t, p) || String(p.id) in t.votes)) hurry(t, now);
       return ok;
     case "hunter": {
       t.actor = null;
@@ -756,17 +815,19 @@ function pick(t: Table, me: Player, picked: number[], now: number, rand: Rand): 
       return ok;
     }
   }
-  if (t.phase === "night" && earlyNight(t) && nightActors(t).every((p) => nightDone(t, p))) endNight(t, now, rand);
+  if (t.phase === "night" && nightActors(t).every((p) => nightDone(t, p))) hurry(t, now);
   return ok;
 }
 
-/**
- * Whether night may end before its time is up when everyone has acted. Not when roles stay hidden on death: a
- * night that ends early would tell the table that the Seer, say, is dead.
- */
-const earlyNight = (t: Table) => t.settings.reveal;
+/** When everything there is to do in a phase is done, the rest of it is skipped. */
+export const LAST_MS = 5 * SEC;
 
-function witch(t: Table, me: Player, heal: number | null, poison: number | null, now: number, rand: Rand): Result {
+/** Everyone has done what they had to: the clock skips to the phase's last few seconds (never later than it was). */
+function hurry(t: Table, now: number) {
+  if (t.deadline !== null) t.deadline = Math.min(t.deadline, now + LAST_MS);
+}
+
+function witch(t: Table, me: Player, heal: number | null, poison: number | null, now: number): Result {
   if (t.phase !== "witch" || me.role !== "witch" || !me.alive || t.night.witchDone) return { error: "not now" };
   if (heal !== null && (!t.potions.heal || !t.night.attacked.includes(heal)))
     return { error: "you can only save someone the wolves attacked" };
@@ -779,7 +840,8 @@ function witch(t: Table, me: Player, heal: number | null, poison: number | null,
   t.night.witchDone = true;
   if (heal !== null) t.potions.heal = false;
   if (poison !== null) t.potions.poison = false;
-  resolveNight(t, now, rand);
+  // the night ends when its last seconds run out (`tick`), like every other phase whose work is done
+  hurry(t, now);
   return ok;
 }
 
@@ -1065,6 +1127,8 @@ export type PlayerView = {
   sheriff: boolean;
   /** This viewer's lover, or the viewer themself when they are one of the lovers. */
   lover: boolean;
+  /** A computer player. */
+  bot: boolean;
 };
 
 export type TableView = {
@@ -1132,6 +1196,7 @@ export function viewFor(t: Table, viewer: number, now: number): TableView {
       ready: p.ready,
       sheriff: t.sheriff === p.id,
       lover: Boolean(lover?.includes(p.id) || (over && t.lovers?.includes(p.id))),
+      bot: Boolean(p.bot),
     }),
   );
   const wolfView = me && isWolf(me.role) && me.alive && t.phase === "night";
@@ -1194,6 +1259,53 @@ export const listingOf = (t: Table): TableListing => ({
   updatedAt: t.updatedAt,
   locked: Boolean(t.lock),
 });
+
+/* ---------- computer players' moves ---------- */
+
+/**
+ * What the computer players do now, if anything: each one who has something to choose chooses (a little like a
+ * person would: wolves follow the pack, voters lean towards whoever is already accused), and each one at the
+ * discussion says it is ready. The table runs these a few seconds after things change, so they don't answer at once.
+ */
+export function botMoves(t: Table, rand: Rand): Array<{ id: number; cmd: TableCommand }> {
+  const moves: Array<{ id: number; cmd: TableCommand }> = [];
+  const any = <T>(xs: T[]): T | undefined => xs[Math.floor(rand() * xs.length)];
+  for (const b of t.players) {
+    if (!b.bot) continue;
+    if (t.phase === "discussion" && b.alive && !b.ready) {
+      moves.push({ id: b.id, cmd: { t: "ready", ready: true } });
+      continue;
+    }
+    if (t.phase === "witch" && b.alive && b.role === "witch" && !t.night.witchDone) {
+      const saveable = t.potions.heal ? t.night.attacked : [];
+      const heal = saveable.length && rand() < 0.5 ? (any(saveable) ?? null) : null;
+      const targets = alive(t).filter((p) => p.id !== b.id && !t.night.attacked.includes(p.id));
+      const poison = t.potions.poison && rand() < 0.15 ? (any(targets)?.id ?? null) : null;
+      moves.push({ id: b.id, cmd: { t: "witch", heal, poison } });
+      continue;
+    }
+    const ask = askFor(t, b);
+    if (!ask || ask.locked || ask.chosen.length) continue;
+    const real = ask.choices.filter((id) => id !== 0);
+    if (!real.length) {
+      if (ask.choices.includes(0)) moves.push({ id: b.id, cmd: { t: "pick", ids: [0] } });
+      continue;
+    }
+    let ids: number[];
+    if (ask.kind === "wolf") {
+      // the pack agrees: follow what the other wolves chose, if they did
+      const theirs = Object.values(t.night.wolf).find((xs) => xs.length === ask.pick);
+      ids = theirs ?? [...real].sort(() => rand() - 0.5).slice(0, ask.pick);
+    } else if (ask.kind === "vote" || ask.kind === "election") {
+      const counts = new Map<number, number>();
+      for (const target of Object.values(t.votes)) if (target) counts.set(target, (counts.get(target) ?? 0) + 1);
+      const lead = [...counts].filter(([id]) => real.includes(id)).sort((a, b) => b[1] - a[1])[0]?.[0];
+      ids = [lead !== undefined && rand() < 0.6 ? lead : (any(real) ?? real[0]!)];
+    } else ids = [...real].sort(() => rand() - 0.5).slice(0, ask.pick);
+    moves.push({ id: b.id, cmd: { t: "pick", ids } });
+  }
+  return moves;
+}
 
 /* ---------- the wire ---------- */
 

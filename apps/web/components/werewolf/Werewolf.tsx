@@ -2,6 +2,8 @@
 
 import {
   cannotStart,
+  isWolf,
+  type LogLine,
   MAX_PLAYERS,
   type Me,
   MIN_PLAYERS,
@@ -19,6 +21,7 @@ import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useStat
 import { API_URL } from "@/lib/api";
 import { openTable, unlockTable } from "@/lib/table-actions";
 import { ROLE_SHORT, RoleIcon } from "./RoleIcon";
+import { setWolfSoundOn, sounds, unlockSound, wolfSoundOn } from "./sounds";
 import { useTable } from "./useTable";
 import { type HouseMark, Village } from "./Village";
 
@@ -245,6 +248,44 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
     if (el && !typing) el.scrollTop = 0;
   }, [phase]);
 
+  // The story: a title card over the sky when the game turns (night, morning, the vote, the verdict, the end), and
+  // the village's sounds with it.
+  const [scene, setScene] = useState<Scene | null>(null);
+  const story = useRef<{ phase: string; at: number; alive: Map<number, boolean> } | null>(null);
+  useEffect(() => {
+    if (!view) return;
+    const before = story.current;
+    story.current = {
+      phase: view.phase,
+      at: view.log.at(-1)?.at ?? 0,
+      alive: new Map(view.players.map((p) => [p.id, p.alive])),
+    };
+    if (!before) return; // sitting down in the middle of something: no card for what already happened
+    const died = view.players.filter((p) => !p.alive && before.alive.get(p.id) === true);
+    const turned = before.phase !== view.phase;
+    if (died.length) window.setTimeout(() => sounds.death(), turned && view.phase === "dawn" ? 1300 : 0);
+    if (!turned) return;
+    const fresh = view.log.filter((l) => l.at > before.at);
+    const next = sceneFor(view, me.id, fresh);
+    if (next) setScene({ ...next, id: Date.now() });
+    if (view.phase === "night") sounds.night();
+    else if (view.phase === "dawn") sounds.dawn();
+    else if (view.phase === "vote" || view.phase === "election") sounds.vote();
+    else if (view.phase === "verdict") sounds.verdict();
+    else if (view.phase === "over") sounds.end(Boolean(view.winner?.ids.includes(me.id)));
+  }, [view, me.id]);
+  useEffect(() => {
+    if (!scene) return;
+    const t = window.setTimeout(() => setScene(null), scene.long ? 5600 : 3600);
+    return () => window.clearTimeout(t);
+  }, [scene]);
+  // Browsers play sound only after a click somewhere: the first one in the window unlocks it.
+  useEffect(() => {
+    const on = () => unlockSound();
+    window.addEventListener("pointerdown", on, { once: true });
+    return () => window.removeEventListener("pointerdown", on);
+  }, []);
+
   const chatCount = view?.chat.length ?? 0;
   const lastSeen = useRef(0);
   useEffect(() => {
@@ -263,6 +304,17 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
 
   const ask = view?.ask ?? null;
   const witch = view?.witch ?? null;
+  // Your turn: a soft ping when there is something for you to choose, and ticks in its last five seconds.
+  const waiting = Boolean((ask && !ask.locked && !ask.chosen.length) || (witch && !witch.done));
+  const turnKey = waiting ? `${phaseKey}:${ask?.kind ?? "witch"}` : "";
+  useEffect(() => {
+    if (turnKey) sounds.turn();
+  }, [turnKey]);
+  const secs = left !== null ? Math.ceil(left / 1000) : null;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once a second, while waiting on you
+  useEffect(() => {
+    if (waiting && secs !== null && secs > 0 && secs <= 5) sounds.tick();
+  }, [secs]);
   const pickingPoison = Boolean(witch && poisoning && !witch.done);
   const marks = useMemo(() => {
     const m = new Map<number, HouseMark>();
@@ -348,6 +400,7 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
               {clock(left)}
             </span>
           )}
+          <SoundToggle />
         </div>
         <p className="ww-say" aria-live="polite">
           {narrator}
@@ -366,6 +419,12 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
             onPick={pick}
             onHouse={(id) => setFocus((f) => (f === id ? null : id))}
           />
+          {scene && (
+            <div key={scene.id} className={`ww-scene ${scene.tone}${scene.long ? " long" : ""}`} aria-hidden="true">
+              <b>{scene.title}</b>
+              {scene.line && <span>{scene.line}</span>}
+            </div>
+          )}
           <Action
             view={view}
             me={me}
@@ -505,7 +564,22 @@ function Action({
             Leave
           </button>
         </div>
-        {view.host === me.id && why && <p className="ww-hint">Can't start yet: {why}.</p>}
+        {view.host === me.id && why && (
+          <p className="ww-hint">
+            Can't start yet: {why}.{" "}
+            {view.players.length < MIN_PLAYERS && (
+              <button
+                type="button"
+                className="linkish ww-fill"
+                onClick={() => {
+                  for (let i = view.players.length; i < MIN_PLAYERS; i++) send({ t: "bot", add: true });
+                }}
+              >
+                Fill the empty seats with computer players
+              </button>
+            )}
+          </p>
+        )}
       </div>
     );
   }
@@ -732,13 +806,14 @@ function Neighbour({
       <div>
         <b>{p.id === me ? "You" : p.name}</b>
         <span>
+          {p.bot ? "a computer player · " : ""}
           {p.alive ? (p.connected ? "at the table" : "stepped away") : "dead"}
           {p.role ? ` · ${ROLE_SHORT[p.role]}` : ""}
           {p.sheriff ? " · sheriff" : ""}
         </span>
       </div>
       <div className="ww-who-acts">
-        {p.id !== me && voice && (
+        {p.id !== me && voice && !p.bot && (
           <button
             type="button"
             className="btn"
@@ -750,19 +825,138 @@ function Neighbour({
             {silenced ? "Hear them again" : "Mute their voice"}
           </button>
         )}
-        <a className="btn" href={`/u/${p.handle}`} target="_blank" rel="noreferrer">
-          Their diary
-        </a>
-        {view.phase === "lobby" && view.host === me && p.id !== me && (
-          <button type="button" className="btn danger" onClick={() => send({ t: "kick", id })}>
-            Ask them to leave
-          </button>
+        {!p.bot && (
+          <a className="btn" href={`/u/${p.handle}`} target="_blank" rel="noreferrer">
+            Their diary
+          </a>
+        )}
+        {(view.phase === "lobby" || view.phase === "over") && view.host === me && p.id !== me && (
+          <>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                send({ t: "kick", id });
+                onClose();
+              }}
+            >
+              {p.bot ? "Send them home" : "Ask them to leave"}
+            </button>
+            {!p.bot && (
+              <button
+                type="button"
+                className="btn danger"
+                title="They can't sit at this table again"
+                onClick={() => {
+                  send({ t: "kick", id, ban: true });
+                  onClose();
+                }}
+              >
+                Ban from this table
+              </button>
+            )}
+          </>
         )}
         <button type="button" className="linkish" onClick={onClose}>
           Close
         </button>
       </div>
     </div>
+  );
+}
+
+/* ---------- the story ---------- */
+
+type Scene = {
+  id: number;
+  tone: "night" | "dawn" | "day" | "dusk" | "win" | "lose";
+  title: string;
+  line: string;
+  long?: boolean;
+};
+
+const WINNERS: Record<string, string> = {
+  wolves: "The wolves win",
+  village: "The village wins",
+  lovers: "The lovers win",
+  tanner: "The tanner wins",
+  nobody: "Nobody wins",
+};
+
+/** The title card for the part of the game that has just begun, from what the narrator has just said. */
+function sceneFor(view: TableView, me: number, fresh: LogLine[]): Omit<Scene, "id"> | null {
+  const said = (kinds: LogLine["kind"][]) =>
+    fresh
+      .filter((l) => kinds.includes(l.kind))
+      .map((l) => l.text)
+      .slice(-2)
+      .join(" ");
+  const you = view.me;
+  switch (view.phase) {
+    case "night":
+      return {
+        tone: "night",
+        title: `Night ${view.day}`,
+        line:
+          you?.alive && isWolf(you.role)
+            ? "The pack wakes. Choose together."
+            : you?.alive
+              ? "The village sleeps."
+              : "The dead watch the dark.",
+      };
+    case "dawn":
+      return { tone: "dawn", title: `Day ${view.day}`, line: said(["death"]) || "Everyone woke up." };
+    case "election":
+      return { tone: "day", title: "The sheriff", line: "The village chooses who speaks for it." };
+    case "vote":
+      return { tone: "day", title: "The vote", line: "Who leaves the village?" };
+    case "verdict":
+      return { tone: "dusk", title: "The verdict", line: said(["death", "day", "info"]) };
+    case "hunter":
+      return { tone: "dusk", title: "The hunter", line: "One last shot." };
+    case "over": {
+      const w = view.winner;
+      const won = Boolean(w?.ids.includes(me));
+      return {
+        tone: won ? "win" : "lose",
+        title: WINNERS[w?.team ?? "nobody"] ?? "The end",
+        line: won ? "You won." : w?.team === "nobody" ? "" : "You lost.",
+        long: true,
+      };
+    }
+    default:
+      return null;
+  }
+}
+
+function SoundToggle() {
+  const [on, setOn] = useState(true);
+  useEffect(() => setOn(wolfSoundOn()), []);
+  return (
+    <button
+      type="button"
+      className={`ww-sound${on ? "" : " off"}`}
+      aria-pressed={on}
+      aria-label={on ? "Sounds on" : "Sounds off"}
+      title={on ? "Sounds on: click to turn them off" : "Sounds off: click to turn them on"}
+      onClick={() => {
+        setWolfSoundOn(!on);
+        setOn(!on);
+        if (!on) {
+          unlockSound();
+          sounds.turn();
+        }
+      }}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M2.5 6h2.6L8.6 3v10L5.1 10H2.5z" />
+        {on ? (
+          <path d="M10.6 5.6a3.4 3.4 0 0 1 0 4.8 M12.4 3.8a6 6 0 0 1 0 8.4" />
+        ) : (
+          <path d="M10.6 6l3.6 4 M14.2 6l-3.6 4" />
+        )}
+      </svg>
+    </button>
   );
 }
 
@@ -1011,7 +1205,10 @@ function Settings({ view, host, send }: { view: TableView; host: boolean; send: 
   const set = (patch: Partial<TableSettings>) => send({ t: "settings", settings: { ...s, ...patch } });
   const setRole = (r: Exclude<RoleId, "villager">, n: number) =>
     set({ auto: false, roles: { ...s.roles, [r]: Math.max(0, Math.min(ROLES[r].max, n)) } });
-  const villagers = Math.max(0, Math.max(seated, MIN_PLAYERS) - specialsIn(s.roles));
+  // Villagers are everyone the roles leave over: at a full table, the seats the roles don't take. More villagers is
+  // more seats.
+  const specials = specialsIn(s.roles);
+  const villagers = Math.max(0, s.seats - specials);
   const why = cannotStart(s, Math.max(seated, MIN_PLAYERS));
   const seconds = (n: number) => (n >= 60 ? `${n / 60} min` : `${n} s`);
 
@@ -1026,6 +1223,15 @@ function Settings({ view, host, send }: { view: TableView; host: boolean; send: 
             min={Math.max(MIN_PLAYERS, seated)}
             max={MAX_PLAYERS}
             onChange={(n) => set({ seats: n })}
+          />
+        </div>
+        <div className="ww-set-row">
+          <span title="They play on their own: handy with few friends, or to try a game alone">Computer players</span>
+          <Stepper
+            value={view.players.filter((p) => p.bot).length}
+            min={0}
+            max={view.players.filter((p) => p.bot).length + Math.max(0, s.seats - seated)}
+            onChange={(n) => send({ t: "bot", add: n > view.players.filter((p) => p.bot).length })}
           />
         </div>
         <Room view={view} send={send} />
@@ -1065,9 +1271,18 @@ function Settings({ view, host, send }: { view: TableView; host: boolean; send: 
           <li className="in">
             <RoleIcon of="villager" />
             <span>Villagers</span>
-            <span className="ww-n">{villagers}</span>
+            <Stepper
+              value={villagers}
+              min={Math.max(0, Math.max(MIN_PLAYERS, seated) - specials)}
+              max={Math.max(0, MAX_PLAYERS - specials)}
+              onChange={(n) => set({ seats: specials + n })}
+            />
           </li>
         </ul>
+        <p className="ww-hint ww-cast-note">
+          A full table of {s.seats}: {specials} with a role, {villagers} {villagers === 1 ? "villager" : "villagers"}.
+          {seated < s.seats ? " If fewer people sit down, there are fewer villagers." : ""}
+        </p>
         {why && <p className="ww-hint">{why[0]?.toUpperCase() + why.slice(1)}.</p>}
         <div className="ww-set-row">
           <span>Night</span>

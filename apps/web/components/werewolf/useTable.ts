@@ -113,7 +113,7 @@ export function useTable(code: string | null, me: number | null, attempt = 0) {
     const v = voiceRef.current;
     if (!v || !view) return;
     v.setTable(
-      view.players.filter((p) => p.connected).map((p) => p.id),
+      view.players.filter((p) => p.connected && !p.bot).map((p) => p.id),
       view.voice.speakTo,
       view.voice.hear,
     );

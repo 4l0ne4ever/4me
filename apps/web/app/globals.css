@@ -366,6 +366,64 @@ body[data-skin="snow"] .wall .paint:not(.color) {
   background: #c4423a;
   color: #fff;
 }
+/* maximised: the window fills the desktop above the taskbar (a computer only; on a phone every window already does) */
+@media (min-width: 900px) {
+  .win.max {
+    left: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    border-width: 0 0 1px;
+    box-shadow: none;
+  }
+  .win.max .bar {
+    cursor: default;
+  }
+}
+/* the edges a window is made bigger or smaller by: the right, the bottom, and the corner with its grip */
+.grip {
+  position: absolute;
+  z-index: 2;
+  touch-action: none;
+}
+.grip-e {
+  top: 34px;
+  right: -4px;
+  bottom: 14px;
+  width: 8px;
+  cursor: ew-resize;
+}
+.grip-s {
+  left: 0;
+  right: 14px;
+  bottom: -4px;
+  height: 8px;
+  cursor: ns-resize;
+}
+.grip-se {
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  /* the 2006 grip: three little rows of dots in the corner */
+  background: radial-gradient(circle, var(--chrome-dim) 0.9px, transparent 1.2px) 0 0 / 4px 4px;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  opacity: 0.55;
+}
+.grip-se:hover {
+  opacity: 0.9;
+}
+@media (max-width: 899px) {
+  .bar .ctl.mx,
+  .grip {
+    display: none;
+  }
+}
 .body {
   overflow: auto;
   flex: 1;
@@ -5296,19 +5354,19 @@ body.daytime .sky-tint {
   opacity: 1;
 }
 .vl-sky.s-lobby {
-  background: linear-gradient(#0f1d36 0%, #22385c 58%, #3b5376 100%);
+  background: linear-gradient(#152850 0%, #2d4878 55%, #6c82ab 100%);
 }
 .vl-sky.s-night {
-  background: linear-gradient(#05080f 0%, #0b1527 62%, #16243d 100%);
+  background: linear-gradient(#060b18 0%, #0e1a33 58%, #22355a 100%);
 }
 .vl-sky.s-dawn {
-  background: linear-gradient(#25355a 0%, #7f6680 52%, #dba06c 100%);
+  background: linear-gradient(#2e3f78 0%, #b8869f 55%, #f6c48c 100%);
 }
 .vl-sky.s-day {
-  background: linear-gradient(#6a8bb3 0%, #a6bdd5 60%, #d4dbe0 100%);
+  background: linear-gradient(#3a82cf 0%, #7db6e3 55%, #e2eee4 100%);
 }
 .vl-sky.s-dusk {
-  background: linear-gradient(#273152 0%, #74526a 58%, #c47e58 100%);
+  background: linear-gradient(#2a2a5c 0%, #9a5679 55%, #f0a160 100%);
 }
 .vl-art {
   position: absolute;
@@ -5341,7 +5399,11 @@ body.daytime .sky-tint {
   opacity: 0.22;
 }
 .vl-sun {
-  fill: #f6e6bd;
+  fill: #fff3cf;
+}
+.vl-dawn .vl-sun,
+.vl-dusk .vl-sun {
+  fill: #ffcf8a;
 }
 .vl-hill,
 .vl-square,
@@ -5352,90 +5414,302 @@ body.daytime .sky-tint {
 .vh-roof {
   transition: fill 2400ms ease;
 }
+/*
+ * The village's palette, one set per sky. Old cottages round a cobbled square: plaster in dark timber frames, stone,
+ * roofs of tile, slate and thatch. By day they show as they are; dawn warms them, dusk cools them, and at night the
+ * moon leaves just enough to tell one house from the next, a step lighter than the hill behind them.
+ */
+.vl {
+  --paint-amt: 24%;
+  --tint: #1c2944;
+  --far: #131f38;
+  --hill: #0c1526;
+  --square: #1a2539;
+  --curb: rgba(150, 175, 220, 0.24);
+  --paving: rgba(150, 175, 220, 0.1);
+  --stone: #1e283b;
+  --tile: #131a28;
+  --roof: #0d1320;
+  --tank: #2b3753;
+  --door: #0a0f18;
+  --side: rgba(0, 0, 0, 0.3);
+  --ledge: rgba(170, 195, 235, 0.16);
+  --edge: rgba(170, 195, 235, 0.45);
+  --small: #0e1522;
+  --leaf: #182a2a;
+  --shadow: 0.4;
+  --cloud: #22314f;
+  --cloud-op: 0.35;
+  --label-bg: rgba(9, 13, 22, 0.84);
+  --label-ink: #eef2f8;
+  --label-edge: rgba(160, 180, 210, 0.3);
+  --lot: rgba(207, 222, 245, 0.34);
+  --timber: #0b101b;
+  --quoin: rgba(170, 190, 225, 0.12);
+}
+.vl-lobby {
+  --paint-amt: 34%;
+  --tint: #2b3d63;
+  --far: #22355a;
+  --hill: #17263f;
+  --square: #27364f;
+  --stone: #2c3851;
+  --tile: #1a2336;
+  --roof: #141d2e;
+  --tank: #48577b;
+  --door: #111827;
+  --ledge: rgba(190, 210, 240, 0.2);
+  --small: #18233a;
+  --leaf: #22383a;
+  --timber: #121a2a;
+  --quoin: rgba(190, 205, 235, 0.14);
+}
+.vl-dawn {
+  --paint-amt: 74%;
+  --tint: #f0ae8a;
+  --far: #b49aae;
+  --hill: #8a9566;
+  --square: #c99579;
+  --curb: #9a6650;
+  --paving: rgba(110, 60, 40, 0.28);
+  --stone: #a69b98;
+  --tile: #8e4b3a;
+  --roof: #7a4a46;
+  --tank: #dcd8de;
+  --door: #5a3b30;
+  --side: rgba(60, 30, 50, 0.18);
+  --ledge: rgba(255, 240, 225, 0.5);
+  --edge: rgba(255, 230, 200, 0.7);
+  --small: #5d5f78;
+  --leaf: #4f7a55;
+  --shadow: 0.22;
+  --cloud: #f8d2b9;
+  --cloud-op: 0.8;
+  --label-bg: rgba(255, 247, 233, 0.94);
+  --label-ink: #2b2117;
+  --label-edge: rgba(80, 50, 30, 0.3);
+  --lot: rgba(70, 45, 30, 0.4);
+  --timber: #5a3b33;
+  --quoin: rgba(255, 240, 225, 0.35);
+}
+.vl-day {
+  --paint-amt: 92%;
+  --tint: #fff8ec;
+  --far: #a6c8b5;
+  --hill: #78a66f;
+  --square: #c9b28c;
+  --curb: #8a7356;
+  --paving: rgba(90, 70, 45, 0.3);
+  --stone: #a9a89f;
+  --tile: #9c4f36;
+  --roof: #8d4a37;
+  --tank: #d9dfe5;
+  --door: #6d4a33;
+  --side: rgba(40, 30, 20, 0.16);
+  --ledge: rgba(255, 255, 255, 0.55);
+  --edge: rgba(255, 255, 255, 0.7);
+  --small: #4e6379;
+  --leaf: #4f8a4a;
+  --shadow: 0.2;
+  --cloud: #ffffff;
+  --cloud-op: 0.9;
+  --label-bg: rgba(255, 249, 236, 0.95);
+  --label-ink: #2b2117;
+  --label-edge: rgba(80, 50, 30, 0.28);
+  --lot: rgba(70, 45, 30, 0.42);
+  --timber: #5b3a26;
+  --quoin: rgba(255, 255, 255, 0.35);
+}
+.vl-dusk {
+  --paint-amt: 58%;
+  --tint: #8a5a7a;
+  --far: #6f5f86;
+  --hill: #48506a;
+  --square: #8f6a70;
+  --curb: #5f4655;
+  --paving: rgba(40, 20, 40, 0.25);
+  --stone: #706879;
+  --tile: #6b3c45;
+  --roof: #3d3244;
+  --tank: #9c97aa;
+  --door: #2c2230;
+  --side: rgba(20, 10, 30, 0.22);
+  --ledge: rgba(255, 220, 200, 0.28);
+  --edge: rgba(255, 200, 170, 0.5);
+  --small: #3e3f58;
+  --leaf: #3b4d4a;
+  --shadow: 0.3;
+  --cloud: #eaa79a;
+  --cloud-op: 0.6;
+  --timber: #2e2230;
+  --quoin: rgba(255, 220, 200, 0.18);
+}
+
+.vl-far,
+.vl-hill,
+.vl-square,
+.vl-well rect,
+.vl-well path,
+.vl-well-rim,
+.vh-body,
+.vh-tinted,
+.vh-timber,
+.vh-chimney,
+.vh-plinth,
+.vh-parapet,
+.vh-roof,
+.vh-tank,
+.vh-door,
+.vh-small,
+.vl-cloud {
+  transition:
+    fill 2400ms ease,
+    opacity 2400ms ease;
+}
+.vl-far {
+  fill: var(--far);
+}
 .vl-hill {
-  fill: #070b12;
+  fill: var(--hill);
 }
 .vl-square {
-  fill: #101824;
+  fill: var(--square);
 }
-.vl-well rect,
-.vl-well path {
-  fill: #0b111c;
-}
-/* the square's stones: a kerb, and rings of setts round the well */
+/* the square's bricks: a kerb, and rings round the well */
 .vl-curb {
   fill: none;
-  stroke: #6f86ad;
-  stroke-opacity: 0.16;
-  stroke-width: 1;
+  stroke: var(--curb);
+  stroke-width: 1.2;
 }
 .vl-paving {
   fill: none;
-  stroke: #8aa3cc;
-  stroke-opacity: 0.07;
+  stroke: var(--paving);
   stroke-width: 0.8;
   stroke-dasharray: 3 2;
 }
-.vl-day .vl-curb,
-.vl-dawn .vl-curb {
-  stroke: #2a3444;
-  stroke-opacity: 0.25;
+.vl-well rect {
+  fill: var(--stone);
 }
-.vl-day .vl-paving,
-.vl-dawn .vl-paving {
-  stroke: #3a4556;
-  stroke-opacity: 0.18;
+.vl-well path {
+  fill: var(--tile);
 }
 .vl-well-rim {
-  fill: #1c2636;
+  fill: var(--stone);
+  filter: brightness(1.15);
+}
+.vl-cloud {
+  fill: var(--cloud);
+  opacity: var(--cloud-op);
+}
+.vl-clouds {
+  animation: vl-drift 140s linear infinite alternate;
+}
+@keyframes vl-drift {
+  to {
+    transform: translateX(60px);
+  }
 }
 .vl-lot {
-  fill: rgba(255, 255, 255, 0.03);
-  stroke: rgba(207, 222, 245, 0.32);
+  fill: rgba(255, 255, 255, 0.04);
+  stroke: var(--lot);
   stroke-width: 0.8;
 }
 .vh-shadow {
   fill: #000;
-  opacity: 0.35;
+  opacity: var(--shadow);
 }
-/* at night the houses stay a step lighter than the hill behind them, so the village reads with every light out */
-.vh-body.s0 {
-  fill: #1b2538;
+.vh-body,
+.vh-tinted {
+  fill: color-mix(in oklab, var(--paint) var(--paint-amt), var(--tint));
 }
-.vh-body.s1 {
-  fill: #172032;
+/* the cottages: rows of tiles or thatch on the roof, a timber frame, stone, panes, planks */
+.vh-roof-tex {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.18);
+  stroke-width: 1.8;
+  stroke-dasharray: 1.6 0.9;
 }
-.vh-body.s2 {
-  fill: #1f2a3e;
+.vh-roof-tex.thatch {
+  stroke: rgba(255, 238, 196, 0.32);
+  stroke-width: 0.6;
+  stroke-dasharray: 5 1.5;
+}
+.vh-timber {
+  fill: var(--timber);
+}
+.vh-brace,
+.vh-pane {
+  fill: none;
+  stroke: var(--timber);
+  stroke-width: 1.2;
+}
+.vh-pane {
+  stroke-width: 0.55;
+}
+.vh-chimney,
+.vh-plinth {
+  fill: var(--stone);
+}
+.vh-quoin {
+  fill: var(--quoin);
+}
+.vh-joint,
+.vh-plank {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.2);
+  stroke-width: 0.45;
+}
+.vh-eave {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.2);
+  stroke-width: 1.4;
+}
+.vh-knob {
+  fill: var(--edge);
+}
+.vh-side {
+  fill: var(--side);
+}
+.vh-ledge {
+  fill: var(--ledge);
 }
 .vh-parapet,
 .vh-roof {
-  fill: #080c14;
+  fill: var(--roof);
+}
+.vh-tank {
+  fill: var(--tank);
 }
 .vh-rim {
-  fill: #6f86ad;
-  opacity: 0.45;
+  fill: var(--edge);
+  opacity: 0.6;
 }
 .vh-edge {
-  fill: #8aa3cc;
-  opacity: 0.22;
+  fill: var(--edge);
+  opacity: 0.5;
 }
-.vh-wire,
-.vh-leaves {
+.vh-wire {
   fill: none;
-  stroke: #080c14;
+  stroke: var(--roof);
   stroke-width: 1;
   stroke-linecap: round;
 }
+.vh-leaves {
+  fill: none;
+  stroke: var(--leaf);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
 .vh-small {
-  fill: #0b111b;
+  fill: var(--small);
 }
 .vh-door {
-  fill: #06090f;
+  fill: var(--door);
 }
 .vh-mullion {
-  fill: #06090f;
-  opacity: 0.6;
+  fill: none;
+  stroke: var(--timber);
+  stroke-width: 0.7;
 }
 .vh-glass {
   transition: fill 900ms ease;
@@ -5572,7 +5846,7 @@ body.daytime .sky-tint {
     stroke-dashoffset: 0;
   }
 }
-.vh.dead .vh-body {
+.vh.dead {
   transition: opacity 2400ms ease;
 }
 .vh-glass.mine {
@@ -5582,8 +5856,11 @@ body.daytime .sky-tint {
   fill: #05070b;
 }
 .vh-glass.pale {
-  fill: #b9c9da;
-  opacity: 0.85;
+  fill: #d4e7f4;
+  opacity: 0.9;
+}
+.vl-dusk .vh-glass.pale {
+  fill: #e9c3b4;
 }
 .vh-spill {
   fill: #f0b25c;
@@ -5622,8 +5899,8 @@ body.daytime .sky-tint {
   stroke: #6b5a44;
   stroke-width: 1.4;
 }
-.vh.dead .vh-body {
-  opacity: 0.72;
+.vh.dead {
+  opacity: 0.8;
 }
 .vh-heart {
   fill: #ff7a8a;
@@ -5636,53 +5913,11 @@ body.daytime .sky-tint {
 .vh-lantern rect {
   fill: #ffcf7a;
 }
-/* daylight on the houses and the square */
-.vl-day .vl-hill,
-.vl-dawn .vl-hill {
-  fill: #4f6170;
-}
-.vl-day .vl-square,
-.vl-dawn .vl-square {
-  fill: #7d8278;
-}
-.vl-day .vl-well rect,
-.vl-day .vl-well path,
-.vl-dawn .vl-well rect,
-.vl-dawn .vl-well path {
-  fill: #3a4252;
-}
-.vl-day .vl-well-rim,
-.vl-dawn .vl-well-rim {
-  fill: #5d6470;
-}
-.vl-day .vh-body.s0,
-.vl-dawn .vh-body.s0 {
-  fill: #3c485b;
-}
-.vl-day .vh-body.s1,
-.vl-dawn .vh-body.s1 {
-  fill: #354153;
-}
-.vl-day .vh-body.s2,
-.vl-dawn .vh-body.s2 {
-  fill: #434f63;
-}
-.vl-day .vh-parapet,
-.vl-day .vh-roof,
-.vl-dawn .vh-parapet,
-.vl-dawn .vh-roof {
-  fill: #2a3342;
-}
-.vl-day .vh-small,
-.vl-dawn .vh-small {
-  fill: #8195ab;
-}
-
 /* the houses as buttons */
 .vh-btn {
   position: absolute;
-  width: calc(var(--k) * 36px);
-  height: calc(var(--k) * 70px);
+  width: calc(var(--k) * 38px);
+  height: calc(var(--k) * 76px);
   transform: translate(-50%, -100%);
   padding: 0;
   border: 0;
@@ -5731,9 +5966,10 @@ body.daytime .sky-tint {
   gap: 3px;
   max-width: 11em;
   padding: 1px 6px 2px;
-  background: rgba(7, 11, 18, 0.78);
-  border: 1px solid rgba(160, 180, 210, 0.22);
-  color: #eef2f8;
+  background: var(--label-bg);
+  border: 1px solid var(--label-edge);
+  color: var(--label-ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
   font-size: 11.5px;
   font-weight: 700;
   line-height: 1.3;
@@ -5742,10 +5978,18 @@ body.daytime .sky-tint {
 .vh-nm {
   overflow: hidden;
   text-overflow: ellipsis;
+  /* room for an italic's last letter, which leans out of its box */
+  padding-right: 0.15em;
 }
 .vh-btn.mine .vh-name {
   border-color: rgba(240, 172, 92, 0.7);
   color: #ffd9a8;
+}
+/* on a light label, by day, "you" in a darker amber */
+.vl-day .vh-btn.mine .vh-name,
+.vl-dawn .vh-btn.mine .vh-name {
+  border-color: #d98a3a;
+  color: #8a4a12;
 }
 .vh-btn.chosen .vh-name {
   background: var(--amber);
@@ -6080,6 +6324,124 @@ body.daytime .sky-tint {
     transform: perspective(700px) rotateY(80deg);
     opacity: 0;
   }
+}
+/* the story's title cards: over the sky when the game turns, then gone; they never take a click */
+.ww-scene {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9%;
+  z-index: 400;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 14px 20px 16px;
+  text-align: center;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(5, 8, 14, 0.62) 22%, rgba(5, 8, 14, 0.62) 78%, transparent);
+  animation: ww-scene 3600ms ease both;
+}
+.ww-scene.long {
+  animation-duration: 5600ms;
+}
+.ww-scene b {
+  font-family: var(--font-hand), cursive;
+  font-weight: 400;
+  font-size: clamp(34px, 7cqw, 58px);
+  line-height: 1;
+  color: #cfe0ff;
+  text-shadow: 0 0 18px rgba(160, 190, 255, 0.35);
+  animation: ww-scene-title 3600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ww-scene span {
+  max-width: 34em;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--paper-ink);
+  text-wrap: balance;
+}
+.ww-scene.dawn b {
+  color: #ffe2b8;
+  text-shadow: 0 0 18px rgba(255, 200, 140, 0.4);
+}
+.ww-scene.day b {
+  color: #f3f6fb;
+}
+.ww-scene.dusk b {
+  color: #ffc9a0;
+  text-shadow: 0 0 18px rgba(255, 150, 90, 0.35);
+}
+.ww-scene.win b {
+  color: #ffd36b;
+  text-shadow: 0 0 22px rgba(255, 211, 107, 0.5);
+}
+.ww-scene.lose b {
+  color: #ff9a8a;
+  text-shadow: 0 0 22px rgba(255, 90, 72, 0.4);
+}
+@keyframes ww-scene {
+  0% {
+    opacity: 0;
+  }
+  14%,
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes ww-scene-title {
+  from {
+    letter-spacing: 0.18em;
+    transform: translateY(6px);
+  }
+  to {
+    letter-spacing: 0;
+    transform: none;
+  }
+}
+/* the village's sounds: on or off */
+.ww-sound {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--chrome-dim);
+  cursor: pointer;
+  align-self: center;
+}
+.ww-sound:hover {
+  color: var(--chrome-ink);
+  border-color: var(--chrome-edge);
+}
+.ww-sound svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ww-sound.off {
+  opacity: 0.6;
+}
+.ww .linkish.ww-fill {
+  min-height: 0;
+  padding: 0;
+  color: var(--amber);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-size: inherit;
+}
+/* a computer player's name, a little apart from the people's */
+.vh-btn.bot .vh-nm {
+  font-style: italic;
+  font-weight: 400;
 }
 .ww-notice {
   position: absolute;
@@ -6680,6 +7042,9 @@ body.daytime .sky-tint {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .ww-scene b {
+    animation: none;
+  }
   .vh-smoke,
   .vh-wisp {
     display: none;

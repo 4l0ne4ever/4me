@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   arrive,
+  BOT_BASE,
+  botMoves,
   cannotStart,
   command,
   defaultSettings,
+  LAST_MS,
   newTable,
   type RoleId,
   suggestRoles,
+  TABLE_BANNED,
   type Table,
   type TableCommand,
   tick,
@@ -63,11 +67,15 @@ describe("the night", () => {
     expect(act(t, 1, { t: "pick", ids: [4] })).toEqual({ ok: true });
     expect(act(t, 1, { t: "pick", ids: [1] })).toEqual({ error: "pick someone at the table" });
     act(t, 2, { t: "pick", ids: [5] });
-    // everyone with something to do has done it: the witch's turn
+    // everyone with something to do has done it: the clock skips to its last seconds, then the witch's turn
+    expect(t.deadline).toBe(clock + LAST_MS);
+    pass(t);
     expect(t.phase).toBe("witch");
     expect(viewFor(t, 3, clock).witch?.attacked).toEqual([4]);
     expect(viewFor(t, 4, clock).witch).toBeNull();
     act(t, 3, { t: "witch", heal: null, poison: null });
+    expect(t.phase).toBe("witch");
+    pass(t);
     expect(t.phase).toBe("dawn");
     expect(alive(t, 4)).toBe(false);
 
@@ -80,7 +88,9 @@ describe("the night", () => {
     act(t, 1, { t: "pick", ids: [5] });
     expect(act(t, 2, { t: "pick", ids: [5] })).toEqual({ error: "pick someone at the table" }); // guarded 5 last night
     act(t, 2, { t: "pick", ids: [3] });
+    pass(t);
     act(t, 3, { t: "witch", heal: 5, poison: null });
+    pass(t);
     expect(alive(t, 5)).toBe(true);
     expect(t.log.some((l) => l.text === "Nobody died last night.")).toBe(true);
   });
@@ -96,6 +106,7 @@ describe("the night", () => {
   it("the elder survives the first bite and the cursed joins the pack", () => {
     const t = game(["werewolf", "elder", "cursed", "villager", "villager", "villager"]);
     act(t, 1, { t: "pick", ids: [2] });
+    pass(t);
     expect(t.phase).toBe("dawn");
     expect(alive(t, 2)).toBe(true);
     pass(t);
@@ -103,6 +114,7 @@ describe("the night", () => {
     pass(t);
     pass(t);
     act(t, 1, { t: "pick", ids: [3] });
+    pass(t);
     expect(alive(t, 3)).toBe(true);
     expect(t.players[2]!.role).toBe("werewolf");
     expect(viewFor(t, 1, clock).players[2]!.role).toBe("werewolf");
@@ -114,6 +126,7 @@ describe("deaths that bring more deaths", () => {
     const t = game(["werewolf", "cupid", "hunter", "villager", "villager", "villager", "villager"]);
     act(t, 2, { t: "pick", ids: [3, 4] });
     act(t, 1, { t: "pick", ids: [3] });
+    pass(t);
     expect(t.lovers).toEqual([3, 4]);
     expect(viewFor(t, 4, clock).notes.at(-1)?.text).toMatch(/you love P3/);
     expect(alive(t, 3)).toBe(false);
@@ -133,6 +146,7 @@ describe("the day", () => {
     const t = game(["werewolf", "villager", "villager", "villager", "villager", "villager"]);
     act(t, 1, { t: "pick", ids: [6] });
     pass(t);
+    pass(t);
     for (const id of [1, 2, 3, 4]) act(t, id, { t: "ready", ready: true });
     expect(t.phase).toBe("vote");
     act(t, 1, { t: "pick", ids: [2] });
@@ -141,6 +155,9 @@ describe("the day", () => {
     act(t, 4, { t: "pick", ids: [2] });
     expect(viewFor(t, 5, clock).votes).toEqual({ "1": 2, "2": 1, "3": 1, "4": 2 });
     act(t, 5, { t: "pick", ids: [0] });
+    // everyone has voted: a few seconds to change their minds, then the verdict
+    expect(t.phase).toBe("vote");
+    pass(t);
     expect(t.phase).toBe("verdict");
     expect(t.log.at(-1)?.text).toBe("No majority. Nobody leaves today.");
   });
@@ -148,6 +165,7 @@ describe("the day", () => {
   it("the village idiot survives one vote; the tanner wins by being voted out", () => {
     const t = game(["werewolf", "idiot", "tanner", "villager", "villager", "villager", "villager"]);
     act(t, 1, { t: "pick", ids: [7] });
+    pass(t);
     pass(t);
     pass(t); // discussion over
     for (const id of [1, 3, 4, 5]) act(t, id, { t: "pick", ids: [2] });
@@ -159,6 +177,7 @@ describe("the day", () => {
     act(t, 1, { t: "pick", ids: [6] });
     pass(t);
     pass(t);
+    pass(t);
     for (const id of [1, 4, 5]) act(t, id, { t: "pick", ids: [3] });
     pass(t);
     expect(t.winner).toEqual({ team: "tanner", ids: [3] });
@@ -168,6 +187,7 @@ describe("the day", () => {
     const t = game(["werewolf", "werewolf", "villager", "villager", "villager"]);
     act(t, 1, { t: "pick", ids: [3] });
     act(t, 2, { t: "pick", ids: [3] });
+    pass(t);
     expect(t.phase).toBe("dawn");
     pass(t);
     expect(t.phase).toBe("over");
@@ -179,8 +199,10 @@ describe("the day", () => {
     const t = game(["werewolf", "villager", "villager", "villager", "villager", "villager"], { sheriff: true });
     act(t, 1, { t: "pick", ids: [6] });
     pass(t);
+    pass(t);
     expect(t.phase).toBe("election");
     for (const id of [1, 2, 3, 4, 5]) act(t, id, { t: "pick", ids: [2] });
+    pass(t);
     expect(t.sheriff).toBe(2);
     pass(t);
     act(t, 2, { t: "pick", ids: [1] });
@@ -212,9 +234,55 @@ describe("what each player may know, see and hear", () => {
     act(t, 1, { t: "pick", ids: [7] });
     act(t, 2, { t: "pick", ids: [7] });
     act(t, 3, { t: "pick", ids: [4] });
+    pass(t);
     expect(t.phase).toBe("dawn");
     // by day everyone alive talks to everyone; the dead only to the dead, but hear the living
     expect(viewFor(t, 4, clock).voice.speakTo).toEqual([1, 2, 3, 5, 6, 7]);
     expect(viewFor(t, 7, clock).voice).toEqual({ speakTo: [], hear: [1, 2, 3, 4, 5, 6] });
+  });
+
+  it("computer players sit down, play a whole game on their own, and never become the host", () => {
+    let seed = 7;
+    const chance = () => {
+      seed = (seed * 16807) % 2147483647;
+      return seed / 2147483647;
+    };
+    const t = newTable("bots01", seat(1), clock, { ...defaultSettings(), seats: 8 });
+    expect(command(t, 2, { t: "bot", add: true }, clock, chance)).toEqual({ error: "you're not at this table" });
+    for (let i = 0; i < 6; i++) expect(command(t, 1, { t: "bot", add: true }, clock, chance)).toEqual({ ok: true });
+    expect(t.players.filter((p) => p.bot).map((p) => p.name)).toEqual(["Owl", "Moth", "Fox", "Crow", "Hare", "Badger"]);
+    expect(viewFor(t, 1, clock).players.find((p) => p.id === BOT_BASE)?.bot).toBe(true);
+    expect(command(t, 1, { t: "bot", add: false }, clock, chance)).toEqual({ ok: true });
+    expect(t.players).toHaveLength(6);
+    expect(command(t, 1, { t: "start" }, clock, chance)).toEqual({ ok: true });
+    // the one person plays like the computer players, so the whole game runs here
+    t.players[0]!.bot = true;
+    let now = clock;
+    for (let step = 0; step < 400 && t.phase !== "over"; step++) {
+      const moves = botMoves(t, chance);
+      for (const { id, cmd } of moves) command(t, id, cmd, now, chance);
+      if (!moves.length) {
+        now = (t.deadline ?? now) + 1;
+        tick(t, now, chance);
+      }
+    }
+    expect(t.phase).toBe("over");
+    expect(t.winner).not.toBeNull();
+    // the person leaves: a computer player is never handed the table
+    t.players[0]!.bot = false;
+    command(t, 1, { t: "leave" }, now, chance);
+    expect(t.players.some((p) => p.id === t.host)).toBe(false);
+  });
+
+  it("the host asks someone to leave (they may come back) or not to come back (they may not)", () => {
+    const t = newTable("kick01", seat(1), clock);
+    arrive(t, seat(2), clock);
+    arrive(t, seat(3), clock);
+    expect(act(t, 2, { t: "kick", id: 3 })).toEqual({ error: "you can't do that" });
+    expect(act(t, 1, { t: "kick", id: 2 })).toEqual({ ok: true });
+    expect(arrive(t, seat(2), clock)).toEqual({ ok: true });
+    expect(act(t, 1, { t: "kick", id: 3, ban: true })).toEqual({ ok: true });
+    expect(arrive(t, seat(3), clock)).toEqual({ error: TABLE_BANNED });
+    expect(t.players.map((p) => p.id)).toEqual([1, 2]);
   });
 });

@@ -72,7 +72,7 @@ import { Screensaver } from "./night/Screensaver";
 import { Seasons } from "./night/Seasons";
 import { skyColours } from "./night/sky";
 import { Skyline } from "./Skyline";
-import { type Pos, Window } from "./Window";
+import { type Pos, type Size, Window } from "./Window";
 import { Werewolf } from "./werewolf/Werewolf";
 import { Account } from "./windows/Account";
 import { DisplayProperties, paintStyle } from "./windows/DisplayProperties";
@@ -100,7 +100,7 @@ export type WinId =
   | "readme"
   | "poem"
   | "wolf";
-type WinState = { open: boolean; min: boolean; z: number; pos?: Pos };
+type WinState = { open: boolean; min: boolean; z: number; pos?: Pos; max?: boolean; size?: Size };
 
 export const WINDOWS: Record<
   WinId,
@@ -318,6 +318,18 @@ export function DeskWindow({ id, title, children }: { id: WinId; title?: string;
       focused={focus === id}
       z={w.z}
       pos={w.pos}
+      max={Boolean(w.max)}
+      // the mixtape is a small player, like Winamp: it keeps its size
+      onMaximise={
+        id === "amp"
+          ? undefined
+          : () => {
+              patch(id, { max: !w.max });
+              if (focus !== id) raise(id);
+            }
+      }
+      size={w.size}
+      onResize={id === "amp" ? undefined : (size) => patch(id, { size })}
       onFocus={() => focus !== id && raise(id)}
       onMinimise={() => patch(id, { min: true })}
       onClose={() => patch(id, { open: false, min: false })}
