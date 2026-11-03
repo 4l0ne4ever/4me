@@ -11,7 +11,10 @@
       "!design",
       "!apps/api/drizzle",
       "!**/next-env.d.ts",
-      "!**/.impeccable"
+      "!**/.impeccable",
+      "!tester",
+      "!docs",
+      "!pm"
     ]
   },
   "formatter": {
