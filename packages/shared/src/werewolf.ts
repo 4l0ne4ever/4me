@@ -275,7 +275,14 @@ export type Table = {
   chat: ChatLine[];
   seq: number;
   winner: Winner | null;
+  /** A password the host set: only its salted hash is kept. Players already sitting stay. */
+  lock?: { salt: string; hash: string } | null;
+  /** Who gave the password, so their browser may sit down (and come back). */
+  allowed?: number[];
 };
+
+/** Why a table turns someone away when it has a password: the browser asks for it on this. */
+export const TABLE_LOCKED = "this table has a password";
 
 export type Rand = () => number;
 
@@ -374,6 +381,7 @@ export function arrive(t: Table, seat: Seat, now: number): Result {
     return ok;
   }
   if (t.phase !== "lobby") return { error: "this game has already started" };
+  if (t.lock && !t.allowed?.includes(seat.id)) return { error: TABLE_LOCKED };
   if (t.players.length >= t.settings.seats) return { error: "this table is full" };
   t.players.push(seatFor(seat));
   if (!find(t, t.host)) t.host = seat.id;
@@ -439,6 +447,8 @@ export function command(t: Table, by: number, cmd: TableCommand, now: number, ra
     case "kick": {
       if (!host || t.phase !== "lobby" || cmd.id === by) return { error: "you can't do that" };
       t.players = t.players.filter((p) => p.id !== cmd.id);
+      // Asked to leave: the password they gave no longer seats them.
+      if (t.allowed) t.allowed = t.allowed.filter((id) => id !== cmd.id);
       autoRoles(t);
       break;
     }
@@ -1085,6 +1095,8 @@ export type TableView = {
   winner: Winner | null;
   /** Who this viewer's microphone reaches, and whose they may hear. */
   voice: { speakTo: number[]; hear: number[] };
+  /** Whether newcomers need the host's password. */
+  locked: boolean;
 };
 
 /** Whether `from`'s voice reaches `to` now. The same rule as the chat: night belongs to the wolves, death to the dead. */
@@ -1157,6 +1169,7 @@ export function viewFor(t: Table, viewer: number, now: number): TableView {
           hear: t.players.filter((p) => canSpeakTo(t, p, me)).map((p) => p.id),
         }
       : { speakTo: [], hear: [] },
+    locked: Boolean(t.lock),
   };
 }
 
@@ -1168,6 +1181,8 @@ export type TableListing = {
   seats: number;
   phase: Phase;
   updatedAt: number;
+  /** Sitting down needs the host's password. */
+  locked: boolean;
 };
 
 export const listingOf = (t: Table): TableListing => ({
@@ -1177,15 +1192,20 @@ export const listingOf = (t: Table): TableListing => ({
   seats: t.settings.seats,
   phase: t.phase,
   updatedAt: t.updatedAt,
+  locked: Boolean(t.lock),
 });
 
 /* ---------- the wire ---------- */
 
 export const TABLE_CODE = /^[a-z0-9]{6}$/;
 
-/** What a browser sends: a command for the game, or a WebRTC message for another player. */
+/** A table's password: what the host may set (null takes it off). */
+export const tablePassword = z.string().trim().min(4, "at least four characters").max(40);
+
+/** What a browser sends: a command for the game, the host's password, or a WebRTC message for another player. */
 export const tableMessage = z.union([
   tableCommand,
+  z.object({ t: z.literal("lock"), password: tablePassword.nullable() }),
   z.object({
     t: z.literal("signal"),
     to: z.number().int().positive(),

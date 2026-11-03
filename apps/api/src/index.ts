@@ -6,8 +6,10 @@ import type { DB } from "./db/types";
 import type { Bindings } from "./env";
 import { type MediaStore, s3Store } from "./lib/media";
 import { hubLive } from "./live/hub";
+import { durableTables } from "./live/table-do";
 
 export { Hub } from "./live/hub";
+export { GameTable, TableLobby } from "./live/table-do";
 
 // One HTTP client per isolate; Neon's driver is stateless, so reusing it is safe and saves setup per request.
 let cached: { url: string; db: DB } | null = null;
@@ -25,6 +27,7 @@ const app = createApp(
     return media.store;
   },
   (env) => (env.HUB ? hubLive(env.HUB) : null),
+  (env) => (env.TABLES ? durableTables(env.TABLES, env.TABLE_LOBBY) : null),
 );
 
 export default {

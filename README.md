@@ -149,6 +149,10 @@ narrates; the sky is the clock, and every player is a house on the ring around t
 - **The table** is one Durable Object per table (`apps/api/src/live/table-do.ts`): the players' WebSockets with the
   hibernation API, the game in its storage, the phase clock as an alarm. Another object lists the open tables.
   Development and tests keep tables in memory with the same code (`live/table.ts`).
+- **Who can sit down**: anyone with the link (and anyone at all, when the table is listed), or only who has the
+  host's password. The host sets it in the table's settings; a listed table with one shows a lock. The table keeps
+  only a salted PBKDF2 hash of it; a newcomer gives it through the web server (`POST
+  /internal/users/:id/tables/:code/unlock`, ten tries per ten minutes), and whoever was already sitting stays.
 - **The voice** goes straight between the players' browsers (WebRTC, audio only, one connection per pair), so the
   delay is the network's own. The table only passes the handshakes along and says who may hear whom: at night only
   the wolves hear each other, the dead only each other. A player's browser sends no sound at all to someone who may

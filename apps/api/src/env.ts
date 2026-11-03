@@ -1,6 +1,7 @@
 import type { LiveEvent } from "@4me/shared";
 import type { DB } from "./db/types";
 import type { MediaStore } from "./lib/media";
+import type { Tables } from "./routes/tables";
 
 export type Bindings = {
   DATABASE_URL: string;
@@ -24,6 +25,12 @@ export type Bindings = {
   YOUTUBE_API_KEY?: string;
   /** The Durable Object that holds everyone's live connections (Workers only). */
   HUB?: DurableObjectNamespace;
+  /** Werewolf: one Durable Object per table, and one that lists the open tables (Workers only). */
+  TABLES?: DurableObjectNamespace;
+  TABLE_LOBBY?: DurableObjectNamespace;
+  /** Cloudflare's TURN service, for the tables' voice behind strict networks. Optional; STUN alone otherwise. */
+  TURN_KEY_ID?: string;
+  TURN_KEY_API_TOKEN?: string;
 };
 
 /**
@@ -38,5 +45,5 @@ export interface Live {
 /** `clientIp` is set only for calls from the web server, which forwards the reader's real address. */
 export type AppEnv = {
   Bindings: Bindings;
-  Variables: { db: DB; media: MediaStore | null; live: Live | null; clientIp?: string };
+  Variables: { db: DB; media: MediaStore | null; live: Live | null; tables: Tables | null; clientIp?: string };
 };
