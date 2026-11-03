@@ -6,3 +6,4 @@ export * from "./occasions";
 export * from "./schemas";
 export * from "./text";
 export * from "./tickets";
+export * from "./werewolf";

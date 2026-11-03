@@ -135,6 +135,29 @@ too, phones see it there), the night gets its own question, and the morning emai
   sealed until it ends and then all open at once (they are ordinary sealed letters, `entries.event_id`), with a
   balloon by the clock when it starts and when its pages open, and a tab in Tonight (`/entries?shift=12`).
 
+### Werewolf
+
+A desktop icon opens the village. Members open a table (or sit at one from the list, or from an invite link,
+`/?table=k7m2qp`), choose five to sixteen seats and the roles (or let them follow the number of players: Werewolf,
+Wolf cub, Seer, Bodyguard, Witch, Hunter, Cupid, Elder, Village idiot, Cursed, Tanner, and villagers for the rest),
+the timers, a sheriff election, whether roles show on death, and whether the table is listed. The computer
+narrates; the sky is the clock, and every player is a house on the ring around the square.
+
+- **The game** is plain functions in `packages/shared/src/werewolf.ts` (deal, nights, the witch, dawn, the Hunter's
+  shot, the badge, votes, the end), and each player is sent only their own view (`viewFor`): nobody's browser ever
+  holds another player's card.
+- **The table** is one Durable Object per table (`apps/api/src/live/table-do.ts`): the players' WebSockets with the
+  hibernation API, the game in its storage, the phase clock as an alarm. Another object lists the open tables.
+  Development and tests keep tables in memory with the same code (`live/table.ts`).
+- **The voice** goes straight between the players' browsers (WebRTC, audio only, one connection per pair), so the
+  delay is the network's own. The table only passes the handshakes along and says who may hear whom: at night only
+  the wolves hear each other, the dead only each other. A player's browser sends no sound at all to someone who may
+  not hear it. Open mic or hold-to-talk (or hold V); any player can be muted locally.
+- **Behind strict networks** (some mobile carriers), two browsers can't always reach each other directly. Add a
+  Cloudflare TURN key (Cloudflare dashboard → Realtime → TURN Server → create a key) as two Worker secrets,
+  `TURN_KEY_ID` and `TURN_KEY_API_TOKEN`: the API then hands each player short-lived TURN credentials (the key never
+  leaves the server). Without them, STUN alone works for most home and office networks.
+
 ## One computer, everyone's diaries
 
 Whoever is reading is always on their own computer: their wallpaper, skin, Ink, Notepad and notifications. Opening
@@ -299,7 +322,8 @@ CI only; preview the web app locally with `pnpm dev`.
 2. **Cloudflare**: create an API token with the *Edit Cloudflare Workers* template; note your account ID.
    Optional secrets are set once by hand, in the dashboard (Workers & Pages → 4me-api → Settings → Variables and
    Secrets) or with `pnpm --filter @4me/api exec wrangler secret put <NAME>`: `TURNSTILE_SECRET`, `LASTFM_API_KEY`,
-   `YOUTUBE_API_KEY` (Google Cloud → enable *YouTube Data API v3* → Credentials → API key, restricted to that API).
+   `YOUTUBE_API_KEY` (Google Cloud → enable *YouTube Data API v3* → Credentials → API key, restricted to that API),
+   and `TURN_KEY_ID` + `TURN_KEY_API_TOKEN` for the werewolf tables' voice (see Werewolf above).
 3. **Photo bucket** (any S3-compatible store; without it, photo uploads are switched off). Set four Worker secrets
    the same way:
 

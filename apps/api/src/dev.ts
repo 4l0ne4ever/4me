@@ -1,4 +1,6 @@
 // Local API without any cloud account: the same Hono app on Node, backed by PGlite (Postgres in WASM) on disk.
+
+import { readTicket, TABLE_CODE } from "@4me/shared";
 import { PGlite } from "@electric-sql/pglite";
 import { serve } from "@hono/node-server";
 import { drizzle } from "drizzle-orm/pglite";
@@ -10,7 +12,9 @@ import type { DB } from "./db/types";
 import type { Bindings } from "./env";
 import { memoryStore, s3Store } from "./lib/media";
 import { MemoryHub } from "./live/memory";
+import { MemoryTables } from "./live/table";
 import { vetTopics } from "./live/vet";
+import { seatOf } from "./routes/tables";
 import { seedIfEmpty } from "./seed";
 
 try {
@@ -42,10 +46,13 @@ const env: Bindings = {
 const media = s3Store(env) ?? memoryStore();
 // Live updates in this process; production uses the Hub Durable Object with the same rules.
 const hub = new MemoryHub();
+// Werewolf tables in this process too; production keeps each in its own Durable Object.
+const tables = new MemoryTables();
 const app = createApp(
   () => db,
   () => media,
   () => hub,
+  () => tables,
 );
 const port = Number(process.env.PORT ?? 8787);
 const server = serve({ fetch: (req) => app.fetch(req, env), port });
@@ -65,6 +72,30 @@ server.on("upgrade", async (req, socket, head) => {
   socket.on("error", () => socket.destroy());
   const url = new URL(req.url ?? "/", `http://localhost:${port}`);
   const origin = req.headers.origin ?? "";
+  const table = url.pathname.match(/^\/tables\/([a-z0-9]{6})\/ws$/)?.[1];
+  if (table && TABLE_CODE.test(table) && env.WEB_ORIGIN.split(",").includes(origin)) {
+    const uid = await readTicket("live", url.searchParams.get("ticket") ?? "", env.ADMIN_TOKEN);
+    const seat = uid ? await seatOf({ get: () => db } as never, uid) : null;
+    if (!seat) {
+      socket.end("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      return;
+    }
+    wss.handleUpgrade(req, socket, head, async (ws) => {
+      const conn = { uid: seat.id, send: (d: string) => ws.send(d), close: (c: number, r: string) => ws.close(c, r) };
+      const queue: string[] = [];
+      let at: Awaited<ReturnType<typeof tables.attach>> | undefined;
+      ws.on("message", (m) => {
+        const text = m.toString();
+        if (text === "ping") return ws.send("pong");
+        if (at) void at.message(text);
+        else if (at === undefined) queue.push(text);
+      });
+      ws.on("close", () => void at?.close());
+      at = await tables.attach(table, seat, conn);
+      for (const q of queue.splice(0)) void at?.message(q);
+    });
+    return;
+  }
   const topics =
     url.pathname === "/live" && env.WEB_ORIGIN.split(",").includes(origin)
       ? await vetTopics(url, env.ADMIN_TOKEN)

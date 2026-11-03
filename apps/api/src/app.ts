@@ -15,12 +15,14 @@ import { musicRoutes } from "./routes/music";
 import { nightRoutes } from "./routes/nights";
 import { searchRoutes } from "./routes/search";
 import { socialRoutes } from "./routes/social";
+import { type Tables, tableInternalRoutes, tableRoutes } from "./routes/tables";
 
 /** The whole API, independent of where it runs: Workers + Neon in production, Node + PGlite locally and in tests. */
 export function createApp(
   resolveDb: (env: Bindings) => DB,
   resolveMedia: (env: Bindings) => MediaStore | null = () => null,
   resolveLive: (env: Bindings) => Live | null = () => null,
+  resolveTables: (env: Bindings) => Tables | null = () => null,
 ) {
   const app = new Hono<AppEnv>();
 
@@ -32,7 +34,8 @@ export function createApp(
   });
   // Photos set their own headers: they must be embeddable from the diary's site, which same-site would forbid.
   // A WebSocket upgrade's response can't take extra headers either; /live checks the origin itself.
-  const own = (path: string) => path.startsWith("/media/") || path === "/live";
+  const socket = (path: string) => path === "/live" || /^\/tables\/[a-z0-9]{6}\/ws$/.test(path);
+  const own = (path: string) => path.startsWith("/media/") || socket(path);
   app.use("*", (c, next) => (own(c.req.path) ? next() : secure(c, next)));
   const sharing = cors({
     origin: (origin, c) => {
@@ -45,11 +48,12 @@ export function createApp(
     allowHeaders: ["Content-Type", "Authorization", "X-Upload-Ticket"],
     maxAge: 86400,
   });
-  app.use("*", (c, next) => (c.req.path === "/live" ? next() : sharing(c, next)));
+  app.use("*", (c, next) => (socket(c.req.path) ? next() : sharing(c, next)));
   app.use("*", async (c, next) => {
     c.set("db", resolveDb(c.env));
     c.set("media", resolveMedia(c.env));
     c.set("live", resolveLive(c.env));
+    c.set("tables", resolveTables(c.env));
     await next();
   });
 
@@ -62,6 +66,8 @@ export function createApp(
   app.route("/", socialRoutes);
   app.route("/", nightRoutes);
   app.route("/admin", adminRoutes);
+  app.route("/", tableRoutes);
+  app.route("/internal", tableInternalRoutes);
   app.route("/internal", internalRoutes);
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
