@@ -6053,6 +6053,69 @@ body.daytime .sky-tint {
   font-size: 10.5px;
   white-space: nowrap;
 }
+/* what the Seer saw: the same pill, in the Seer's violet, with an eye */
+.vh-role.seen {
+  background: rgba(52, 34, 92, 0.92);
+  color: #efe6ff;
+  box-shadow: 0 0 0 1px rgba(190, 160, 255, 0.55);
+}
+.vh-role .vh-role-eye {
+  opacity: 0.8;
+}
+/* the moment the Seer looks: the role rises over the house in a glow, and settles on the name */
+.vh-vision {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 86px;
+  padding: 8px 10px 6px;
+  background: rgba(22, 14, 44, 0.94);
+  border: 1px solid rgba(196, 168, 255, 0.75);
+  box-shadow:
+    0 0 24px rgba(170, 130, 255, 0.55),
+    0 6px 18px rgba(0, 0, 0, 0.5);
+  color: #f3ecff;
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  animation: vh-vision 5200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.vh-vision .role-ic {
+  color: #d9c8ff;
+}
+.vh-vision.wolves {
+  border-color: rgba(255, 110, 96, 0.85);
+  box-shadow:
+    0 0 26px rgba(255, 80, 64, 0.55),
+    0 6px 18px rgba(0, 0, 0, 0.5);
+}
+.vh-vision.wolves .role-ic {
+  color: #ff8a7a;
+}
+@keyframes vh-vision {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.6);
+    filter: blur(4px);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+    filter: blur(0);
+  }
+  82% {
+    opacity: 1;
+    transform: translate(-50%, -4px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 18px) scale(0.5);
+  }
+}
 .vh-tally,
 .vh-claw {
   position: absolute;
@@ -6090,15 +6153,33 @@ body.daytime .sky-tint {
 .ww-game {
   overflow: hidden;
 }
+/* the narrator's bar: dark in every theme, so the clock and the hand-lettered story read the same by day */
 .ww-top {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px 16px;
   padding: 6px 12px;
-  background: var(--field);
-  border-bottom: 1px solid var(--chrome-edge);
+  background: #0b111d;
+  color: #e6ebf4;
+  border-bottom: 1px solid #22304a;
   flex-shrink: 0;
+}
+.ww-turn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: center;
+  padding: 2px 8px;
+  border: 1px solid rgba(160, 180, 220, 0.35);
+  color: #d7e2f7;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ww-turn .role-ic {
+  width: 14px;
+  height: 14px;
 }
 .ww-when {
   display: flex;
@@ -6128,7 +6209,7 @@ body.daytime .sky-tint {
   font-family: var(--font-hand), cursive;
   font-size: 23px;
   line-height: 1.05;
-  color: var(--paper-ink);
+  color: #f1e9d8;
   text-wrap: balance;
   /* three lines at most; the whole story is in What happened */
   display: -webkit-box;
@@ -6171,24 +6252,169 @@ body.daytime .sky-tint {
   border-color: #6fd27a;
   color: #08130a;
 }
+.ww-voice {
+  position: relative;
+}
 .ww-linked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
-  color: var(--chrome-dim);
+  color: #9fb0cc;
   white-space: nowrap;
 }
-/* push to talk: a switch with a small lamp that says whether it is on */
-.ww-mode[aria-pressed="false"] {
-  color: var(--chrome-dim);
-}
-.ww-led {
+/* a small lamp: lit when someone's voice reaches this browser (and green while they talk) */
+.ww-linked i,
+.ww-pv-name i {
   width: 7px;
   height: 7px;
+  flex-shrink: 0;
   background: #33405a;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
-.ww-mode.on .ww-led {
+.ww-linked i.on,
+.ww-pv-name i.on {
+  background: #6f86b0;
+}
+.ww-pv-name i.talk {
   background: #8fe39a;
-  box-shadow: 0 0 6px rgba(143, 227, 154, 0.7);
+  box-shadow: 0 0 6px rgba(143, 227, 154, 0.8);
+}
+.ww-gear {
+  min-width: 34px;
+  justify-content: center;
+  padding: 0 8px;
+}
+.ww-gear.on {
+  border-color: var(--amber);
+}
+/* the voice's settings: under the bar, over the village */
+.ww-vpanel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 400;
+  display: grid;
+  gap: 10px;
+  width: min(330px, calc(100vw - 32px));
+  max-height: min(70vh, 520px);
+  overflow: auto;
+  padding: 12px 14px 14px;
+  background: var(--chrome);
+  color: var(--chrome-ink);
+  border: 1px solid var(--chrome-edge);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  text-align: left;
+  font-size: 13px;
+}
+.ww-vp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ww-vp-head b {
+  font-size: 15px;
+}
+.ww-vpanel h4 {
+  margin: 4px 0 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--chrome-dim);
+}
+.ww-vp-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--chrome-edge);
+}
+.ww-vp-mode legend {
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--chrome-dim);
+}
+.ww-vp-mode label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+}
+.ww-vp-row {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.ww-vp-row select {
+  grid-column: 2 / -1;
+  min-width: 0;
+  min-height: 30px;
+}
+.ww-key {
+  justify-self: start;
+  min-width: 64px;
+  font-family: var(--font-lcd), monospace;
+  font-size: 17px;
+}
+.ww-key.on {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+.ww-vp-n {
+  min-width: 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--chrome-dim);
+}
+.ww-vpanel input[type="range"],
+.ww-who-voice input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--amber);
+}
+.ww-vp-people {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* one player's voice: their name and lamp, how loud, and a mute */
+.ww-pv {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(70px, 120px) auto;
+  align-items: center;
+  gap: 8px;
+}
+.ww-pv-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--chrome-ink);
+  font-size: 13px;
+}
+.ww-pv.muted .ww-pv-name {
+  color: var(--chrome-dim);
+  text-decoration: line-through;
+}
+.ww-pv-mute {
+  min-width: 32px;
+  min-height: 30px;
+  justify-content: center;
+  padding: 0 6px;
+}
+.ww-pv-mute.on {
+  border-color: var(--buzz);
+  color: var(--buzz);
+}
+.ww-who-voice {
+  grid-column: 1 / -1;
 }
 /* the quiet ways out (leave, nothing tonight, close): in the window's own colours, not a web link */
 .ww .linkish {

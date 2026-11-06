@@ -54,6 +54,8 @@ export function useTable(code: string | null, me: number | null, attempt = 0) {
           setVoice,
         );
         setVoice(voiceRef.current.state);
+        // in the voice from the start, hearing everyone, as in a game (unless it was switched off last time)
+        if (Voice.wanted()) void voiceRef.current.join();
       }
       const url = new URL(`/tables/${code}/ws`, API_URL);
       url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
@@ -88,7 +90,7 @@ export function useTable(code: string | null, me: number | null, attempt = 0) {
         if (finalWord || ev.code >= 4000 || ev.code === 1000) {
           setClosed(finalWord ?? (ev.reason || "you left the table"));
           setStatus("closed");
-          voiceRef.current?.leave();
+          voiceRef.current?.leave(false);
           return;
         }
         setStatus("reconnecting");
@@ -102,7 +104,7 @@ export function useTable(code: string | null, me: number | null, attempt = 0) {
       window.clearInterval(ping);
       ws.current?.close(1000);
       ws.current = null;
-      voiceRef.current?.leave();
+      voiceRef.current?.leave(false);
       voiceRef.current = null;
       setVoice(null);
     };

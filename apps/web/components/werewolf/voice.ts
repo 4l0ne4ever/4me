@@ -21,14 +21,81 @@ type Peer = {
   early: RTCIceCandidateInit[];
 };
 
+/** How the microphone opens: while a key (or the button) is held, or all the time. */
+export type MicMode = "ptt" | "open";
+
+/** What this browser remembers about the voice, from one table to the next. */
+export type VoicePrefs = {
+  /** In the voice at all (hearing the others). */
+  on: boolean;
+  mode: MicMode;
+  /** The push-to-talk key, as KeyboardEvent.code. */
+  key: string;
+  /** Everyone's voices, 0 to 1. */
+  volume: number;
+  /** One player's voice, 0 to 1 (by member id). */
+  people: Record<string, number>;
+  /** Players this browser doesn't hear. */
+  silenced: number[];
+  /** The microphone to use (null: the system's). */
+  device: string | null;
+};
+
+const PREFS = "4me-wolf-voice";
+const DEFAULTS: VoicePrefs = {
+  on: true,
+  mode: "ptt",
+  key: "KeyV",
+  volume: 0.9,
+  people: {},
+  silenced: [],
+  device: null,
+};
+
+function loadPrefs(): VoicePrefs {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PREFS) ?? "null") as Partial<VoicePrefs> | null;
+    return { ...DEFAULTS, ...(raw ?? {}) };
+  } catch {
+    return { ...DEFAULTS };
+  }
+}
+
+/** A key's name, for showing: KeyV → V, Digit1 → 1, Backquote → `. */
+export function keyName(code: string): string {
+  if (code.startsWith("Key")) return code.slice(3);
+  if (code.startsWith("Digit")) return code.slice(5);
+  const named: Record<string, string> = {
+    Backquote: "`",
+    Space: "Space",
+    CapsLock: "Caps Lock",
+    ShiftLeft: "Left Shift",
+    ShiftRight: "Right Shift",
+    ControlLeft: "Left Ctrl",
+    ControlRight: "Right Ctrl",
+    AltLeft: "Left Alt",
+    AltRight: "Right Alt",
+    Tab: "Tab",
+  };
+  return named[code] ?? code;
+}
+
 export type VoiceState = {
   on: boolean;
-  /** No microphone (refused or none): listening only. */
-  listenOnly: boolean;
+  /** The microphone is open to this browser (asked for and allowed). */
+  hasMic: boolean;
+  /** The browser refused the microphone (or there is none): listening only. */
+  micBlocked: boolean;
+  /** The microphone switched off (in either mode). */
   muted: boolean;
-  /** Hold-to-talk instead of an open microphone. */
-  ptt: boolean;
+  mode: MicMode;
+  key: string;
+  /** Holding the push-to-talk key or button now. */
   talking: boolean;
+  volume: number;
+  people: Record<string, number>;
+  silenced: Set<number>;
+  device: string | null;
   speaking: Set<number>;
   /** Players heard in this browser right now (joined the voice and connected). */
   linked: Set<number>;
@@ -47,65 +114,169 @@ export class Voice {
   private speakTo = new Set<number>();
   private hear = new Set<number>();
   private seated = new Set<number>();
-  private silenced = new Set<number>();
+  /** Those this browser has said hello to since joining. */
+  private greeted = new Set<number>();
   private timer = 0;
   private loudAt = new Map<number, number>();
-  state: VoiceState = {
-    on: false,
-    listenOnly: false,
-    muted: false,
-    ptt: false,
-    talking: false,
-    speaking: new Set(),
-    linked: new Set(),
-    error: null,
-  };
+  private asking: Promise<boolean> | null = null;
+  state: VoiceState;
 
   constructor(
     private me: number,
     private send: (to: number, data: Signal) => void,
     private ice: IceServer[],
     private changed: (s: VoiceState) => void,
-  ) {}
+  ) {
+    const p = loadPrefs();
+    this.state = {
+      on: false,
+      hasMic: false,
+      micBlocked: false,
+      muted: false,
+      mode: p.mode,
+      key: p.key,
+      talking: false,
+      volume: p.volume,
+      people: p.people,
+      silenced: new Set(p.silenced),
+      device: p.device,
+      speaking: new Set(),
+      linked: new Set(),
+      error: null,
+    };
+  }
+
+  /** Whether the voice was on last time (a table joins it by itself, as a game does). */
+  static wanted(): boolean {
+    return loadPrefs().on;
+  }
 
   private emit() {
-    this.state = { ...this.state, speaking: new Set(this.state.speaking), linked: new Set(this.state.linked) };
+    this.state = {
+      ...this.state,
+      speaking: new Set(this.state.speaking),
+      linked: new Set(this.state.linked),
+      silenced: new Set(this.state.silenced),
+    };
     this.changed(this.state);
   }
 
-  /** Joins the voice: asks for the microphone (once), then says hello to everyone at the table. */
+  private save(patch: Partial<VoicePrefs> = {}) {
+    const s = this.state;
+    const prefs: VoicePrefs = {
+      on: s.on,
+      mode: s.mode,
+      key: s.key,
+      volume: s.volume,
+      people: s.people,
+      silenced: [...s.silenced],
+      device: s.device,
+      ...patch,
+    };
+    try {
+      localStorage.setItem(PREFS, JSON.stringify(prefs));
+    } catch {
+      // for this visit only
+    }
+  }
+
+  /**
+   * Joins the voice: hears everyone at once, and says hello to whoever is at the table. The microphone is asked for
+   * only when it is needed (an open mic, or the first time the talk key is held), unless it was allowed before.
+   */
   async join() {
     if (this.state.on) return;
     this.ctx = new AudioContext();
-    try {
-      this.mic = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
-      });
-      this.micAnalyser = this.analyse(this.mic);
-      this.state.listenOnly = false;
-    } catch {
-      this.mic = null;
-      this.state.listenOnly = true;
-    }
     this.state.on = true;
     this.state.error = null;
-    this.applyMic();
-    for (const id of this.seated) this.send(id, { kind: "hello" });
+    this.greeted.clear();
+    this.greet();
     this.timer = window.setInterval(() => this.listen(), 120);
+    this.save();
     this.emit();
+    const allowed = await navigator.permissions
+      ?.query({ name: "microphone" as PermissionName })
+      .then((r) => r.state === "granted")
+      .catch(() => false);
+    if (allowed || this.state.mode === "open") await this.ensureMic();
   }
 
-  leave() {
+  /** Leaves the voice; `remember` keeps it off for the next table too (closing the table doesn't). */
+  leave(remember = true) {
     if (!this.state.on) return;
     for (const id of this.peers.keys()) this.send(id, { kind: "bye" });
     for (const id of [...this.peers.keys()]) this.drop(id);
-    for (const t of this.mic?.getTracks() ?? []) t.stop();
-    this.mic = null;
+    this.stopMic();
     void this.ctx?.close();
     this.ctx = null;
     window.clearInterval(this.timer);
-    this.state = { ...this.state, on: false, talking: false, speaking: new Set(), linked: new Set() };
+    this.state = { ...this.state, on: false, hasMic: false, talking: false, speaking: new Set(), linked: new Set() };
+    if (remember) this.save();
     this.emit();
+  }
+
+  /** Browsers start sound only after a click: the table calls this on the first one. */
+  wake() {
+    if (this.ctx?.state === "suspended") void this.ctx.resume();
+    for (const p of this.peers.values()) if (p.audio.paused && p.stream) void p.audio.play().catch(() => undefined);
+  }
+
+  /** Asks for the microphone, once; false when the browser won't give it. */
+  ensureMic(): Promise<boolean> {
+    if (this.mic) return Promise.resolve(true);
+    this.asking ??= this.openMic().finally(() => {
+      this.asking = null;
+    });
+    return this.asking;
+  }
+
+  private async openMic(): Promise<boolean> {
+    try {
+      const mic = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          deviceId: this.state.device ? { exact: this.state.device } : undefined,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        },
+      });
+      if (!this.state.on) {
+        for (const t of mic.getTracks()) t.stop();
+        return false;
+      }
+      this.mic = mic;
+      this.micAnalyser = this.analyse(mic);
+      this.state.hasMic = true;
+      this.state.micBlocked = false;
+      this.state.error = null;
+      this.applyMic();
+      this.route();
+      this.emit();
+      return true;
+    } catch {
+      this.state.micBlocked = true;
+      this.state.error = "The browser didn't give us the microphone. You can still listen.";
+      this.emit();
+      return false;
+    }
+  }
+
+  private stopMic() {
+    for (const t of this.mic?.getTracks() ?? []) t.stop();
+    this.mic = null;
+    this.micAnalyser = null;
+    this.state.hasMic = false;
+  }
+
+  /** Says hello to everyone at the table this browser hasn't greeted yet (newcomers, or everyone on joining). */
+  private greet() {
+    if (!this.state.on) return;
+    for (const id of this.seated)
+      if (!this.greeted.has(id)) {
+        this.greeted.add(id);
+        this.send(id, { kind: "hello" });
+      }
   }
 
   /** Who is at the table (connected), and who this player may speak to and hear now. */
@@ -113,8 +284,10 @@ export class Voice {
     this.seated = new Set(seated.filter((id) => id !== this.me));
     this.speakTo = new Set(speakTo);
     this.hear = new Set(hear);
-    // Someone left the table: their line goes too.
+    // Someone left the table: their line goes too (and a hello, should they come back).
     for (const id of [...this.peers.keys()]) if (!this.seated.has(id)) this.drop(id);
+    for (const id of [...this.greeted]) if (!this.seated.has(id)) this.greeted.delete(id);
+    this.greet();
     this.route();
   }
 
@@ -122,32 +295,75 @@ export class Voice {
     this.state.muted = muted;
     this.applyMic();
     this.emit();
+    if (!muted && this.state.mode === "open") void this.ensureMic();
   }
-  setPtt(ptt: boolean) {
-    this.state.ptt = ptt;
+  setMode(mode: MicMode) {
+    this.state.mode = mode;
     this.state.talking = false;
     this.applyMic();
+    this.save();
+    this.emit();
+    if (mode === "open" && !this.state.muted) void this.ensureMic();
+  }
+  setKey(code: string) {
+    this.state.key = code;
+    this.save();
     this.emit();
   }
-  /** Hold-to-talk: pressed or released. */
+  /** Push to talk: the key or the button pressed, or let go. The first press asks for the microphone. */
   talk(on: boolean) {
     if (this.state.talking === on) return;
     this.state.talking = on;
+    if (on && !this.mic) void this.ensureMic();
     this.applyMic();
     this.emit();
   }
+  setVolume(v: number) {
+    this.state.volume = Math.max(0, Math.min(1, v));
+    this.route();
+    this.save();
+    this.emit();
+  }
+  setPersonVolume(id: number, v: number) {
+    this.state.people = { ...this.state.people, [String(id)]: Math.max(0, Math.min(1, v)) };
+    this.route();
+    this.save();
+    this.emit();
+  }
+  personVolume(id: number) {
+    return this.state.people[String(id)] ?? 1;
+  }
   /** This browser stops hearing one player (or hears them again). */
   silence(id: number, off: boolean) {
-    if (off) this.silenced.add(id);
-    else this.silenced.delete(id);
+    if (off) this.state.silenced.add(id);
+    else this.state.silenced.delete(id);
     this.route();
+    this.save();
+    this.emit();
   }
   isSilenced(id: number) {
-    return this.silenced.has(id);
+    return this.state.silenced.has(id);
+  }
+  /** Another microphone: the open one is swapped for it, on every line at once. */
+  async setDevice(device: string | null) {
+    this.state.device = device;
+    this.save();
+    if (this.mic) {
+      this.stopMic();
+      await this.ensureMic();
+    }
+    this.emit();
+  }
+  /** The microphones this browser can use (their names show once one has been allowed). */
+  static async microphones(): Promise<Array<{ id: string; label: string }>> {
+    const all = await navigator.mediaDevices?.enumerateDevices().catch(() => []);
+    return (all ?? [])
+      .filter((d) => d.kind === "audioinput" && d.deviceId !== "default" && d.deviceId !== "communications")
+      .map((d, i) => ({ id: d.deviceId, label: d.label || `Microphone ${i + 1}` }));
   }
 
   private micOpen() {
-    return Boolean(this.mic) && !this.state.muted && (!this.state.ptt || this.state.talking);
+    return Boolean(this.mic) && !this.state.muted && (this.state.mode === "open" || this.state.talking);
   }
   private applyMic() {
     for (const t of this.mic?.getAudioTracks() ?? []) t.enabled = this.micOpen();
@@ -160,7 +376,8 @@ export class Voice {
       const sender = p.pc.getTransceivers()[0]?.sender;
       const out = this.speakTo.has(id) ? track : null;
       if (sender && sender.track !== out) void sender.replaceTrack(out).catch(() => undefined);
-      p.audio.muted = !this.hear.has(id) || this.silenced.has(id);
+      p.audio.muted = !this.hear.has(id) || this.state.silenced.has(id);
+      p.audio.volume = Math.max(0, Math.min(1, this.state.volume * this.personVolume(id)));
     }
   }
 

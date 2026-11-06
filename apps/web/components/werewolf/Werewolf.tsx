@@ -7,6 +7,7 @@ import {
   MAX_PLAYERS,
   type Me,
   MIN_PLAYERS,
+  type NightStep,
   ROLE_ORDER,
   ROLES,
   type RoleId,
@@ -24,6 +25,7 @@ import { ROLE_SHORT, RoleIcon } from "./RoleIcon";
 import { setWolfSoundOn, sounds, unlockSound, wolfSoundOn } from "./sounds";
 import { useTable } from "./useTable";
 import { type HouseMark, Village } from "./Village";
+import { keyName, Voice, type VoiceState } from "./voice";
 
 // The Werewolf window. Without a table: the open tables, and opening one. At a table: the village (the sky is the
 // clock, the houses are the players), the one thing to do now, and a dock with the chat, your card, the log and
@@ -194,6 +196,14 @@ const PHASE_TITLE: Record<TableView["phase"], string> = {
   over: "The end",
 };
 
+/** Who is awake on each turn of the night: the header's title, and the card over the sky when they wake. */
+const STEP: Record<NightStep, { title: string; role: RoleId; doing: string }> = {
+  cupid: { title: "Cupid", role: "cupid", doing: "draws the bow" },
+  seer: { title: "The Seer", role: "seer", doing: "looks into someone's house" },
+  guard: { title: "The Bodyguard", role: "bodyguard", doing: "keeps watch" },
+  wolves: { title: "The wolves", role: "werewolf", doing: "choose who to eat" },
+};
+
 function clock(ms: number) {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -228,7 +238,7 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
     return () => ro.disconnect();
   }, [seated]);
 
-  const phaseKey = view ? `${view.phase}:${view.day}:${view.actor}` : "";
+  const phaseKey = view ? `${view.phase}:${view.day}:${view.actor}:${view.step}` : "";
   // A new phase: forget half-made choices.
   // biome-ignore lint/correctness/useExhaustiveDependencies: only when the phase changes
   useEffect(() => {
@@ -251,12 +261,13 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
   // The story: a title card over the sky when the game turns (night, morning, the vote, the verdict, the end), and
   // the village's sounds with it.
   const [scene, setScene] = useState<Scene | null>(null);
-  const story = useRef<{ phase: string; at: number; alive: Map<number, boolean> } | null>(null);
+  const story = useRef<{ phase: string; step: string; at: number; alive: Map<number, boolean> } | null>(null);
   useEffect(() => {
     if (!view) return;
     const before = story.current;
     story.current = {
       phase: view.phase,
+      step: view.step ?? "",
       at: view.log.at(-1)?.at ?? 0,
       alive: new Map(view.players.map((p) => [p.id, p.alive])),
     };
@@ -264,6 +275,11 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
     const died = view.players.filter((p) => !p.alive && before.alive.get(p.id) === true);
     const turned = before.phase !== view.phase;
     if (died.length) window.setTimeout(() => sounds.death(), turned && view.phase === "dawn" ? 1300 : 0);
+    // the night's turns: a card for each role as it wakes
+    if (!turned && view.step && before.step !== view.step) {
+      setScene({ ...stepScene(view, view.step), id: Date.now() });
+      return;
+    }
     if (!turned) return;
     const fresh = view.log.filter((l) => l.at > before.at);
     const next = sceneFor(view, me.id, fresh);
@@ -394,6 +410,12 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
             {view.day > 0 && view.phase !== "over" && view.phase !== "lobby" ? ` ${view.day}` : ""}
             {view.phase === "lobby" ? ` ${view.code}` : ""}
           </span>
+          {(view.step || view.phase === "witch") && (
+            <span className="ww-turn">
+              <RoleIcon of={view.step ? STEP[view.step].role : "witch"} />
+              {view.step ? STEP[view.step].title : "The Witch"}
+            </span>
+          )}
           {left !== null && (
             <span className={`ww-clock${left < 10_000 ? " late" : ""}`}>
               <span className="sr">time left </span>
@@ -405,7 +427,7 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
         <p className="ww-say" aria-live="polite">
           {narrator}
         </p>
-        <VoiceBar voice={voice} ctl={voiceCtl.current} canTalk={view.voice.speakTo.length > 0} />
+        <VoiceBar voice={voice} ctl={voiceCtl.current} canTalk={view.voice.speakTo.length > 0} view={view} me={me.id} />
       </header>
 
       <div className="ww-main" ref={main}>
@@ -443,7 +465,8 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
               view={view}
               id={focus}
               me={me.id}
-              voice={voiceCtl.current}
+              voice={voice}
+              ctl={voiceCtl.current}
               onClose={() => setFocus(null)}
               send={send}
             />
@@ -708,7 +731,11 @@ function Action({
     return (
       <div className="ww-act">
         <p className="ww-ask">
-          {ask.locked ? "Done for tonight." : prompt[ask.kind]}
+          {ask.locked
+            ? ask.kind === "seer"
+              ? `You looked. ${view.notes.at(-1)?.text.replace(/^Night \d+: /, "") ?? ""}`
+              : "Done for tonight."
+            : prompt[ask.kind]}
           {!confirm && chosen.length > 0 && chosen[0] !== 0 && !ask.locked && (
             <span className="ww-chosen"> Chosen: {chosen.map(name).join(" and ")}.</span>
           )}
@@ -769,11 +796,15 @@ function Action({
     ? "You're watching."
     : !you.alive
       ? "You're dead. Watch, and talk with the other ghosts."
-      : view.phase === "night" || view.phase === "witch" || view.phase === "deal"
-        ? "You sleep. The night belongs to the others."
-        : view.phase === "vote" && !you.canVote
-          ? "You lost your vote when they found out who you are."
-          : "Listen.";
+      : view.phase === "night" && view.step
+        ? `You sleep. ${STEP[view.step].title} ${view.step === "wolves" ? "are" : "is"} awake.`
+        : view.phase === "witch"
+          ? "You sleep. The Witch is awake."
+          : view.phase === "night" || view.phase === "deal"
+            ? "You sleep. The night belongs to the others."
+            : view.phase === "vote" && !you.canVote
+              ? "You lost your vote when they found out who you are."
+              : "Listen.";
   return (
     <div className="ww-act">
       <p className="ww-ask quiet">{quiet}</p>
@@ -787,18 +818,19 @@ function Neighbour({
   id,
   me,
   voice,
+  ctl,
   onClose,
   send,
 }: {
   view: TableView;
   id: number;
   me: number;
-  voice: import("./voice").Voice | null;
+  voice: VoiceState | null;
+  ctl: Voice | null;
   onClose: () => void;
   send: ReturnType<typeof useTable>["send"];
 }) {
   const p = view.players.find((x) => x.id === id);
-  const [silenced, setSilenced] = useState(() => voice?.isSilenced(id) ?? false);
   if (!p) return null;
   return (
     <div className="ww-who" role="dialog" aria-label={p.name}>
@@ -812,19 +844,12 @@ function Neighbour({
           {p.sheriff ? " · sheriff" : ""}
         </span>
       </div>
+      {p.id !== me && voice?.on && ctl && !p.bot && (
+        <div className="ww-who-voice">
+          <PersonVoice id={p.id} name={p.name} voice={voice} ctl={ctl} />
+        </div>
+      )}
       <div className="ww-who-acts">
-        {p.id !== me && voice && !p.bot && (
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              voice.silence(id, !silenced);
-              setSilenced(!silenced);
-            }}
-          >
-            {silenced ? "Hear them again" : "Mute their voice"}
-          </button>
-        )}
         {!p.bot && (
           <a className="btn" href={`/u/${p.handle}`} target="_blank" rel="noreferrer">
             Their diary
@@ -883,6 +908,21 @@ const WINNERS: Record<string, string> = {
   nobody: "Nobody wins",
 };
 
+/** A role wakes in the night: whose turn it is, and whether it's yours. */
+function stepScene(view: TableView, step: NightStep): Omit<Scene, "id"> {
+  const you = view.me;
+  const yours = Boolean(view.ask && !view.ask.locked);
+  return {
+    tone: "night",
+    title: STEP[step].title,
+    line: yours
+      ? "Your turn. Tap a house."
+      : you?.alive && you.role && (step === "wolves" ? isWolf(you.role) : STEP[step].role === you.role)
+        ? "Your turn."
+        : `${step === "wolves" ? "wake and" : "wakes and"} ${STEP[step].doing}.`,
+  };
+}
+
 /** The title card for the part of the game that has just begun, from what the narrator has just said. */
 function sceneFor(view: TableView, me: number, fresh: LogLine[]): Omit<Scene, "id"> | null {
   const said = (kinds: LogLine["kind"][]) =>
@@ -897,13 +937,14 @@ function sceneFor(view: TableView, me: number, fresh: LogLine[]): Omit<Scene, "i
       return {
         tone: "night",
         title: `Night ${view.day}`,
-        line:
-          you?.alive && isWolf(you.role)
-            ? "The pack wakes. Choose together."
-            : you?.alive
-              ? "The village sleeps."
-              : "The dead watch the dark.",
+        line: view.step
+          ? `${STEP[view.step].title} ${view.step === "wolves" ? "wake" : "wakes"} first.`
+          : you?.alive
+            ? "The village sleeps."
+            : "The dead watch the dark.",
       };
+    case "witch":
+      return { tone: "night", title: "The Witch", line: "wakes, and sees who the wolves attacked." };
     case "dawn":
       return { tone: "dawn", title: `Day ${view.day}`, line: said(["death"]) || "Everyone woke up." };
     case "election":
@@ -962,97 +1003,303 @@ function SoundToggle() {
 
 /* ---------- voice ---------- */
 
+/**
+ * The voice, as a game has it: everyone at the table is heard from the start; you talk by holding a key (or the button)
+ * or with an open microphone; and a settings panel for the key, the microphone, everyone's volume and each player's.
+ */
 function VoiceBar({
   voice,
   ctl,
   canTalk,
+  view,
+  me,
 }: {
   voice: ReturnType<typeof useTable>["voice"];
-  ctl: import("./voice").Voice | null;
+  ctl: Voice | null;
   canTalk: boolean;
+  view: TableView;
+  me: number;
 }) {
-  // Hold V to talk, unless typing.
+  const [open, setOpen] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  // Browsers play sound only after a click: every click wakes the voice's sound, should it be asleep.
   useEffect(() => {
-    if (!voice?.on || !voice.ptt || !ctl) return;
+    if (!ctl) return;
+    const wake = () => ctl.wake();
+    window.addEventListener("pointerdown", wake);
+    return () => window.removeEventListener("pointerdown", wake);
+  }, [ctl]);
+  // Hold the talk key to talk, unless typing (or choosing a new key).
+  useEffect(() => {
+    if (!voice?.on || voice.mode !== "ptt" || !ctl || capturing) return;
     const typing = (e: globalThis.KeyboardEvent) => (e.target as Element | null)?.closest("input, textarea, select");
     const down = (e: globalThis.KeyboardEvent) => {
-      if (e.key.toLowerCase() === "v" && !e.repeat && !typing(e)) ctl.talk(true);
+      if (e.code !== voice.key || e.repeat || typing(e)) return;
+      e.preventDefault();
+      ctl.talk(true);
     };
     const up = (e: globalThis.KeyboardEvent) => {
-      if (e.key.toLowerCase() === "v") ctl.talk(false);
+      if (e.code === voice.key) ctl.talk(false);
     };
+    const away = () => ctl.talk(false);
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
+    window.addEventListener("blur", away);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", away);
     };
-  }, [voice?.on, voice?.ptt, ctl]);
+  }, [voice?.on, voice?.mode, voice?.key, ctl, capturing]);
 
   if (!voice || !ctl) return null;
-  if (!voice.on)
-    return (
-      <div className="ww-voice">
-        <button type="button" className="btn ww-join" onClick={() => void ctl.join()}>
-          <MicIcon /> Join the voice
-        </button>
-      </div>
-    );
   const hold = (on: boolean) => () => ctl.talk(on);
   return (
     <div className="ww-voice">
-      <span className="ww-linked" title="you, and the players whose voice reaches this browser">
-        {voice.linked.size + 1} in the voice
-      </span>
-      {voice.listenOnly ? (
-        <span className="ww-hint">listening only (no microphone)</span>
-      ) : (
+      {voice.on ? (
         <>
-          {voice.ptt ? (
+          <span className="ww-linked" title="You, and the players whose voice reaches this browser">
+            <i className={voice.linked.size ? "on" : ""} aria-hidden="true" />
+            {voice.linked.size + 1} in the voice
+          </span>
+          {voice.micBlocked ? (
+            <span className="ww-hint">listening only</span>
+          ) : voice.mode === "ptt" ? (
             <button
               type="button"
               className={`btn ww-ptt${voice.talking ? " on" : ""}`}
               onPointerDown={hold(true)}
               onPointerUp={hold(false)}
+              onPointerCancel={hold(false)}
               onPointerLeave={hold(false)}
-              onKeyDown={(e: KeyboardEvent) => e.key === " " && ctl.talk(true)}
+              onContextMenu={(e) => e.preventDefault()}
+              onKeyDown={(e: KeyboardEvent) => e.key === " " && !e.repeat && ctl.talk(true)}
               onKeyUp={(e: KeyboardEvent) => e.key === " " && ctl.talk(false)}
               disabled={!canTalk}
-              title="Hold to talk (or hold V)"
+              title={canTalk ? `Hold this, or ${keyName(voice.key)}, to talk` : "Nobody can hear you right now"}
             >
-              <MicIcon /> {canTalk ? "Hold to talk" : "Quiet now"}
+              <MicIcon off={!canTalk} />
+              {!canTalk ? "Quiet now" : voice.talking ? "Talking…" : `Hold ${keyName(voice.key)} to talk`}
             </button>
           ) : (
             <button
               type="button"
-              className={`btn ww-mic${voice.muted ? " off" : ""}${voice.speaking.size && !voice.muted && canTalk ? "" : ""}`}
+              className={`btn ww-mic${voice.muted || !canTalk ? " off" : ""}`}
               onClick={() => ctl.setMuted(!voice.muted)}
               aria-pressed={!voice.muted}
-              title={canTalk ? "" : "Nobody can hear you right now"}
+              title={canTalk ? "Your microphone is open: click to switch it off" : "Nobody can hear you right now"}
             >
-              <MicIcon off={voice.muted || !canTalk} /> {voice.muted ? "Muted" : canTalk ? "Mic on" : "Quiet now"}
+              <MicIcon off={voice.muted || !canTalk} />
+              {voice.muted ? "Mic off" : canTalk ? "Mic on" : "Quiet now"}
             </button>
           )}
+        </>
+      ) : (
+        <button type="button" className="btn ww-join" onClick={() => void ctl.join()}>
+          <SpeakerIcon off /> Voice off
+        </button>
+      )}
+      <button
+        type="button"
+        className={`btn ww-gear${open ? " on" : ""}`}
+        aria-expanded={open}
+        aria-label="Voice settings"
+        title="Voice settings"
+        onClick={() => setOpen(!open)}
+      >
+        <GearIcon />
+      </button>
+      {open && (
+        <VoicePanel
+          voice={voice}
+          ctl={ctl}
+          view={view}
+          me={me}
+          capturing={capturing}
+          setCapturing={setCapturing}
+          onClose={() => {
+            setOpen(false);
+            setCapturing(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function VoicePanel({
+  voice,
+  ctl,
+  view,
+  me,
+  capturing,
+  setCapturing,
+  onClose,
+}: {
+  voice: VoiceState;
+  ctl: Voice;
+  view: TableView;
+  me: number;
+  capturing: boolean;
+  setCapturing: (b: boolean) => void;
+  onClose: () => void;
+}) {
+  const [mics, setMics] = useState<Array<{ id: string; label: string }>>([]);
+  // (names show once a microphone has been allowed: look again then)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: hasMic changes what the browser will tell
+  useEffect(() => {
+    if (voice.on) void Voice.microphones().then(setMics);
+  }, [voice.on, voice.hasMic]);
+  // Choosing the talk key: the next key pressed (Escape keeps the old one).
+  useEffect(() => {
+    if (!capturing) return;
+    const take = (e: globalThis.KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.code !== "Escape") ctl.setKey(e.code);
+      setCapturing(false);
+    };
+    window.addEventListener("keydown", take, true);
+    return () => window.removeEventListener("keydown", take, true);
+  }, [capturing, ctl, setCapturing]);
+  const people = view.players.filter((p) => p.id !== me && !p.bot);
+  return (
+    <div className="ww-vpanel" role="dialog" aria-label="Voice settings">
+      <div className="ww-vp-head">
+        <b>Voice</b>
+        <button type="button" className="linkish" onClick={onClose}>
+          Close
+        </button>
+      </div>
+      <label className="ww-check">
+        <input
+          type="checkbox"
+          checked={voice.on}
+          onChange={(e) => (e.target.checked ? void ctl.join() : ctl.leave())}
+        />
+        Voice chat: hear the table, and talk
+      </label>
+      <fieldset className="ww-vp-mode" disabled={!voice.on}>
+        <legend>Microphone</legend>
+        <label>
+          <input type="radio" name="ww-mic-mode" checked={voice.mode === "ptt"} onChange={() => ctl.setMode("ptt")} />
+          Push to talk
+        </label>
+        <label>
+          <input type="radio" name="ww-mic-mode" checked={voice.mode === "open"} onChange={() => ctl.setMode("open")} />
+          Open mic
+        </label>
+      </fieldset>
+      {voice.mode === "ptt" && (
+        <div className="ww-vp-row">
+          <span>Talk key</span>
           <button
             type="button"
-            className={`btn ww-mode${voice.ptt ? " on" : ""}`}
-            aria-pressed={voice.ptt}
-            onClick={() => ctl.setPtt(!voice.ptt)}
-            title={
-              voice.ptt
-                ? "Push to talk is on: the mic opens only while you hold the button or V"
-                : "Turn on push to talk"
-            }
+            className={`btn ww-key${capturing ? " on" : ""}`}
+            onClick={() => setCapturing(!capturing)}
+            disabled={!voice.on}
           >
-            <span className="ww-led" aria-hidden="true" />
-            Push to talk
+            {capturing ? "Press a key…" : keyName(voice.key)}
           </button>
+        </div>
+      )}
+      {mics.length > 1 && (
+        <div className="ww-vp-row">
+          <label htmlFor="ww-mic-dev">Input</label>
+          <select
+            id="ww-mic-dev"
+            value={voice.device ?? ""}
+            onChange={(e) => void ctl.setDevice(e.target.value || null)}
+          >
+            <option value="">The system's microphone</option>
+            {mics.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {voice.error && <p className="ww-hint">{voice.error}</p>}
+      <div className="ww-vp-row">
+        <label htmlFor="ww-vol">Everyone</label>
+        <input
+          id="ww-vol"
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(voice.volume * 100)}
+          onChange={(e) => ctl.setVolume(Number(e.target.value) / 100)}
+        />
+        <span className="ww-vp-n">{Math.round(voice.volume * 100)}%</span>
+      </div>
+      {people.length > 0 && (
+        <>
+          <h4>Each player</h4>
+          <ul className="ww-vp-people">
+            {people.map((p) => (
+              <li key={p.id}>
+                <PersonVoice id={p.id} name={p.name} voice={voice} ctl={ctl} />
+              </li>
+            ))}
+          </ul>
         </>
       )}
-      <button type="button" className="btn" onClick={() => ctl.leave()}>
-        Leave voice
+    </div>
+  );
+}
+
+/** One player's voice: whether it reaches this browser, how loud, and muting it. */
+function PersonVoice({ id, name, voice, ctl }: { id: number; name: string; voice: VoiceState; ctl: Voice }) {
+  const muted = voice.silenced.has(id);
+  const level = Math.round((voice.people[String(id)] ?? 1) * 100);
+  return (
+    <div className={`ww-pv${muted ? " muted" : ""}`}>
+      <span className="ww-pv-name">
+        <i
+          className={voice.speaking.has(id) ? "talk" : voice.linked.has(id) ? "on" : ""}
+          title={voice.linked.has(id) ? "in the voice" : "not in the voice"}
+        />
+        {name}
+      </span>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={level}
+        disabled={muted}
+        aria-label={`${name}'s volume`}
+        onChange={(e) => ctl.setPersonVolume(id, Number(e.target.value) / 100)}
+      />
+      <button
+        type="button"
+        className={`btn ww-pv-mute${muted ? " on" : ""}`}
+        aria-pressed={muted}
+        onClick={() => ctl.silence(id, !muted)}
+        title={muted ? `Hear ${name} again` : `Stop hearing ${name}`}
+      >
+        <SpeakerIcon off={muted} />
+        <span className="sr">{muted ? "Unmute" : "Mute"}</span>
       </button>
     </div>
+  );
+}
+
+function SpeakerIcon({ off }: { off?: boolean }) {
+  return (
+    <svg viewBox="0 0 16 16" className="ww-mic-ic" aria-hidden="true">
+      <path d="M2.5 6h2.6L8.6 3v10L5.1 10H2.5z" />
+      {off ? <path d="M10.6 6l3.6 4 M14.2 6l-3.6 4" /> : <path d="M10.6 5.6a3.4 3.4 0 0 1 0 4.8" />}
+    </svg>
+  );
+}
+
+function GearIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="ww-mic-ic" aria-hidden="true">
+      <circle cx="8" cy="8" r="2.2" />
+      <path d="M8 1.6v2 M8 12.4v2 M1.6 8h2 M12.4 8h2 M3.5 3.5l1.4 1.4 M11.1 11.1l1.4 1.4 M3.5 12.5l1.4-1.4 M11.1 4.9l1.4-1.4" />
+    </svg>
   );
 }
 
@@ -1175,9 +1422,10 @@ function Rules() {
   return (
     <div className="ww-rules">
       <p>
-        Each night the wolves pick someone to eat, and the roles with a night power use it. Each day the village finds
-        out who died, talks, and votes someone out. The village wins when the last wolf is gone; the wolves win when
-        there are as many of them as everyone else.
+        Each night the roles wake one at a time, in the narrator's order: Cupid (the first night only), the Seer, the
+        Bodyguard, the wolves, then the Witch. Each day the village finds out who died, talks, and votes someone out;
+        the sheriff's vote counts twice and settles a tie. The village wins when the last wolf is gone; the wolves win
+        when there are as many of them as everyone else.
       </p>
       <dl>
         {ROLE_ORDER.map((r) => (
@@ -1195,7 +1443,7 @@ function Rules() {
 
 /* ---------- the table's settings ---------- */
 
-const NIGHT = [20, 30, 45, 60, 90, 120];
+const NIGHT = [10, 15, 20, 25, 30, 45, 60];
 const TALK = [30, 60, 90, 120, 150, 180, 240, 300, 420, 600];
 const VOTE = [15, 30, 45, 60, 90, 120];
 
@@ -1285,7 +1533,9 @@ function Settings({ view, host, send }: { view: TableView; host: boolean; send: 
         </p>
         {why && <p className="ww-hint">{why[0]?.toUpperCase() + why.slice(1)}.</p>}
         <div className="ww-set-row">
-          <span>Night</span>
+          <span title="How long each role has at night: the Seer, the Bodyguard, the wolves, the Witch">
+            Each night turn
+          </span>
           <Choice value={s.night} options={NIGHT} label={seconds} onChange={(n) => set({ night: n })} />
         </div>
         <div className="ww-set-row">

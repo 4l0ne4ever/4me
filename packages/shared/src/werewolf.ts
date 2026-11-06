@@ -55,7 +55,7 @@ export const ROLES: Record<RoleId, RoleInfo> = {
     name: "Seer",
     team: "village",
     max: 1,
-    blurb: "Each night, look at one player and learn whether they are a wolf.",
+    blurb: "Each night, look into one player's house and learn who they really are.",
   },
   bodyguard: {
     name: "Bodyguard",
@@ -97,7 +97,7 @@ export const ROLES: Record<RoleId, RoleInfo> = {
     name: "Cursed",
     team: "village",
     max: 1,
-    blurb: "A villager, until the wolves bite you: then you wake up one of them. The Seer sees a villager.",
+    blurb: "A villager, until the wolves bite you: then you wake up one of them. Until then the Seer sees a Villager.",
   },
   tanner: {
     name: "Tanner",
@@ -145,8 +145,8 @@ export const tableSettings = z.object({
   roles: roleCounts,
   /** The roles follow how many are sitting down (suggestRoles), until the host picks their own. */
   auto: z.boolean().default(true),
-  /** Seconds. */
-  night: z.number().int().min(20).max(120).default(45),
+  /** Seconds for each role's turn at night (the Seer's, the Bodyguard's, the wolves', the Witch's…). */
+  night: z.number().int().min(10).max(120).default(25),
   discussion: z.number().int().min(30).max(600).default(150),
   vote: z.number().int().min(15).max(120).default(45),
   /** Elect a sheriff on the first day: their vote counts twice, and they pass the badge on when they die. */
@@ -213,6 +213,13 @@ export type Phase =
 /** Phases that are night: only the wolves talk. */
 export const NIGHT_PHASES: Phase[] = ["deal", "night", "witch"];
 
+/**
+ * The night goes round the roles one at a time, in the narrator's order: Cupid (the first night only), the Seer, the
+ * Bodyguard, the wolves; then the Witch, who learns what the wolves did (her own phase). Each has its own time.
+ */
+export type NightStep = "cupid" | "seer" | "guard" | "wolves";
+export const NIGHT_STEPS: NightStep[] = ["cupid", "seer", "guard", "wolves"];
+
 /** Who sits down: what the API knows about a member. */
 export type Seat = { id: number; name: string; handle: string; avatar: string };
 
@@ -270,7 +277,11 @@ export type Table = {
     heal: number | null;
     poison: number | null;
     witchDone: boolean;
+    /** Whose turn it is tonight (missing on a table from before the night had turns: everyone's at once). */
+    step?: NightStep | null;
   };
+  /** What each Seer has seen: seer → player → the role they saw. */
+  seen?: Record<string, Record<string, RoleId>>;
   /** Votes in a vote or an election: voter → target (0: nobody). */
   votes: Record<string, number>;
   notes: Record<string, Array<{ day: number; text: string }>>;
@@ -338,6 +349,7 @@ const freshNight = (kills = 1): Table["night"] => ({
   heal: null,
   poison: null,
   witchDone: false,
+  step: null,
 });
 
 export function newTable(code: string, host: Seat, now: number, settings = defaultSettings()): Table {
@@ -548,7 +560,7 @@ export function command(t: Table, by: number, cmd: TableCommand, now: number, ra
       break;
     }
     case "pick": {
-      const r = pick(t, me, cmd.ids, now);
+      const r = pick(t, me, cmd.ids, now, rand);
       if ("error" in r) return r;
       break;
     }
@@ -611,6 +623,7 @@ function deal(t: Table, now: number, rand: Rand) {
     night: freshNight(),
     votes: {},
     notes: {},
+    seen: {},
     log: [],
     chat: t.chat.filter((c) => c.channel === "all"),
     winner: null,
@@ -645,6 +658,7 @@ function backToLobby(t: Table, now: number) {
     sheriff: null,
     votes: {},
     notes: {},
+    seen: {},
     winner: null,
     night: freshNight(),
   });
@@ -658,23 +672,75 @@ function setPhase(t: Table, phase: Phase, deadline: number | null) {
   for (const p of t.players) p.ready = false;
 }
 
-function startNight(t: Table, now: number) {
+function startNight(t: Table, now: number, rand: Rand) {
   t.day += 1;
   t.night = freshNight(t.cubBonus ? 2 : 1);
   t.cubBonus = false;
-  log(
-    t,
-    "night",
-    t.night.kills === 2
-      ? `Night ${t.day}. The wolves are angry tonight: they will take two.`
-      : `Night ${t.day}. Everyone closes their eyes.`,
-    now,
-  );
-  setPhase(t, "night", now + t.settings.night * SEC);
+  log(t, "night", `Night ${t.day}. Everyone closes their eyes.`, now);
+  nextStep(t, now, rand, null);
 }
 
-/** Who has something to do tonight. */
+const STEP_ROLE: Record<NightStep, (r: RoleId | null) => boolean> = {
+  cupid: (r) => r === "cupid",
+  seer: (r) => r === "seer",
+  guard: (r) => r === "bodyguard",
+  wolves: isWolf,
+};
+
+/** Who wakes on this turn of the night. */
+function stepActors(t: Table, step: NightStep): Player[] {
+  if (step === "cupid" && (t.day !== 1 || t.lovers)) return [];
+  return alive(t).filter((p) => STEP_ROLE[step](p.role));
+}
+
+/**
+ * The next role's turn after `after`. A role nobody was dealt is skipped; so is a dead one's when the dead show their
+ * roles. When they don't, the narrator still calls a dead role and waits a little, so the table can't tell.
+ */
+function nextStep(t: Table, now: number, rand: Rand, after: NightStep | null) {
+  for (const step of NIGHT_STEPS.slice(after ? NIGHT_STEPS.indexOf(after) + 1 : 0)) {
+    if (step === "cupid" && (t.day !== 1 || t.lovers)) continue;
+    if (!t.players.some((p) => STEP_ROLE[step](p.role))) continue;
+    const awake = stepActors(t, step);
+    if (!awake.length && t.settings.reveal) continue;
+    t.night.step = step;
+    const call: Record<NightStep, string> = {
+      cupid: "Cupid wakes, and draws the bow: two people will fall in love.",
+      seer: "The Seer wakes, and looks into someone's house.",
+      guard: "The Bodyguard wakes, and keeps watch over someone.",
+      wolves:
+        t.night.kills === 2
+          ? "The wolves wake, angry: tonight they will take two."
+          : "The wolves wake, and choose who to eat.",
+    };
+    log(t, "night", call[step], now);
+    const pretend = Math.min(t.settings.night, 6 + ((t.day * 7 + NIGHT_STEPS.indexOf(step) * 3) % 5));
+    setPhase(t, "night", now + (awake.length ? t.settings.night : pretend) * SEC);
+    return;
+  }
+  t.night.step = null;
+  endNight(t, now, rand);
+}
+
+/** A turn of the night is over: Cupid's arrow lands, then the next role wakes. */
+function endStep(t: Table, now: number, rand: Rand) {
+  const step = t.night.step;
+  if (!step) return endNight(t, now, rand);
+  if (step === "cupid") bindLovers(t);
+  nextStep(t, now, rand, step);
+}
+
+function bindLovers(t: Table) {
+  if (t.night.cupid?.length !== 2 || t.lovers) return;
+  const [a, b] = t.night.cupid.map((id) => find(t, id)!) as [Player, Player];
+  t.lovers = [a.id, b.id];
+  note(t, a.id, `Cupid's arrow: you love ${b.name}. If one of you dies, so does the other.`);
+  note(t, b.id, `Cupid's arrow: you love ${a.name}. If one of you dies, so does the other.`);
+}
+
+/** Who has something to do now (on a table from before the night had turns, everyone with a night power). */
 function nightActors(t: Table): Player[] {
+  if (t.night.step) return stepActors(t, t.night.step);
   return alive(t).filter(
     (p) =>
       isWolf(p.role) || p.role === "seer" || p.role === "bodyguard" || (p.role === "cupid" && t.day === 1 && !t.lovers),
@@ -714,8 +780,10 @@ export function askFor(t: Table, p: Player | undefined): Ask | null {
   if (!p) return null;
   const living = alive(t);
   const ids = (xs: Player[]) => xs.map((x) => x.id);
+  // (a table from before the night had turns has no step: everyone acts at once)
+  const turn = (s: NightStep) => !t.night.step || t.night.step === s;
   if (t.phase === "night" && p.alive) {
-    if (isWolf(p.role))
+    if (isWolf(p.role) && turn("wolves"))
       return {
         kind: "wolf",
         pick: t.night.kills,
@@ -723,7 +791,7 @@ export function askFor(t: Table, p: Player | undefined): Ask | null {
         chosen: t.night.wolf[String(p.id)] ?? [],
         locked: false,
       };
-    if (p.role === "seer")
+    if (p.role === "seer" && turn("seer"))
       return {
         kind: "seer",
         pick: 1,
@@ -731,7 +799,7 @@ export function askFor(t: Table, p: Player | undefined): Ask | null {
         chosen: t.night.seer ? [t.night.seer] : [],
         locked: t.night.seer !== null,
       };
-    if (p.role === "bodyguard")
+    if (p.role === "bodyguard" && turn("guard"))
       return {
         kind: "guard",
         pick: 1,
@@ -739,7 +807,7 @@ export function askFor(t: Table, p: Player | undefined): Ask | null {
         chosen: t.night.guard ? [t.night.guard] : [],
         locked: false,
       };
-    if (p.role === "cupid" && t.day === 1 && !t.lovers)
+    if (p.role === "cupid" && t.day === 1 && !t.lovers && turn("cupid"))
       return { kind: "cupid", pick: 2, choices: ids(living), chosen: t.night.cupid ?? [], locked: false };
   }
   if ((t.phase === "vote" || t.phase === "election") && p.alive && (t.phase === "election" || p.canVote))
@@ -761,7 +829,10 @@ export function askFor(t: Table, p: Player | undefined): Ask | null {
   return null;
 }
 
-function pick(t: Table, me: Player, picked: number[], now: number): Result {
+/** "the Witch", "a Werewolf": how the narrator names a role. */
+const aRole = (r: RoleId) => (ROLES[r].max === 1 ? `the ${ROLES[r].name}` : `a ${ROLES[r].name}`);
+
+function pick(t: Table, me: Player, picked: number[], now: number, rand: Rand): Result {
   const ask = askFor(t, me);
   if (!ask) return { error: "nothing to choose right now" };
   if (ask.locked) return { error: "you've already chosen" };
@@ -776,7 +847,11 @@ function pick(t: Table, me: Player, picked: number[], now: number): Result {
     case "seer": {
       t.night.seer = one;
       const seen = find(t, one)!;
-      note(t, me.id, `Night ${t.day}: ${seen.name} ${isWolf(seen.role) ? "IS a werewolf." : "is not a werewolf."}`);
+      // A Cursed player looks like a villager until the wolves bite them.
+      const looks: RoleId = seen.role === "cursed" ? "villager" : seen.role!;
+      const mine = { ...(t.seen?.[String(me.id)] ?? {}), [String(one)]: looks };
+      t.seen = { ...(t.seen ?? {}), [String(me.id)]: mine };
+      note(t, me.id, `Night ${t.day}: ${seen.name} is ${aRole(looks)}.`);
       break;
     }
     case "guard":
@@ -798,7 +873,7 @@ function pick(t: Table, me: Player, picked: number[], now: number): Result {
         log(t, "death", `${me.name}, the Hunter, takes ${named(t, target)} down too.`, now);
         kill(t, target, now);
       } else log(t, "info", `${me.name}, the Hunter, lowers the gun.`, now);
-      proceed(t, now);
+      proceed(t, now, rand);
       return ok;
     }
     case "badge": {
@@ -811,7 +886,7 @@ function pick(t: Table, me: Player, picked: number[], now: number): Result {
         t.sheriff = null;
         log(t, "info", `${me.name} tears up the sheriff's badge.`, now);
       }
-      proceed(t, now);
+      proceed(t, now, rand);
       return ok;
     }
   }
@@ -858,13 +933,9 @@ function wolfTargets(t: Table, rand: Rand): number[] {
 }
 
 function endNight(t: Table, now: number, rand: Rand) {
+  t.night.step = null;
   t.night.attacked = wolfTargets(t, rand);
-  if (t.night.cupid?.length === 2 && !t.lovers) {
-    const [a, b] = t.night.cupid.map((id) => find(t, id)!) as [Player, Player];
-    t.lovers = [a.id, b.id];
-    note(t, a.id, `Cupid's arrow: you love ${b.name}. If one of you dies, so does the other.`);
-    note(t, b.id, `Cupid's arrow: you love ${a.name}. If one of you dies, so does the other.`);
-  }
+  bindLovers(t);
   if (t.night.guard) t.lastGuarded = t.night.guard;
   else t.lastGuarded = null;
   const witchP = t.players.find((p) => p.role === "witch");
@@ -878,12 +949,14 @@ function endNight(t: Table, now: number, rand: Rand) {
         ? `Night ${t.day}: the wolves attacked ${attacked.join(" and ")}.`
         : `Night ${t.day}: the wolves attacked nobody.`,
     );
-    setPhase(t, "witch", now + Math.max(15, Math.round(t.settings.night / 2)) * SEC);
+    log(t, "night", "The Witch wakes, and sees who the wolves attacked.", now);
+    setPhase(t, "witch", now + t.settings.night * SEC);
     return;
   }
   // A witch with nothing left to do, or a dead one: wait a little anyway, unless roles are known, so the table
   // can't tell.
   if (t.settings.reveal && !witchP.alive) return resolveNight(t, now, rand);
+  log(t, "night", "The Witch wakes, and sees who the wolves attacked.", now);
   setPhase(t, "witch", now + Math.round(6 + rand() * 6) * SEC);
 }
 
@@ -941,7 +1014,7 @@ function kill(t: Table, p: Player, now: number) {
 }
 
 /** After a dawn or a verdict: last acts of the dead, then the end of the game, or the next part of it. */
-function proceed(t: Table, now: number) {
+function proceed(t: Table, now: number, rand: Rand) {
   while (t.pending.length) {
     const next = t.pending.shift()!;
     const who = find(t, next.id);
@@ -962,7 +1035,7 @@ function proceed(t: Table, now: number) {
   t.actor = null;
   const w = winnerOf(t);
   if (w) return finish(t, w, now);
-  if (t.resume === "night") return startNight(t, now);
+  if (t.resume === "night") return startNight(t, now, rand);
   if (t.settings.sheriff && !t.elected) {
     t.elected = true;
     log(t, "day", "Before anything else, the village elects a sheriff. Their vote counts twice.", now);
@@ -1005,8 +1078,15 @@ function resolveElection(t: Table, now: number, rand: Rand) {
 function resolveVote(t: Table, now: number) {
   const ranked = tallied(t, true);
   const [first, second] = ranked;
-  const out = first && first[0] !== 0 && (!second || second[1] < first[1]) ? find(t, first[0]) : undefined;
+  let out = first && first[0] !== 0 && (!second || second[1] < first[1]) ? find(t, first[0]) : undefined;
+  // A tie between players: the sheriff's vote settles it, when it went to one of them.
+  const tied = first ? ranked.filter(([, n]) => n === first[1]).map(([id]) => id) : [];
+  const badge = t.sheriff !== null ? t.votes[String(t.sheriff)] : undefined;
+  const broken =
+    !out && tied.length > 1 && !tied.includes(0) && badge !== undefined && badge !== 0 && tied.includes(badge);
+  if (broken) out = find(t, badge);
   t.resume = "night";
+  if (broken && out) log(t, "day", `A tie. The sheriff's vote settles it.`, now);
   if (!out) {
     log(t, "day", ranked.length ? "No majority. Nobody leaves today." : "Nobody voted. Nobody leaves today.", now);
   } else if (out.role === "idiot" && out.canVote) {
@@ -1070,10 +1150,10 @@ export function tick(t: Table, now: number, rand: Rand): boolean {
   if (t.deadline === null || now < t.deadline) return false;
   switch (t.phase) {
     case "deal":
-      startNight(t, now);
+      startNight(t, now, rand);
       break;
     case "night":
-      endNight(t, now, rand);
+      endStep(t, now, rand);
       break;
     case "witch":
       t.night.witchDone = true;
@@ -1081,18 +1161,18 @@ export function tick(t: Table, now: number, rand: Rand): boolean {
       break;
     case "dawn":
     case "verdict":
-      proceed(t, now);
+      proceed(t, now, rand);
       break;
     case "hunter":
       log(t, "info", "The Hunter's hand shook. Nobody else dies.", now);
       t.actor = null;
-      proceed(t, now);
+      proceed(t, now, rand);
       break;
     case "badge":
       log(t, "info", "The badge falls in the mud. No sheriff now.", now);
       t.sheriff = null;
       t.actor = null;
-      proceed(t, now);
+      proceed(t, now, rand);
       break;
     case "election":
       resolveElection(t, now, rand);
@@ -1129,6 +1209,8 @@ export type PlayerView = {
   lover: boolean;
   /** A computer player. */
   bot: boolean;
+  /** The role is what this viewer, the Seer, saw in their house (a Cursed turns, and the look doesn't). */
+  seen: boolean;
 };
 
 export type TableView = {
@@ -1140,6 +1222,8 @@ export type TableView = {
   /** The server's clock when this was sent, so the browser can count down without trusting its own. */
   now: number;
   day: number;
+  /** Whose turn it is at night. */
+  step: NightStep | null;
   actor: number | null;
   players: PlayerView[];
   /** This viewer, when they sit at the table. */
@@ -1182,6 +1266,7 @@ export function viewFor(t: Table, viewer: number, now: number): TableView {
     p.shown ||
     (me && isWolf(me.role) && isWolf(p.role)) ||
     (me && !me.alive && t.settings.reveal);
+  const vision = me ? t.seen?.[String(me.id)] : undefined;
   const players = t.players.map(
     (p): PlayerView => ({
       id: p.id,
@@ -1190,13 +1275,14 @@ export function viewFor(t: Table, viewer: number, now: number): TableView {
       avatar: p.avatar,
       connected: p.connected,
       alive: p.alive,
-      role: sees(p) ? p.role : null,
+      role: sees(p) ? p.role : (vision?.[String(p.id)] ?? null),
       turned: sees(p) ? p.turned : false,
       canVote: p.canVote,
       ready: p.ready,
       sheriff: t.sheriff === p.id,
       lover: Boolean(lover?.includes(p.id) || (over && t.lovers?.includes(p.id))),
       bot: Boolean(p.bot),
+      seen: !sees(p) && Boolean(vision?.[String(p.id)]),
     }),
   );
   const wolfView = me && isWolf(me.role) && me.alive && t.phase === "night";
@@ -1208,6 +1294,7 @@ export function viewFor(t: Table, viewer: number, now: number): TableView {
     deadline: t.deadline,
     now,
     day: t.day,
+    step: t.phase === "night" ? (t.night.step ?? null) : null,
     actor: t.actor,
     players,
     me: me ? { id: me.id, role: me.role, alive: me.alive, canVote: me.canVote, ready: me.ready } : null,

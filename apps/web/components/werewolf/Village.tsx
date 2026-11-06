@@ -1,13 +1,12 @@
 "use client";
 
-import type { PlayerView, TableView } from "@4me/shared";
+import { type PlayerView, ROLES, type TableView } from "@4me/shared";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { ROLE_SHORT, RoleIcon } from "./RoleIcon";
 
 // The table, drawn as a village around its square at the foot of the sky: each player is a house on the ring, the
 // viewer's own at the front. The sky is the clock: the moon (or the sun, by day) crosses it as the phase runs out.
-// Houses are drawn like the desktop's skyline (narrow tube houses, a water tank or an antenna on the roof); every
-// house is also a button, for choosing someone.
+// Houses are old cottages, each player's the same every game; every house is also a button, for choosing someone.
 
 export type Sky = "lobby" | "night" | "dawn" | "day" | "dusk";
 
@@ -249,6 +248,22 @@ export function Village({
       window.setTimeout(() => setDying((d) => new Set([...d].filter((id) => !fresh.includes(id)))), 3600),
     );
   }, [view]);
+  // The Seer looks into a house: what they saw rises over it, then stays on its name.
+  const [visions, setVisions] = useState<Set<number>>(() => new Set());
+  const seenBefore = useRef<Set<number> | null>(null);
+  useEffect(() => {
+    if (!view) return;
+    const before = seenBefore.current;
+    const now = new Set(view.players.filter((p) => p.seen).map((p) => p.id));
+    seenBefore.current = now;
+    if (!before) return;
+    const fresh = [...now].filter((id) => !before.has(id));
+    if (!fresh.length) return;
+    setVisions((v) => new Set([...v, ...fresh]));
+    timers.current.push(
+      window.setTimeout(() => setVisions((v) => new Set([...v].filter((id) => !fresh.includes(id)))), 5200),
+    );
+  }, [view]);
   useEffect(
     () => () => {
       for (const t of timers.current) window.clearTimeout(t);
@@ -368,9 +383,19 @@ export function Village({
               <span className="vh-nm">{p.id === me ? "you" : p.name}</span>
             </span>
             {p.role && (
-              <span className="vh-role">
+              <span
+                className={`vh-role${p.seen ? " seen" : ""}`}
+                title={p.seen ? "what you saw as the Seer" : undefined}
+              >
+                {p.seen && <RoleIcon of="seer" className="vh-role-eye" />}
                 <RoleIcon of={p.role} />
                 <span className="vh-role-t">{p.turned ? "Cursed → wolf" : ROLE_SHORT[p.role]}</span>
+              </span>
+            )}
+            {p.role && visions.has(p.id) && (
+              <span className={`vh-vision ${ROLES[p.role].team}`} role="status">
+                <RoleIcon of={p.role} className="big" />
+                <b>{ROLES[p.role].name}</b>
               </span>
             )}
             {m && m.tally > 0 && <span className="vh-tally">{m.tally}</span>}

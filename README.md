@@ -146,6 +146,13 @@ narrates; the sky is the clock, and every player is a house on the ring around t
 - **The game** is plain functions in `packages/shared/src/werewolf.ts` (deal, nights, the witch, dawn, the Hunter's
   shot, the badge, votes, the end), and each player is sent only their own view (`viewFor`): nobody's browser ever
   holds another player's card.
+- **The night goes round the roles**, one at a time, in the narrator's order, each with its own time ("Each night
+  turn"): Cupid (the first night only), the Seer, the Bodyguard, the wolves, then the Witch. Only the role whose
+  turn it is can act; when it has, the clock skips to its last five seconds. A role nobody was dealt is skipped, and
+  so is a dead one's when roles show on death; when they don't, the narrator still calls it and waits a little.
+- **The Seer sees the role itself** (a Cursed player shows as a Villager until bitten). It rises over the house the
+  moment they look and stays on its name, in the Seer's violet, for the rest of the game; only the Seer sees it.
+- **The sheriff's vote counts twice** and settles a tie between two players.
 - **The table** is one Durable Object per table (`apps/api/src/live/table-do.ts`): the players' WebSockets with the
   hibernation API, the game in its storage, the phase clock as an alarm. Another object lists the open tables.
   Development and tests keep tables in memory with the same code (`live/table.ts`).
@@ -165,7 +172,10 @@ narrates; the sky is the clock, and every player is a house on the ring around t
 - **The voice** goes straight between the players' browsers (WebRTC, audio only, one connection per pair), so the
   delay is the network's own. The table only passes the handshakes along and says who may hear whom: at night only
   the wolves hear each other, the dead only each other. A player's browser sends no sound at all to someone who may
-  not hear it. Open mic or hold-to-talk (or hold V); any player can be muted locally.
+  not hear it. Everyone is in the voice and hears the table from the moment they sit down, as in a game; the
+  microphone is asked for only when it's first needed. The gear by the talk button has the settings, remembered in
+  the browser: push to talk (hold the button, or a key you choose; V at first) or an open mic, which microphone,
+  everyone's volume, and each player's volume and mute (also in the popover when you tap their house).
 - **Behind strict networks** (some mobile carriers), two browsers can't always reach each other directly. Add a
   Cloudflare TURN key (Cloudflare dashboard → Realtime → TURN Server → create a key) as two Worker secrets,
   `TURN_KEY_ID` and `TURN_KEY_API_TOKEN`: the API then hands each player short-lived TURN credentials (the key never
