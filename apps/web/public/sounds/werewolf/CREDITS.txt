@@ -20,3 +20,14 @@ day.mp3          "morning ambience of a small mountain village" by gladkiy
 lobby.mp3        "Medieval music played at town plaza" by bolkmar     https://freesound.org/s/424789/
 night-drone.mp3  "Thriller Ambient" by unfa                           https://freesound.org/s/157133/
 vote.mp3         "Mystery And Thriller Music" by akisloukas           https://freesound.org/s/418210/
+
+The night's turns, and what the night's powers sound like:
+
+cupid.mp3        "harp glissando 2" by PhonosUPF                      https://freesound.org/s/490994/
+seer.mp3         "Glimmer.wav" by opticaillusions                     https://freesound.org/s/521873/
+guard.mp3        "Sword Unsheath" by lucabia                          https://freesound.org/s/276872/
+witch.mp3        "MagicCauldronBubbling.mp3" by katzlbt               https://freesound.org/s/361540/
+shield.mp3       "shield guard" by nekoninja                          https://freesound.org/s/370203/
+heal.mp3         "Magic Spell Fairy Dust" by zazz.sound.design        https://freesound.org/s/683323/
+poison.mp3       "Poison effect.wav" by Mendenhall02                  https://freesound.org/s/565145/
+shot.mp3         "Rifle gunshot, one shot" by felix.blume             https://freesound.org/s/710084/

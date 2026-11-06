@@ -101,7 +101,34 @@ describe("the night", () => {
     act(t, 3, { t: "witch", heal: 5, poison: null });
     pass(t);
     expect(alive(t, 5)).toBe(true);
-    expect(t.log.some((l) => l.text === "Nobody died last night.")).toBe(true);
+    expect(t.log.some((l) => l.text.startsWith("Nobody died last night: the wolves came"))).toBe(true);
+    // the Witch sees her potion on the house, and is told; the one she saved learns someone did
+    expect(viewFor(t, 3, clock).signs).toEqual([{ id: 5, sign: "heal" }]);
+    expect(viewFor(t, 3, clock).notes.at(-1)?.text).toBe("Night 2: your potion saved P5.");
+    expect(viewFor(t, 5, clock).notes.at(-1)?.text).toMatch(/someone brought you back/);
+    expect(viewFor(t, 2, clock).signs).toEqual([]);
+  });
+
+  it("the Bodyguard sees their watch hold; the village sees how each one died", () => {
+    const t = game(["werewolf", "bodyguard", "witch", "villager", "villager", "villager"]);
+    act(t, 2, { t: "pick", ids: [4] });
+    pass(t);
+    act(t, 1, { t: "pick", ids: [4] });
+    pass(t);
+    act(t, 3, { t: "witch", heal: null, poison: 6 });
+    pass(t);
+    expect(alive(t, 4)).toBe(true);
+    expect(alive(t, 6)).toBe(false);
+    expect(viewFor(t, 2, clock).signs).toEqual([{ id: 4, sign: "shield" }]);
+    expect(viewFor(t, 2, clock).notes.at(-1)?.text).toMatch(/your watch sent them away/);
+    expect(viewFor(t, 3, clock).signs).toEqual([{ id: 6, sign: "poison" }]);
+    expect(viewFor(t, 5, clock).signs).toEqual([]);
+    expect(viewFor(t, 5, clock).players[5]!.cause).toBe("poison");
+    expect(t.log.some((l) => l.text.includes("was found dead, poisoned"))).toBe(true);
+    expect(t.log.some((l) => l.text === "And someone the wolves came for was kept safe.")).toBe(true);
+    // the signs go when night falls again
+    while (t.phase !== "night") pass(t);
+    expect(viewFor(t, 2, clock).signs).toEqual([]);
   });
 
   it("tells the seer what they saw, and only them", () => {
@@ -160,8 +187,44 @@ describe("deaths that bring more deaths", () => {
     expect(viewFor(t, 3, clock).ask?.kind).toBe("hunter");
     act(t, 3, { t: "pick", ids: [1] });
     expect(alive(t, 1)).toBe(false);
+    expect(viewFor(t, 5, clock).players.map((p) => p.cause)).toEqual([
+      "hunter",
+      null,
+      "wolves",
+      "grief",
+      null,
+      null,
+      null,
+    ]);
     expect(t.phase).toBe("over");
     expect(t.winner?.team).toBe("village");
+  });
+
+  it("the hunter shoots when the village votes them out, or the witch poisons them", () => {
+    const t = game(["werewolf", "hunter", "witch", "villager", "villager", "villager", "villager"]);
+    act(t, 1, { t: "pick", ids: [7] });
+    pass(t);
+    act(t, 3, { t: "witch", heal: null, poison: 2 });
+    pass(t);
+    expect(alive(t, 2)).toBe(false);
+    pass(t); // dawn → the hunter's turn
+    expect(t.phase).toBe("hunter");
+    act(t, 2, { t: "pick", ids: [4] });
+    expect(alive(t, 4)).toBe(false);
+
+    const u = game(["werewolf", "hunter", "villager", "villager", "villager", "villager", "villager"]);
+    act(u, 1, { t: "pick", ids: [7] });
+    pass(u);
+    pass(u);
+    pass(u); // discussion over
+    for (const id of [1, 3, 4]) act(u, id, { t: "pick", ids: [2] });
+    pass(u);
+    expect(alive(u, 2)).toBe(false);
+    pass(u); // verdict → the hunter's turn
+    expect(u.phase).toBe("hunter");
+    expect(viewFor(u, 2, clock).ask?.kind).toBe("hunter");
+    act(u, 2, { t: "pick", ids: [1] });
+    expect(u.winner?.team).toBe("village");
   });
 });
 
@@ -183,7 +246,9 @@ describe("the day", () => {
     expect(t.phase).toBe("vote");
     pass(t);
     expect(t.phase).toBe("verdict");
-    expect(t.log.at(-1)?.text).toBe("No majority. Nobody leaves today.");
+    // everyone sees how the village voted, "nobody" too; with no sheriff, a tie sends nobody
+    expect(t.log.at(-2)?.text).toBe("The votes: P2 2, P1 2, nobody 1.");
+    expect(t.log.at(-1)?.text).toBe("A tie, and no sheriff to settle it. Nobody leaves today.");
   });
 
   it("the village idiot survives one vote; the tanner wins by being voted out", () => {
@@ -238,7 +303,7 @@ describe("the day", () => {
     expect(alive(t, 1)).toBe(true);
   });
 
-  it("lets the sheriff's vote settle a tie between two players", () => {
+  it("lets the sheriff choose who leaves when two players are tied", () => {
     const t = game(["werewolf", "villager", "villager", "villager", "villager", "villager", "villager"], {
       sheriff: true,
     });
@@ -249,13 +314,39 @@ describe("the day", () => {
     pass(t);
     expect(t.sheriff).toBe(2);
     pass(t);
-    // 3 gets 1 + 1 + 1, 4 gets the sheriff's 2 + 1: a tie at three, settled by the sheriff
+    // 3 gets 1 + 1 + 1, 4 gets the sheriff's 2 + 1: a tie at three, and the sheriff chooses
     for (const id of [1, 5, 6]) act(t, id, { t: "pick", ids: [3] });
     act(t, 2, { t: "pick", ids: [4] });
     act(t, 3, { t: "pick", ids: [4] });
     pass(t);
-    expect(alive(t, 4)).toBe(false);
-    expect(alive(t, 3)).toBe(true);
+    expect(t.phase).toBe("tiebreak");
+    expect(t.log.at(-1)?.text).toBe("A tie between P3 and P4. The sheriff, P2, decides who leaves.");
+    expect(viewFor(t, 3, clock).ask).toBeNull();
+    expect(viewFor(t, 2, clock).ask).toMatchObject({ kind: "tiebreak", choices: [3, 4] });
+    expect(act(t, 2, { t: "pick", ids: [5] })).toEqual({ error: "pick someone at the table" });
+    act(t, 2, { t: "pick", ids: [3] });
+    expect(alive(t, 3)).toBe(false);
+    expect(alive(t, 4)).toBe(true);
+    expect(t.phase).toBe("verdict");
+  });
+
+  it("a sheriff who doesn't choose sends nobody", () => {
+    const t = game(["werewolf", "villager", "villager", "villager", "villager", "villager", "villager"], {
+      sheriff: true,
+    });
+    act(t, 1, { t: "pick", ids: [7] });
+    pass(t);
+    pass(t);
+    for (const id of [1, 2, 3, 4, 5, 6]) act(t, id, { t: "pick", ids: [2] });
+    pass(t);
+    pass(t);
+    for (const id of [1, 5]) act(t, id, { t: "pick", ids: [3] });
+    for (const id of [3, 6]) act(t, id, { t: "pick", ids: [4] });
+    pass(t);
+    expect(t.phase).toBe("tiebreak");
+    pass(t);
+    expect(t.phase).toBe("verdict");
+    expect([alive(t, 3), alive(t, 4)]).toEqual([true, true]);
   });
 });
 
@@ -284,6 +375,29 @@ describe("what each player may know, see and hear", () => {
     // by day everyone alive talks to everyone; the dead only to the dead, but hear the living
     expect(viewFor(t, 4, clock).voice.speakTo).toEqual([1, 2, 3, 5, 6, 7]);
     expect(viewFor(t, 7, clock).voice).toEqual({ speakTo: [], hear: [1, 2, 3, 4, 5, 6] });
+    // the dead see no more roles than they did alive (reveal is on: their own, and the dead's)
+    expect(
+      viewFor(t, 7, clock)
+        .players.filter((p) => p.role !== null)
+        .map((p) => p.id),
+    ).toEqual([7]);
+    // the dead don't read the pack, and the living don't read the dead
+    expect(viewFor(t, 7, clock).chat.some((c) => c.channel === "wolves")).toBe(false);
+    act(t, 7, { t: "chat", body: "it was P1" });
+    expect(t.chat.at(-1)?.channel).toBe("dead");
+    expect(viewFor(t, 4, clock).chat.some((c) => c.channel === "dead")).toBe(false);
+    // by day the wolves have their own channel too, which only they read
+    expect(viewFor(t, 1, clock).channels).toEqual(["all", "wolves"]);
+    expect(viewFor(t, 4, clock).channels).toEqual(["all"]);
+    act(t, 1, { t: "chat", body: "vote the seer", channel: "wolves" });
+    expect(t.chat.at(-1)?.channel).toBe("wolves");
+    expect(viewFor(t, 2, clock).chat.at(-1)?.body).toBe("vote the seer");
+    expect(viewFor(t, 4, clock).chat.some((c) => c.body === "vote the seer")).toBe(false);
+    act(t, 4, { t: "chat", body: "sneaky", channel: "wolves" });
+    expect(t.chat.at(-1)?.channel).toBe("all");
+    // the next night, the dead hear nobody but the dead: not the wolves
+    while (t.phase !== "night") pass(t);
+    expect(viewFor(t, 7, clock).voice.hear).toEqual([]);
   });
 
   it("computer players sit down, play a whole game on their own, and never become the host", () => {

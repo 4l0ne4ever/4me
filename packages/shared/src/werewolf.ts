@@ -207,6 +207,7 @@ export type Phase =
   | "election"
   | "discussion"
   | "vote"
+  | "tiebreak"
   | "verdict"
   | "over";
 
@@ -242,6 +243,10 @@ export type LogLine = { at: number; day: number; text: string; kind: "night" | "
 export type Channel = "all" | "wolves" | "dead";
 export type ChatLine = { id: number; from: number; name: string; body: string; channel: Channel; at: number };
 export type Winner = { team: Team | "lovers" | "nobody"; ids: number[] };
+/** How someone died: everyone sees it on their house. */
+export type Cause = "wolves" | "poison" | "vote" | "hunter" | "grief";
+/** What a player's own power did in the night, shown to them on a house in the morning. */
+export type Sign = { id: number; sign: "shield" | "heal" | "poison" | "fought" };
 
 export type Table = {
   v: 1;
@@ -282,6 +287,12 @@ export type Table = {
   };
   /** What each Seer has seen: seer → player → the role they saw. */
   seen?: Record<string, Record<string, RoleId>>;
+  /** How each of the dead died, for everyone to see. */
+  causes?: Record<string, Cause>;
+  /** What this morning shows each player on the houses: what their own power did in the night. */
+  signs?: Record<string, Sign[]>;
+  /** The players tied at the top of a vote, while the sheriff chooses between them. */
+  tied?: number[];
   /** Votes in a vote or an election: voter → target (0: nobody). */
   votes: Record<string, number>;
   notes: Record<string, Array<{ day: number; text: string }>>;
@@ -335,6 +346,7 @@ const DAWN_MS = 9 * SEC;
 const VERDICT_MS = 8 * SEC;
 const HUNTER_MS = 25 * SEC;
 const BADGE_MS = 20 * SEC;
+const TIEBREAK_MS = 25 * SEC;
 const ELECTION_MS = 45 * SEC;
 const MAX_LOG = 120;
 const MAX_CHAT = 120;
@@ -473,7 +485,12 @@ export const tableCommand = z.discriminatedUnion("t", [
   z.object({ t: z.literal("leave") }),
   z.object({ t: z.literal("again") }),
   z.object({ t: z.literal("ready"), ready: z.boolean() }),
-  z.object({ t: z.literal("chat"), body: z.string().trim().min(1).max(300) }),
+  z.object({
+    t: z.literal("chat"),
+    body: z.string().trim().min(1).max(300),
+    /** The pack's own channel, which the wolves may use by day too (night is theirs anyway). */
+    channel: z.enum(["all", "wolves"]).optional(),
+  }),
   z.object({ t: z.literal("pick"), ids: z.array(z.number().int().min(0)).max(2) }),
   z.object({
     t: z.literal("witch"),
@@ -552,7 +569,8 @@ export function command(t: Table, by: number, cmd: TableCommand, now: number, ra
       break;
     }
     case "chat": {
-      const channel = chatChannel(t, me);
+      const open = chatChannels(t, me);
+      const channel = cmd.channel && open.includes(cmd.channel) ? cmd.channel : open[0];
       if (!channel) return { error: "it's night: only the wolves can talk" };
       t.seq += 1;
       t.chat.push({ id: t.seq, from: by, name: me.name, body: cmd.body, channel, at: now });
@@ -574,20 +592,32 @@ export function command(t: Table, by: number, cmd: TableCommand, now: number, ra
   return ok;
 }
 
-/** Where this player's words go right now, or null when they must stay quiet. */
-export function chatChannel(t: Table, p: Player): Channel | null {
-  if (t.phase === "lobby" || t.phase === "over") return "all";
-  if (!p.alive) return "dead";
-  if (NIGHT_PHASES.includes(t.phase)) return isWolf(p.role) ? "wolves" : null;
-  return "all";
+/**
+ * Where this player may write right now, the usual one first (none: they must stay quiet). The dead talk only among
+ * themselves; at night only the wolves talk, in their own channel; by day everyone talks, and the wolves also have
+ * their own channel, which only they read.
+ */
+export function chatChannels(t: Table, p: Player): Channel[] {
+  if (t.phase === "lobby" || t.phase === "over") return ["all"];
+  if (!p.alive) return ["dead"];
+  if (NIGHT_PHASES.includes(t.phase)) return isWolf(p.role) ? ["wolves"] : [];
+  return isWolf(p.role) ? ["all", "wolves"] : ["all"];
 }
 
-/** Whether this player may read a line: the dead and a finished game see every channel. */
+/** Where this player's words go by default right now, or null when they must stay quiet. */
+export function chatChannel(t: Table, p: Player): Channel | null {
+  return chatChannels(t, p)[0] ?? null;
+}
+
+/**
+ * Whether this player may read a line. Everyone reads the village; only the living wolves read the pack; only the dead
+ * read the dead (who may no longer read the pack: they would know who the wolves are). A finished game shows it all.
+ */
 export function canRead(t: Table, p: Player | undefined, line: ChatLine): boolean {
   if (line.channel === "all" || t.phase === "over" || t.phase === "lobby") return true;
   if (!p) return false;
-  if (!p.alive) return true;
-  return line.channel === "wolves" && isWolf(p.role);
+  if (line.channel === "dead") return !p.alive;
+  return p.alive && isWolf(p.role);
 }
 
 /* ---------- the game ---------- */
@@ -624,6 +654,9 @@ function deal(t: Table, now: number, rand: Rand) {
     votes: {},
     notes: {},
     seen: {},
+    causes: {},
+    signs: {},
+    tied: [],
     log: [],
     chat: t.chat.filter((c) => c.channel === "all"),
     winner: null,
@@ -659,6 +692,9 @@ function backToLobby(t: Table, now: number) {
     votes: {},
     notes: {},
     seen: {},
+    causes: {},
+    signs: {},
+    tied: [],
     winner: null,
     night: freshNight(),
   });
@@ -676,6 +712,7 @@ function startNight(t: Table, now: number, rand: Rand) {
   t.day += 1;
   t.night = freshNight(t.cubBonus ? 2 : 1);
   t.cubBonus = false;
+  t.signs = {};
   log(t, "night", `Night ${t.day}. Everyone closes their eyes.`, now);
   nextStep(t, now, rand, null);
 }
@@ -766,7 +803,7 @@ function nightDone(t: Table, p: Player): boolean {
 
 /** What this player is being asked to choose right now, if anything. */
 export type Ask = {
-  kind: "wolf" | "seer" | "guard" | "cupid" | "vote" | "election" | "hunter" | "badge";
+  kind: "wolf" | "seer" | "guard" | "cupid" | "vote" | "election" | "hunter" | "badge" | "tiebreak";
   /** How many to pick. */
   pick: number;
   /** Who may be picked; 0 means "nobody" where that is allowed. */
@@ -818,6 +855,8 @@ export function askFor(t: Table, p: Player | undefined): Ask | null {
       chosen: String(p.id) in t.votes ? [t.votes[String(p.id)]!] : [],
       locked: false,
     };
+  if (t.phase === "tiebreak" && t.actor === p.id && p.alive)
+    return { kind: "tiebreak", pick: 1, choices: [...(t.tied ?? [])], chosen: [], locked: false };
   if ((t.phase === "hunter" || t.phase === "badge") && t.actor === p.id)
     return {
       kind: t.phase,
@@ -870,10 +909,23 @@ function pick(t: Table, me: Player, picked: number[], now: number, rand: Rand): 
       t.actor = null;
       const target = find(t, one);
       if (target?.alive) {
-        log(t, "death", `${me.name}, the Hunter, takes ${named(t, target)} down too.`, now);
-        kill(t, target, now);
+        log(t, "death", `${me.name}, the Hunter, shoots ${named(t, target)}.`, now);
+        kill(t, target, now, "hunter");
       } else log(t, "info", `${me.name}, the Hunter, lowers the gun.`, now);
       proceed(t, now, rand);
+      return ok;
+    }
+    case "tiebreak": {
+      t.actor = null;
+      t.tied = [];
+      const out = find(t, one)!;
+      log(
+        t,
+        "day",
+        `The sheriff, ${me.name}, chooses: ${out.id === me.id ? "they leave themselves" : `${out.name} leaves`}.`,
+        now,
+      );
+      sendOut(t, out, now);
       return ok;
     }
     case "badge": {
@@ -960,14 +1012,44 @@ function endNight(t: Table, now: number, rand: Rand) {
   setPhase(t, "witch", now + Math.round(6 + rand() * 6) * SEC);
 }
 
+/** A player's own power showed on a house this morning (only they see it). */
+function sign(t: Table, to: Player | undefined, s: Sign) {
+  if (!to) return;
+  const key = String(to.id);
+  t.signs = { ...(t.signs ?? {}), [key]: [...(t.signs?.[key] ?? []), s] };
+}
+
 function resolveNight(t: Table, now: number, rand: Rand) {
-  const deaths: Player[] = [];
+  const deaths: Array<{ p: Player; cause: Cause }> = [];
+  const guard = t.players.find((p) => p.role === "bodyguard");
+  const witchP = t.players.find((p) => p.role === "witch");
+  let saved = 0;
   for (const id of t.night.attacked) {
     const p = find(t, id);
     if (!p?.alive) continue;
-    if (id === t.night.guard || id === t.night.heal) continue;
+    // The Bodyguard's watch, then the Witch's potion: each learns their power worked, and sees it on the house.
+    if (id === t.night.guard) {
+      saved += 1;
+      sign(t, guard, { id, sign: "shield" });
+      note(
+        t,
+        guard!.id,
+        `Night ${t.day}: the wolves came for ${p.id === guard!.id ? "you" : p.name}, and your watch sent them away.`,
+      );
+      if (p.id !== guard!.id) note(t, p.id, `Night ${t.day}: the wolves came for you, and someone kept them away.`);
+      continue;
+    }
+    if (id === t.night.heal) {
+      saved += 1;
+      sign(t, witchP, { id, sign: "heal" });
+      note(t, witchP!.id, `Night ${t.day}: your potion saved ${p.name}.`);
+      if (p.id !== witchP!.id) note(t, p.id, `Night ${t.day}: the wolves came for you, and someone brought you back.`);
+      continue;
+    }
     if (p.role === "elder" && t.elderLives > 0) {
       t.elderLives -= 1;
+      saved += 1;
+      sign(t, p, { id, sign: "fought" });
       note(t, p.id, `Night ${t.day}: the wolves came for you, and you fought them off. Next time you won't.`);
       continue;
     }
@@ -979,27 +1061,48 @@ function resolveNight(t: Table, now: number, rand: Rand) {
         note(t, w.id, `Night ${t.day}: ${p.name} was Cursed, and has joined the pack.`);
       continue;
     }
-    deaths.push(p);
+    deaths.push({ p, cause: "wolves" });
   }
   const poisoned = t.night.poison ? find(t, t.night.poison) : undefined;
-  if (poisoned?.alive && !deaths.includes(poisoned)) deaths.push(poisoned);
+  if (poisoned?.alive) {
+    sign(t, witchP, { id: poisoned.id, sign: "poison" });
+    // poisoned as well as bitten: the poison is what the village finds
+    const bitten = deaths.find((d) => d.p === poisoned);
+    if (bitten) bitten.cause = "poison";
+    else deaths.push({ p: poisoned, cause: "poison" });
+  }
 
   log(t, "day", `Day ${t.day}. The sun comes up.`, now);
-  if (deaths.length === 0) log(t, "info", "Nobody died last night.", now);
-  for (const p of shuffle(deaths, rand)) {
+  if (deaths.length === 0)
+    log(
+      t,
+      "info",
+      saved ? "Nobody died last night: the wolves came, and someone was kept safe." : "Nobody died last night.",
+      now,
+    );
+  else if (saved) log(t, "info", "And someone the wolves came for was kept safe.", now);
+  for (const { p, cause } of shuffle(deaths, rand)) {
     if (!p.alive) continue;
-    log(t, "death", `${named(t, p)} was found dead.`, now);
-    kill(t, p, now);
+    log(
+      t,
+      "death",
+      cause === "poison"
+        ? `${named(t, p)} was found dead, poisoned.`
+        : `${named(t, p)} was found dead, torn apart by wolves.`,
+      now,
+    );
+    kill(t, p, now, cause);
   }
   t.resume = "day";
   setPhase(t, "dawn", now + DAWN_MS);
 }
 
 /** Someone dies, and whatever follows from it: grief, the Hunter's shot, the badge, the wolf cub's revenge. */
-function kill(t: Table, p: Player, now: number) {
+function kill(t: Table, p: Player, now: number, cause: Cause) {
   if (!p.alive) return;
   p.alive = false;
   p.ready = false;
+  t.causes = { ...(t.causes ?? {}), [String(p.id)]: cause };
   if (t.settings.reveal) p.shown = true;
   if (p.role === "hunter") t.pending.push({ kind: "hunter", id: p.id });
   if (t.sheriff === p.id) t.pending.push({ kind: "badge", id: p.id });
@@ -1008,7 +1111,7 @@ function kill(t: Table, p: Player, now: number) {
     const other = find(t, t.lovers[0] === p.id ? t.lovers[1] : t.lovers[0]);
     if (other?.alive) {
       log(t, "death", `${named(t, other)} dies of a broken heart.`, now);
-      kill(t, other, now);
+      kill(t, other, now, "grief");
     }
   }
 }
@@ -1075,20 +1178,51 @@ function resolveElection(t: Table, now: number, rand: Rand) {
   startDiscussion(t, now);
 }
 
+/** "Lan 3, Minh 2, nobody 1": how the village voted (the sheriff's vote counted twice). */
+function tallyLine(t: Table, ranked: Array<[number, number]>): string {
+  return ranked.map(([id, n]) => `${id === 0 ? "nobody" : (find(t, id)?.name ?? "someone")} ${n}`).join(", ");
+}
+
 function resolveVote(t: Table, now: number) {
   const ranked = tallied(t, true);
-  const [first, second] = ranked;
-  let out = first && first[0] !== 0 && (!second || second[1] < first[1]) ? find(t, first[0]) : undefined;
-  // A tie between players: the sheriff's vote settles it, when it went to one of them.
-  const tied = first ? ranked.filter(([, n]) => n === first[1]).map(([id]) => id) : [];
-  const badge = t.sheriff !== null ? t.votes[String(t.sheriff)] : undefined;
-  const broken =
-    !out && tied.length > 1 && !tied.includes(0) && badge !== undefined && badge !== 0 && tied.includes(badge);
-  if (broken) out = find(t, badge);
   t.resume = "night";
-  if (broken && out) log(t, "day", `A tie. The sheriff's vote settles it.`, now);
-  if (!out) {
-    log(t, "day", ranked.length ? "No majority. Nobody leaves today." : "Nobody voted. Nobody leaves today.", now);
+  if (!ranked.length) {
+    log(t, "day", "Nobody voted. Nobody leaves today.", now);
+    return setPhase(t, "verdict", now + VERDICT_MS);
+  }
+  log(t, "info", `The votes: ${tallyLine(t, ranked)}.`, now);
+  const top = ranked[0]![1];
+  const tied = ranked.filter(([, n]) => n === top).map(([id]) => id);
+  if (tied.length === 1) return sendOut(t, tied[0] ? find(t, tied[0]) : undefined, now);
+  // A tie with "nobody" sends nobody. A tie between players: the sheriff chooses which of them leaves.
+  const sheriff = t.sheriff !== null ? find(t, t.sheriff) : undefined;
+  if (tied.includes(0) || !sheriff?.alive) {
+    log(
+      t,
+      "day",
+      tied.includes(0)
+        ? "No majority. Nobody leaves today."
+        : "A tie, and no sheriff to settle it. Nobody leaves today.",
+      now,
+    );
+    return setPhase(t, "verdict", now + VERDICT_MS);
+  }
+  t.tied = tied;
+  t.actor = sheriff.id;
+  log(
+    t,
+    "day",
+    `A tie between ${tied.map((id) => find(t, id)!.name).join(" and ")}. The sheriff, ${sheriff.name}, decides who leaves.`,
+    now,
+  );
+  setPhase(t, "tiebreak", now + TIEBREAK_MS);
+}
+
+/** The village sends someone out (or nobody): the idiot stays, the tanner wins, anyone else dies. */
+function sendOut(t: Table, out: Player | undefined, now: number) {
+  t.resume = "night";
+  if (!out?.alive) {
+    log(t, "day", "Nobody leaves today.", now);
   } else if (out.role === "idiot" && out.canVote) {
     out.canVote = false;
     out.shown = true;
@@ -1100,12 +1234,12 @@ function resolveVote(t: Table, now: number) {
     );
   } else if (out.role === "tanner") {
     out.shown = true;
-    kill(t, out, now);
+    kill(t, out, now, "vote");
     log(t, "end", `The village votes out ${out.name}: the Tanner, who wanted exactly that.`, now);
     return finish(t, { team: "tanner", ids: [out.id] }, now);
   } else {
     log(t, "death", `The village votes out ${named(t, out)}.`, now);
-    kill(t, out, now);
+    kill(t, out, now, "vote");
   }
   setPhase(t, "verdict", now + VERDICT_MS);
 }
@@ -1183,6 +1317,13 @@ export function tick(t: Table, now: number, rand: Rand): boolean {
     case "vote":
       resolveVote(t, now);
       break;
+    case "tiebreak":
+      log(t, "day", "The sheriff couldn't choose. Nobody leaves today.", now);
+      t.actor = null;
+      t.tied = [];
+      t.resume = "night";
+      setPhase(t, "verdict", now + VERDICT_MS);
+      break;
     default:
       t.deadline = null;
   }
@@ -1209,6 +1350,8 @@ export type PlayerView = {
   lover: boolean;
   /** A computer player. */
   bot: boolean;
+  /** How they died, when they did. */
+  cause: Cause | null;
   /** The role is what this viewer, the Seer, saw in their house (a Cursed turns, and the look doesn't). */
   seen: boolean;
 };
@@ -1235,11 +1378,17 @@ export type TableView = {
   witch: { attacked: number[]; heal: boolean; poison: boolean; done: boolean } | null;
   /** Open votes, in a vote or an election. */
   votes: Record<string, number> | null;
+  /** The players tied at the top of the vote, while the sheriff chooses which of them leaves. */
+  tied: number[];
   notes: Array<{ day: number; text: string }>;
   log: LogLine[];
   chat: ChatLine[];
   /** Where this viewer's words would go now, or null when they must keep quiet. */
   channel: Channel | null;
+  /** Every channel this viewer may write in now, the usual one first (a wolf by day: the village and the pack). */
+  channels: Channel[];
+  /** What this viewer's own power did last night, shown on the houses this morning. */
+  signs: Sign[];
   winner: Winner | null;
   /** Who this viewer's microphone reaches, and whose they may hear. */
   voice: { speakTo: number[]; hear: number[] };
@@ -1247,12 +1396,15 @@ export type TableView = {
   locked: boolean;
 };
 
-/** Whether `from`'s voice reaches `to` now. The same rule as the chat: night belongs to the wolves, death to the dead. */
+/**
+ * Whether `from`'s voice reaches `to` now. The same rule as the chat: the dead are heard only by the dead (they still
+ * hear the village by day); at night only the living wolves talk, and only to each other.
+ */
 export function canSpeakTo(t: Table, from: Player, to: Player): boolean {
   if (from.id === to.id) return false;
   if (t.phase === "lobby" || t.phase === "over") return true;
   if (!from.alive) return !to.alive;
-  if (NIGHT_PHASES.includes(t.phase)) return isWolf(from.role) && (isWolf(to.role) || !to.alive);
+  if (NIGHT_PHASES.includes(t.phase)) return isWolf(from.role) && isWolf(to.role) && to.alive;
   return true;
 }
 
@@ -1260,12 +1412,8 @@ export function viewFor(t: Table, viewer: number, now: number): TableView {
   const me = find(t, viewer);
   const over = t.phase === "over";
   const lover = me && t.lovers?.includes(me.id) ? t.lovers : null;
-  const sees = (p: Player) =>
-    over ||
-    p.id === viewer ||
-    p.shown ||
-    (me && isWolf(me.role) && isWolf(p.role)) ||
-    (me && !me.alive && t.settings.reveal);
+  // (the dead see no more than they did alive, and what the table shows: they could still tell the living)
+  const sees = (p: Player) => over || p.id === viewer || p.shown || (me && isWolf(me.role) && isWolf(p.role));
   const vision = me ? t.seen?.[String(me.id)] : undefined;
   const players = t.players.map(
     (p): PlayerView => ({
@@ -1283,6 +1431,7 @@ export function viewFor(t: Table, viewer: number, now: number): TableView {
       lover: Boolean(lover?.includes(p.id) || (over && t.lovers?.includes(p.id))),
       bot: Boolean(p.bot),
       seen: !sees(p) && Boolean(vision?.[String(p.id)]),
+      cause: p.alive ? null : (t.causes?.[String(p.id)] ?? null),
     }),
   );
   const wolfView = me && isWolf(me.role) && me.alive && t.phase === "night";
@@ -1310,10 +1459,14 @@ export function viewFor(t: Table, viewer: number, now: number): TableView {
           }
         : null,
     votes: t.phase === "vote" || t.phase === "election" ? t.votes : null,
+    tied: t.phase === "tiebreak" ? (t.tied ?? []) : [],
     notes: t.notes[String(viewer)] ?? [],
     log: t.log,
     chat: t.chat.filter((c) => canRead(t, me, c)),
     channel: me ? chatChannel(t, me) : null,
+    channels: me ? chatChannels(t, me) : [],
+    // (kept until the next night falls)
+    signs: t.signs?.[String(viewer)] ?? [],
     winner: t.winner,
     voice: me
       ? {

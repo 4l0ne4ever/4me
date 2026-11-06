@@ -3,8 +3,10 @@
 // church bell for a death, a gavel for the vote and the verdict, a chime when the Seer looks, a clock in the last
 // seconds of your turn, and at the end a fanfare or the pack. Under it all, a bed that follows the game: a little
 // medieval music on the square while the table fills, the village by day, a dark drone and crickets at night, and
-// a tense one for the vote. Three levels, as in a game: everything, effects, music; the music steps back while
-// someone is talking.
+// a tense one for the vote. Each role has its own sound when the narrator wakes it (a harp for Cupid, a glimmer for
+// the Seer, a sword drawn for the Bodyguard, a howl for the wolves, the cauldron for the Witch), and the night's powers
+// sound in the morning to whoever used them (the shield, the potion, the poison); the Hunter's shot is heard by all.
+// Three levels, as in a game: everything, effects, music; the music steps back while someone is talking.
 
 import { PLAYING } from "@/lib/clip";
 
@@ -130,7 +132,26 @@ export function duckMusic(on: boolean) {
 
 /* ---------- the recordings ---------- */
 
-const CUES = ["howl", "howl-far", "rooster", "toll", "knock", "gavel", "tick", "vision", "fanfare", "pack"] as const;
+const CUES = [
+  "howl",
+  "howl-far",
+  "rooster",
+  "toll",
+  "knock",
+  "gavel",
+  "tick",
+  "vision",
+  "fanfare",
+  "pack",
+  "cupid",
+  "seer",
+  "guard",
+  "witch",
+  "shield",
+  "heal",
+  "poison",
+  "shot",
+] as const;
 type Cue = (typeof CUES)[number];
 type BedFile = "lobby" | "day" | "night-drone" | "crickets" | "vote";
 
@@ -242,14 +263,40 @@ function ping() {
   }
 }
 
+/** Each turn of the night, as the narrator wakes it. */
+const WAKE: Record<"cupid" | "seer" | "guard" | "wolves" | "witch", [Cue, number]> = {
+  cupid: ["cupid", 0.6],
+  seer: ["seer", 0.75],
+  guard: ["guard", 0.7],
+  wolves: ["howl-far", 0.45],
+  witch: ["witch", 0.6],
+};
+
 export const sounds = {
   /** Night falls: a wolf howls. */
   night() {
     cue("howl", 0.55);
   },
-  /** The wolves wake: another, further off. */
-  wolves() {
-    cue("howl-far", 0.45);
+  /** A role wakes in the night (everyone hears it): after a moment, when night has only just fallen. */
+  wake(step: keyof typeof WAKE, delay = 0) {
+    const [name, volume] = WAKE[step];
+    cue(name, volume, delay);
+  },
+  /** The Bodyguard's watch held, or the Elder fought them off. */
+  shield() {
+    cue("shield", 0.8);
+  },
+  /** The Witch's potion saves someone. */
+  heal() {
+    cue("heal", 0.7);
+  },
+  /** The Witch's poison. */
+  poison() {
+    cue("poison", 0.7);
+  },
+  /** The Hunter's last shot. */
+  shot() {
+    cue("shot", 0.8);
   },
   /** Daybreak: the rooster. */
   dawn() {

@@ -152,7 +152,18 @@ narrates; the sky is the clock, and every player is a house on the ring around t
   so is a dead one's when roles show on death; when they don't, the narrator still calls it and waits a little.
 - **The Seer sees the role itself** (a Cursed player shows as a Villager until bitten). It rises over the house the
   moment they look and stays on its name, in the Seer's violet, for the rest of the game; only the Seer sees it.
-- **The sheriff's vote counts twice** and settles a tie between two players.
+- **The sheriff's vote counts twice**, and when two players are tied at the top the sheriff chooses which of them
+  leaves (a tie with "nobody" sends nobody, and so does a sheriff who doesn't choose). After every vote the narrator
+  reads the count, votes for nobody included, and the vote shows who is voting for nobody as it happens.
+- **What the night did, and to whom.** Everyone sees how each of the dead died, on their house's name: torn apart
+  by wolves, poisoned, voted out, shot by the Hunter, of a broken heart. Only the one whose power it was sees what
+  it did: in the morning the Bodyguard sees a shield rise over the house they kept safe, the Witch her potion or her
+  poison, the Elder their fight; the one saved learns only that someone saved them. The village hears that someone
+  was kept safe, not who or by whom.
+- **The dead stay dead.** They talk only with each other, by voice and in the chat, and nobody alive hears them;
+  they see no more cards than they did alive, don't read the pack, and don't hear the wolves at night.
+- **The pack's room**: the wolves talk at night, and by day they have their own room in the chat as well (text only:
+  a voice would carry across the square), which only the living wolves read.
 - **The table** is one Durable Object per table (`apps/api/src/live/table-do.ts`): the players' WebSockets with the
   hibernation API, the game in its storage, the phase clock as an alarm. Another object lists the open tables.
   Development and tests keep tables in memory with the same code (`live/table.ts`).
@@ -163,8 +174,10 @@ narrates; the sky is the clock, and every player is a house on the ring around t
 - **Asking people to leave**: before a game or after it, the host can ask someone to leave (they may come back) or
   ban them from the table (they may not); their browser is told and let go at once.
 - **Sounds, music and title cards**: real recordings, all CC0 from Freesound (`apps/web/public/sounds/werewolf`,
-  with `CREDITS.txt`), cut, levelled and looped for the game: a wolf howls when night falls and another when the
-  wolves wake, a rooster at daybreak, a church bell for a death, the gavel for the vote and the verdict, a chime when
+  with `CREDITS.txt`), cut, levelled and looped for the game: a wolf howls when night falls; each role has its own
+  sound as the narrator wakes it (a harp for Cupid, a glimmer for the Seer, a sword drawn for the Bodyguard, another
+  howl for the wolves, the cauldron for the Witch); the shield, the potion and the poison sound in the morning for
+  whoever used them, and the Hunter's shot for everyone; a rooster at daybreak, a church bell for a death, the gavel for the vote and the verdict, a chime when
   the Seer looks, a clock in the last seconds of your turn, a fanfare or the pack at the end. Under them, music that
   follows the game: a little medieval music on the square while the table fills, the village's birds by day, a dark
   drone and crickets at night, a tense piece for the vote. It steps back while anyone talks, rests in a hidden tab,

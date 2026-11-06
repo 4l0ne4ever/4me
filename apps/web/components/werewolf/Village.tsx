@@ -2,6 +2,7 @@
 
 import { type PlayerView, ROLES, type TableView } from "@4me/shared";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { CAUSE_TEXT, CauseIcon, SIGN_SHORT, SIGN_TEXT, SignIcon } from "./Marks";
 import { ROLE_SHORT, RoleIcon } from "./RoleIcon";
 import { sounds } from "./sounds";
 
@@ -368,6 +369,7 @@ export function Village({
           zIndex: Math.round(s.y),
         } as CSSProperties;
         const state = !p.alive ? "dead" : !p.connected ? "away" : "";
+        const signs = view?.signs.filter((x) => x.id === p.id) ?? [];
         return (
           <button
             key={p.id}
@@ -376,10 +378,15 @@ export function Village({
             style={style}
             onClick={() => (m?.pickable ? onPick(p.id) : onHouse(p.id))}
             aria-pressed={m?.pickable ? Boolean(m.chosen) : undefined}
-            aria-label={`${p.name}${p.id === me ? " (you)" : ""}${p.alive ? "" : ", dead"}${p.role ? `, ${ROLE_SHORT[p.role]}` : ""}${m?.tally ? `, ${m.tally} votes` : ""}`}
+            aria-label={`${p.name}${p.id === me ? " (you)" : ""}${p.alive ? "" : `, dead${p.cause ? `, ${CAUSE_TEXT[p.cause]}` : ""}`}${p.role ? `, ${ROLE_SHORT[p.role]}` : ""}${m?.tally ? `, ${m.tally} votes` : ""}${signs.map((x) => `, ${SIGN_TEXT[x.sign].toLowerCase()}`).join("")}`}
           >
             <span className="vh-hit" />
             <span className="vh-name">
+              {p.cause && (
+                <span className={`vh-cause c-${p.cause}`} title={CAUSE_TEXT[p.cause]}>
+                  <CauseIcon of={p.cause} />
+                </span>
+              )}
               {p.sheriff && <Badge />}
               {p.role && <RoleIcon of={p.role} className="vh-name-role" />}
               <span className="vh-nm">{p.id === me ? "you" : p.name}</span>
@@ -400,6 +407,14 @@ export function Village({
                 <b>{ROLES[p.role].name}</b>
               </span>
             )}
+            {/* what your own power did last night: it rises over the house in the morning, then stays */}
+            {signs.map((x) => (
+              <span key={`${view?.day}:${x.sign}`} className={`vh-sign s-${x.sign}`} role="status">
+                <SignIcon of={x.sign} />
+                <b className="long">{SIGN_TEXT[x.sign]}</b>
+                <b className="short">{SIGN_SHORT[x.sign]}</b>
+              </span>
+            ))}
             {m && m.tally > 0 && <span className="vh-tally">{m.tally}</span>}
             {m && m.wolfPick > 0 && (
               <span className="vh-claw" title="the pack's pick">

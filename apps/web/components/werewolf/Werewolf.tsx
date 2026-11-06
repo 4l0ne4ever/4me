@@ -21,6 +21,7 @@ import {
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { API_URL } from "@/lib/api";
 import { openTable, unlockTable } from "@/lib/table-actions";
+import { CAUSE_TEXT } from "./Marks";
 import { ROLE_SHORT, RoleIcon } from "./RoleIcon";
 import {
   type Bed,
@@ -204,6 +205,7 @@ const PHASE_TITLE: Record<TableView["phase"], string> = {
   election: "Sheriff",
   discussion: "Talk",
   vote: "Vote",
+  tiebreak: "The tie",
   verdict: "Day",
   over: "The end",
 };
@@ -286,11 +288,17 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
     if (!before) return; // sitting down in the middle of something: no card for what already happened
     const died = view.players.filter((p) => !p.alive && before.alive.get(p.id) === true);
     const turned = before.phase !== view.phase;
-    if (died.length) window.setTimeout(() => sounds.death(), turned && view.phase === "dawn" ? 1300 : 0);
-    // the night's turns: a card for each role as it wakes
+    const dawn = turned && view.phase === "dawn";
+    // a death: the Hunter's shot rings out first; the poison is heard by the Witch who gave it (below), the bell by all
+    if (died.some((p) => p.cause === "hunter")) sounds.shot();
+    if (died.length)
+      window.setTimeout(() => sounds.death(), dawn ? 1300 : died.some((p) => p.cause === "hunter") ? 700 : 0);
+    // the night's turns: each role's sound as the narrator wakes it (a moment after the howl when night has only just
+    // fallen), and a card for it
+    if (view.phase === "night" && view.step && before.step !== view.step) sounds.wake(view.step, turned ? 2.2 : 0);
+    if (turned && view.phase === "witch") sounds.wake("witch");
     if (!turned && view.step && before.step !== view.step) {
       setScene({ ...stepScene(view, view.step), id: Date.now() });
-      if (view.step === "wolves") sounds.wolves();
       return;
     }
     if (!turned) return;
@@ -299,11 +307,26 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
     if (next) setScene({ ...next, id: Date.now() });
     if (view.phase === "night") sounds.night();
     else if (view.phase === "dawn") sounds.dawn();
-    else if (view.phase === "vote" || view.phase === "election") sounds.vote();
+    else if (view.phase === "vote" || view.phase === "election" || view.phase === "tiebreak") sounds.vote();
     else if (view.phase === "verdict") sounds.verdict();
     else if (view.phase === "over")
       sounds.end(Boolean(view.winner?.ids.includes(me.id)), view.winner?.team === "wolves");
   }, [view, me.id]);
+  const signKey = view?.signs.map((x) => `${x.id}:${x.sign}`).join(",") ?? "";
+  const heardSigns = useRef("");
+  useEffect(() => {
+    if (!signKey || signKey === heardSigns.current) {
+      heardSigns.current = signKey;
+      return;
+    }
+    heardSigns.current = signKey;
+    const kinds = new Set(signKey.split(",").map((x) => x.split(":")[1]));
+    window.setTimeout(() => {
+      if (kinds.has("shield") || kinds.has("fought")) sounds.shield();
+      if (kinds.has("heal")) sounds.heal();
+      if (kinds.has("poison")) sounds.poison();
+    }, 2200);
+  }, [signKey]);
   useEffect(() => {
     if (!scene) return;
     const t = window.setTimeout(() => setScene(null), scene.long ? 5600 : 3600);
@@ -416,7 +439,8 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
     if (ask.pick === 1) {
       setPicked([id]);
       // Choices that can be changed go straight in; the Seer confirms.
-      if (ask.kind !== "seer" && ask.kind !== "hunter" && ask.kind !== "badge") send({ t: "pick", ids: [id] });
+      if (ask.kind !== "seer" && ask.kind !== "hunter" && ask.kind !== "badge" && ask.kind !== "tiebreak")
+        send({ t: "pick", ids: [id] });
       return;
     }
     const next = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id].slice(-ask.pick);
@@ -698,7 +722,15 @@ function Action({
         <div className="ww-row">
           {heal &&
             w.attacked.map((id) => (
-              <button key={id} type="button" className="btn" onClick={() => send({ t: "witch", heal: id, poison })}>
+              <button
+                key={id}
+                type="button"
+                className="btn"
+                onClick={() => {
+                  sounds.heal();
+                  send({ t: "witch", heal: id, poison });
+                }}
+              >
                 Save {name(id)}
               </button>
             ))}
@@ -708,7 +740,10 @@ function Action({
                 type="button"
                 className="btn danger"
                 disabled={poison === null}
-                onClick={() => send({ t: "witch", heal: null, poison })}
+                onClick={() => {
+                  sounds.poison();
+                  send({ t: "witch", heal: null, poison });
+                }}
               >
                 {poison ? `Poison ${name(poison)}` : "Pick someone"}
               </button>
@@ -747,10 +782,11 @@ function Action({
       cupid: "Tap two houses: they fall in love.",
       vote: "Tap a house to vote them out.",
       election: "Tap a house to make them sheriff.",
-      hunter: "You're going down. Tap a house to take with you.",
+      hunter: "You're going down, Hunter. Tap a house: you take them with you.",
       badge: "Pass the sheriff's badge: tap a house.",
+      tiebreak: `A tie between ${view.tied.map(name).join(" and ")}. You're the sheriff: tap the one who leaves.`,
     };
-    const confirm = ask.kind === "seer" || ask.kind === "hunter" || ask.kind === "badge";
+    const confirm = ask.kind === "seer" || ask.kind === "hunter" || ask.kind === "badge" || ask.kind === "tiebreak";
     return (
       <div className="ww-act">
         <p className="ww-ask">
@@ -772,7 +808,9 @@ function Action({
               onClick={() => send({ t: "pick", ids: picked })}
             >
               {picked.length
-                ? `${ask.kind === "seer" ? "Look at" : ask.kind === "hunter" ? "Shoot" : "Give it to"} ${name(picked[0]!)}`
+                ? ask.kind === "tiebreak"
+                  ? `${name(picked[0]!)} leaves`
+                  : `${ask.kind === "seer" ? "Look at" : ask.kind === "hunter" ? "Shoot" : "Give it to"} ${name(picked[0]!)}`
                 : "Pick a house"}
             </button>
           )}
@@ -786,9 +824,13 @@ function Action({
               }}
             >
               {ask.kind === "hunter" ? "Lower the gun" : ask.kind === "badge" ? "Tear it up" : "Nobody"}
+              {(ask.kind === "vote" || ask.kind === "election") && nobody(view).count > 0 && (
+                <span className="ww-count">{nobody(view).count}</span>
+              )}
             </button>
           )}
         </div>
+        {(ask.kind === "vote" || ask.kind === "election") && <NobodyVotes view={view} name={name} />}
       </div>
     );
   }
@@ -817,21 +859,49 @@ function Action({
 
   const quiet = !you
     ? "You're watching."
-    : !you.alive
-      ? "You're dead. Watch, and talk with the other ghosts."
-      : view.phase === "night" && view.step
-        ? `You sleep. ${STEP[view.step].title} ${view.step === "wolves" ? "are" : "is"} awake.`
-        : view.phase === "witch"
-          ? "You sleep. The Witch is awake."
-          : view.phase === "night" || view.phase === "deal"
-            ? "You sleep. The night belongs to the others."
-            : view.phase === "vote" && !you.canVote
-              ? "You lost your vote when they found out who you are."
-              : "Listen.";
+    : view.phase === "tiebreak"
+      ? `A tie between ${view.tied.map(name).join(" and ")}. The sheriff, ${name(view.actor ?? 0)}, decides who leaves.`
+      : view.phase === "hunter" && view.actor !== null
+        ? `${name(view.actor)}, the Hunter, takes aim…`
+        : !you.alive
+          ? "You're dead. Watch, and talk with the other ghosts."
+          : view.phase === "night" && view.step
+            ? `You sleep. ${STEP[view.step].title} ${view.step === "wolves" ? "are" : "is"} awake.`
+            : view.phase === "witch"
+              ? "You sleep. The Witch is awake."
+              : view.phase === "night" || view.phase === "deal"
+                ? "You sleep. The night belongs to the others."
+                : view.phase === "vote" && !you.canVote
+                  ? "You lost your vote when they found out who you are."
+                  : "Listen.";
   return (
     <div className="ww-act">
       <p className="ww-ask quiet">{quiet}</p>
+      {(view.phase === "vote" || view.phase === "election") && <NobodyVotes view={view} name={name} />}
     </div>
+  );
+}
+
+/** Who voted for nobody (a vote counts twice when it is the sheriff's, in the vote). */
+function nobody(view: TableView): { count: number; voters: number[] } {
+  const voters = Object.entries(view.votes ?? {})
+    .filter(([, target]) => target === 0)
+    .map(([voter]) => Number(voter));
+  const count = voters.reduce(
+    (n, id) => n + (view.phase === "vote" && view.players.find((p) => p.id === id)?.sheriff ? 2 : 1),
+    0,
+  );
+  return { count, voters };
+}
+
+/** The votes for nobody, which have no house to stand on: a line under the choices, for everyone to see. */
+function NobodyVotes({ view, name }: { view: TableView; name: (id: number) => string }) {
+  const { count, voters } = nobody(view);
+  if (!count) return null;
+  return (
+    <p className="ww-hint ww-nobody">
+      <span className="ww-count">{count}</span> for nobody: {voters.map(name).join(", ")}.
+    </p>
   );
 }
 
@@ -862,7 +932,7 @@ function Neighbour({
         <b>{p.id === me ? "You" : p.name}</b>
         <span>
           {p.bot ? "a computer player · " : ""}
-          {p.alive ? (p.connected ? "at the table" : "stepped away") : "dead"}
+          {p.alive ? (p.connected ? "at the table" : "stepped away") : p.cause ? CAUSE_TEXT[p.cause] : "dead"}
           {p.role ? ` · ${ROLE_SHORT[p.role]}` : ""}
           {p.sheriff ? " · sheriff" : ""}
         </span>
@@ -935,7 +1005,7 @@ const WINNERS: Record<string, string> = {
 function bedFor(phase: TableView["phase"]): Bed {
   if (phase === "lobby" || phase === "over") return "lobby";
   if (phase === "deal" || phase === "night" || phase === "witch") return "night";
-  if (phase === "vote" || phase === "verdict") return "vote";
+  if (phase === "vote" || phase === "tiebreak" || phase === "verdict") return "vote";
   return "day";
 }
 
@@ -985,7 +1055,17 @@ function sceneFor(view: TableView, me: number, fresh: LogLine[]): Omit<Scene, "i
     case "verdict":
       return { tone: "dusk", title: "The verdict", line: said(["death", "day", "info"]) };
     case "hunter":
-      return { tone: "dusk", title: "The hunter", line: "One last shot." };
+      return {
+        tone: "dusk",
+        title: "The Hunter",
+        line: view.actor === me ? "You're going down. Take someone with you." : "One last shot.",
+      };
+    case "tiebreak":
+      return {
+        tone: "dusk",
+        title: "A tie",
+        line: view.actor === me ? "You're the sheriff: you decide who leaves." : "The sheriff decides who leaves.",
+      };
     case "over": {
       const w = view.winner;
       const won = Boolean(w?.ids.includes(me));
@@ -1391,34 +1471,63 @@ function MicIcon({ off }: { off?: boolean }) {
 
 /* ---------- the dock ---------- */
 
+/**
+ * The table's chat. A wolf by day has two rooms: the village, and the pack's own, which only the wolves read (text
+ * only: their voices would carry to the whole square). At night the pack's room is the only one open; the dead have
+ * theirs, which only the dead read.
+ */
 function Chat({ view, me, send }: { view: TableView; me: number; send: ReturnType<typeof useTable>["send"] }) {
   const [text, setText] = useState("");
+  const [room, setRoom] = useState<"all" | "wolves">("all");
   const list = useRef<HTMLOListElement>(null);
-  const count = view.chat.length;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on each new line
+  const rooms = view.channels.length > 1;
+  const channel = rooms ? (view.channels.includes(room) ? room : view.channels[0]!) : view.channel;
+  const lines = rooms
+    ? view.chat.filter((c) => (channel === "wolves" ? c.channel === "wolves" : c.channel !== "wolves"))
+    : view.chat;
+  const count = lines.length;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on each new line, and on changing room
   useEffect(() => {
     list.current?.scrollTo({ top: list.current.scrollHeight });
-  }, [count]);
+  }, [count, channel]);
   const say = (e: FormEvent) => {
     e.preventDefault();
     const body = text.trim();
-    if (!body || !view.channel) return;
-    send({ t: "chat", body });
+    if (!body || !channel) return;
+    send(channel === "all" || channel === "wolves" ? { t: "chat", body, channel } : { t: "chat", body });
     setText("");
   };
   const placeholder =
-    view.channel === "wolves"
-      ? "Whisper to the pack"
-      : view.channel === "dead"
-        ? "Talk with the dead"
-        : view.channel === "all"
+    channel === "wolves"
+      ? "Whisper to the pack (only the wolves read this)"
+      : channel === "dead"
+        ? "Talk with the dead (only the dead read this)"
+        : channel === "all"
           ? "Say something to the village"
           : "It's night. Only the wolves can talk.";
+  const packUnread = rooms && channel !== "wolves" ? view.chat.filter((c) => c.channel === "wolves").length : 0;
   return (
     <div className="ww-chat">
+      {rooms && (
+        <div className="ww-rooms" role="tablist" aria-label="Where you talk">
+          <button type="button" role="tab" aria-selected={channel === "all"} onClick={() => setRoom("all")}>
+            Village
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={channel === "wolves"}
+            className="pack"
+            onClick={() => setRoom("wolves")}
+          >
+            Pack
+            {packUnread > 0 && <span className="ww-count">{packUnread}</span>}
+          </button>
+        </div>
+      )}
       <ol ref={list}>
-        {view.chat.length === 0 && <li className="ww-quiet">Nothing said yet.</li>}
-        {view.chat.map((c) => (
+        {lines.length === 0 && <li className="ww-quiet">Nothing said yet.</li>}
+        {lines.map((c) => (
           <li key={c.id} className={`ch-${c.channel}${c.from === me ? " mine" : ""}`}>
             {c.channel !== "all" && <span className="ww-chan">{c.channel === "wolves" ? "pack" : "ghosts"}</span>}
             <b>{c.from === me ? "you" : c.name}</b> {c.body}
@@ -1430,11 +1539,11 @@ function Chat({ view, me, send }: { view: TableView; me: number; send: ReturnTyp
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={placeholder}
-          disabled={!view.channel}
+          disabled={!channel}
           maxLength={300}
           aria-label="Message"
         />
-        <button type="submit" className="btn" disabled={!view.channel || !text.trim()}>
+        <button type="submit" className="btn" disabled={!channel || !text.trim()}>
           Say
         </button>
       </form>
@@ -1500,9 +1609,15 @@ function Rules() {
     <div className="ww-rules">
       <p>
         Each night the roles wake one at a time, in the narrator's order: Cupid (the first night only), the Seer, the
-        Bodyguard, the wolves, then the Witch. Each day the village finds out who died, talks, and votes someone out;
-        the sheriff's vote counts twice and settles a tie. The village wins when the last wolf is gone; the wolves win
-        when there are as many of them as everyone else.
+        Bodyguard, the wolves, then the Witch. Each day the village finds out who died and how, talks, and votes someone
+        out (or nobody); the sheriff's vote counts twice, and when two players are tied, the sheriff chooses which of
+        them leaves. The village wins when the last wolf is gone; the wolves win when there are as many of them as
+        everyone else.
+      </p>
+      <p>
+        The dead talk only with the dead, by voice and in the chat, and the living don't hear them; they see no more
+        cards than they did alive. The wolves talk at night, and by day they have their own room in the chat too, which
+        only they read.
       </p>
       <dl>
         {ROLE_ORDER.map((r) => (

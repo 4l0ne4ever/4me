@@ -6148,6 +6148,119 @@ body.daytime .sky-tint {
     opacity: 0;
   }
 }
+/* the night's marks: how each of the dead died, on their name; and what your own power did, over the house */
+.ww-mark {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.vh-cause {
+  display: inline-grid;
+  place-items: center;
+  color: #b0412f;
+}
+.vh-cause.c-poison {
+  color: #4f8a2a;
+}
+.vh-cause.c-vote {
+  color: #6b5640;
+}
+.vh-cause.c-hunter {
+  color: #9a6a14;
+}
+.vh-cause.c-grief {
+  color: #b2457a;
+}
+.vh-sign {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  font-size: 11.5px;
+  pointer-events: none;
+  z-index: 5;
+  transform: translateX(-50%);
+  animation: vh-sign 1400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.vh-sign .ww-mark {
+  width: 15px;
+  height: 15px;
+}
+.vh-sign .short {
+  display: none;
+}
+/* the Bodyguard's shield: steel and gold; the Witch's potion: a green-gold light; her poison: sickly violet */
+.vh-sign.s-shield,
+.vh-sign.s-fought {
+  background: rgba(20, 34, 58, 0.94);
+  border: 1px solid rgba(160, 196, 255, 0.8);
+  color: #e3eeff;
+  box-shadow: 0 0 20px rgba(120, 170, 255, 0.55);
+}
+.vh-sign.s-shield .ww-mark,
+.vh-sign.s-fought .ww-mark {
+  color: #ffd36b;
+}
+.vh-sign.s-heal {
+  background: rgba(18, 44, 30, 0.94);
+  border: 1px solid rgba(150, 230, 170, 0.8);
+  color: #e6fbe9;
+  box-shadow: 0 0 20px rgba(110, 220, 140, 0.55);
+}
+.vh-sign.s-heal .ww-mark {
+  color: #9df0b0;
+}
+.vh-sign.s-poison {
+  background: rgba(38, 20, 46, 0.94);
+  border: 1px solid rgba(190, 120, 230, 0.8);
+  color: #f2e2fb;
+  box-shadow: 0 0 20px rgba(160, 80, 210, 0.55);
+}
+.vh-sign.s-poison .ww-mark {
+  color: #b9f06a;
+}
+@keyframes vh-sign {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 16px) scale(0.5);
+    filter: blur(4px);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -6px) scale(1.12);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+/* a small count: the votes for nobody, the pack's unread lines */
+.ww-count {
+  display: inline-block;
+  min-width: 18px;
+  margin-left: 6px;
+  padding: 0 4px;
+  background: #efe6d6;
+  color: #1b130c;
+  border: 1px solid #b9a98e;
+  font-family: var(--font-lcd), monospace;
+  font-size: 16px;
+  line-height: 1.1;
+  text-align: center;
+}
+.ww-nobody .ww-count {
+  margin: 0 4px 0 0;
+}
 
 /* the top: when it is, how long is left, what the narrator says, the voice */
 .ww-game {
@@ -6810,6 +6923,33 @@ body.daytime .sky-tint {
 .ww-chat li.ch-dead {
   color: var(--chrome-dim);
 }
+/* a wolf by day talks in two rooms: the village, and the pack */
+.ww-rooms {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--chrome-edge);
+}
+.ww-rooms button {
+  flex: 1;
+  min-height: 32px;
+  padding: 0 10px;
+  background: none;
+  border: 1px solid var(--chrome-edge);
+  color: var(--chrome-dim);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ww-rooms button[aria-selected="true"] {
+  background: var(--chrome-hi);
+  color: var(--chrome-ink);
+}
+.ww-rooms button.pack[aria-selected="true"] {
+  background: #6e2b25;
+  border-color: #a5463c;
+  color: #ffe3dd;
+}
 .ww-chan {
   display: inline-block;
   margin-right: 5px;
@@ -7235,6 +7375,22 @@ body.daytime .sky-tint {
   }
   .vh-name .vh-name-role {
     display: inline-block;
+  }
+  /* the night's marks, small: a word and its mark */
+  .vh-sign {
+    gap: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+  }
+  .vh-sign .ww-mark {
+    width: 11px;
+    height: 11px;
+  }
+  .vh-sign .long {
+    display: none;
+  }
+  .vh-sign .short {
+    display: inline;
   }
   /* beside the house, not above it: above is where the row behind keeps its names */
   .vh-tally,
