@@ -3,10 +3,13 @@
 import type { TableEvent, TableMessage, TableView } from "@4me/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { API_URL } from "@/lib/api";
-import { tableSeat } from "@/lib/table-actions";
+import { tableSeat, tableTicket } from "@/lib/table-actions";
 import { type IceServer, Voice, type VoiceState } from "./voice";
 
 export type TableStatus = "connecting" | "open" | "reconnecting" | "closed";
+
+/** How often the socket shows the table a fresh ticket (the table waits fifteen minutes). */
+const RENEW_MS = 8 * 60_000;
 
 /**
  * Sits this browser at a table: one WebSocket that brings this player's view of the game and carries what they do,
@@ -34,6 +37,7 @@ export function useTable(code: string | null, me: number | null, attempt = 0) {
     let tries = 0;
     let retry = 0;
     let ping = 0;
+    let renew = 0;
     setView(null);
     setClosed(null);
     setStatus("connecting");
@@ -67,6 +71,14 @@ export function useTable(code: string | null, me: number | null, attempt = 0) {
         tries = 0;
         setStatus("open");
         ping = window.setInterval(() => socket.readyState === WebSocket.OPEN && socket.send("ping"), 25_000);
+        // the table lets a socket go 15 minutes after its last ticket: a fresh one every eight, while signed in
+        renew = window.setInterval(() => {
+          void tableTicket()
+            .catch(() => null)
+            .then((ticket) => {
+              if (ticket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ t: "renew", ticket }));
+            });
+        }, RENEW_MS);
       };
       socket.onmessage = (m) => {
         if (m.data === "pong") return;
@@ -85,6 +97,7 @@ export function useTable(code: string | null, me: number | null, attempt = 0) {
       };
       socket.onclose = (ev) => {
         window.clearInterval(ping);
+        window.clearInterval(renew);
         if (stopped) return;
         // Turned away, kicked, or the table was put away: don't knock again.
         if (finalWord || ev.code >= 4000 || ev.code === 1000) {
@@ -102,6 +115,7 @@ export function useTable(code: string | null, me: number | null, attempt = 0) {
       stopped = true;
       window.clearTimeout(retry);
       window.clearInterval(ping);
+      window.clearInterval(renew);
       ws.current?.close(1000);
       ws.current = null;
       voiceRef.current?.leave(false);

@@ -29,6 +29,12 @@ export async function unlockTable(code: string, password: string): Promise<{ ok:
   }
 }
 
+/** A fresh ticket for a table's socket, while the session is still good: it keeps the socket open. */
+export async function tableTicket(): Promise<string | null> {
+  const me = await getMe();
+  return me ? signTicket("live", me.id, process.env.ADMIN_TOKEN ?? "") : null;
+}
+
 /**
  * What a member's browser needs to sit at a table: a ten-minute ticket for the table's connection, and where to find
  * the other players for the voice (TURN credentials, when configured, never leave the server for longer than that).

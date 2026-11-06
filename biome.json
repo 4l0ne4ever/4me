@@ -14,7 +14,8 @@
       "!**/.impeccable",
       "!tester",
       "!docs",
-      "!pm"
+      "!pm",
+      "!architecture"
     ]
   },
   "formatter": {
