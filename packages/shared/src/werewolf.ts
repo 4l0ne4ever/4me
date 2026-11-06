@@ -1401,9 +1401,15 @@ export const TABLE_CODE = /^[a-z0-9]{6}$/;
 /** A table's password: what the host may set (null takes it off). */
 export const tablePassword = z.string().trim().min(4, "at least four characters").max(40);
 
-/** What a browser sends: a command for the game, the host's password, or a WebRTC message for another player. */
+/**
+ * What a browser sends: a command for the game, the host's password, a WebRTC message for another player, or a
+ * fresh ticket. A socket at a table only lives as long as its player is still signed in: the browser sends a new
+ * ticket every few minutes (the web server gives one only to a valid, current session), and a socket that stops
+ * is let go.
+ */
 export const tableMessage = z.union([
   tableCommand,
+  z.object({ t: z.literal("renew"), ticket: z.string().max(400) }),
   z.object({ t: z.literal("lock"), password: tablePassword.nullable() }),
   z.object({
     t: z.literal("signal"),

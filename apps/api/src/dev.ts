@@ -47,7 +47,7 @@ const media = s3Store(env) ?? memoryStore();
 // Live updates in this process; production uses the Hub Durable Object with the same rules.
 const hub = new MemoryHub();
 // Werewolf tables in this process too; production keeps each in its own Durable Object.
-const tables = new MemoryTables();
+const tables = new MemoryTables((ticket) => readTicket("live", ticket, env.ADMIN_TOKEN));
 const app = createApp(
   () => db,
   () => media,

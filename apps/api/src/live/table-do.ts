@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import type { Seat, Table, TableEvent, TableListing } from "@4me/shared";
+import { readTicket, type Seat, type Table, type TableEvent, type TableListing } from "@4me/shared";
 import type { Bindings } from "../env";
 import { type Conn, TableRoom, type Unlock } from "./table";
 
@@ -7,7 +7,8 @@ import { type Conn, TableRoom, type Unlock } from "./table";
 // WebSockets with the hibernation API (it sleeps between moves and still wakes for the clock, with an alarm). A
 // second, single object keeps the list of open tables for the desktop.
 
-type Attachment = { uid: number };
+/** Who a socket is, and until when they're known to be signed in (a fresh ticket moves it on). */
+type Attachment = { uid: number; until?: number };
 
 export class GameTable extends DurableObject<Bindings> {
   private room: TableRoom;
@@ -15,36 +16,51 @@ export class GameTable extends DurableObject<Bindings> {
   constructor(ctx: DurableObjectState, env: Bindings) {
     super(ctx, env);
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
-    this.room = new TableRoom({
-      conns: () => this.conns(),
-      load: async () => (await ctx.storage.get<Table>("table")) ?? null,
-      save: async (t) => {
-        if (t) await ctx.storage.put("table", t);
-        else {
-          await ctx.storage.deleteAlarm();
-          await ctx.storage.deleteAll();
-        }
+    this.room = new TableRoom(
+      {
+        conns: () => this.conns(),
+        load: async () => (await ctx.storage.get<Table>("table")) ?? null,
+        save: async (t) => {
+          if (t) await ctx.storage.put("table", t);
+          else {
+            await ctx.storage.deleteAlarm();
+            await ctx.storage.deleteAll();
+          }
+        },
+        schedule: (at) => ctx.storage.setAlarm(at),
+        list: async (code, l) => {
+          const lobby = env.TABLE_LOBBY;
+          if (!lobby) return;
+          await lobby
+            .get(lobby.idFromName("lobby"))
+            .fetch("https://lobby/put", { method: "POST", body: JSON.stringify({ code, listing: l }) });
+        },
+        renew: (uid, until) => {
+          for (const ws of ctx.getWebSockets()) {
+            const a = ws.deserializeAttachment() as Attachment | null;
+            if (a?.uid === uid) ws.serializeAttachment({ uid, until } satisfies Attachment);
+          }
+        },
       },
-      schedule: (at) => ctx.storage.setAlarm(at),
-      list: async (code, l) => {
-        const lobby = env.TABLE_LOBBY;
-        if (!lobby) return;
-        await lobby
-          .get(lobby.idFromName("lobby"))
-          .fetch("https://lobby/put", { method: "POST", body: JSON.stringify({ code, listing: l }) });
-      },
-    });
+      undefined,
+      undefined,
+      (ticket) => readTicket("live", ticket, env.ADMIN_TOKEN),
+    );
   }
 
   private conns(except?: WebSocket): Conn[] {
     return this.ctx
       .getWebSockets()
       .filter((ws) => ws !== except)
-      .map((ws) => ({
-        uid: (ws.deserializeAttachment() as Attachment | null)?.uid ?? 0,
-        send: (d: string) => ws.send(d),
-        close: (code: number, reason: string) => ws.close(code, reason),
-      }));
+      .map((ws) => {
+        const a = ws.deserializeAttachment() as Attachment | null;
+        return {
+          uid: a?.uid ?? 0,
+          until: a?.until,
+          send: (d: string) => ws.send(d),
+          close: (code: number, reason: string) => ws.close(code, reason),
+        };
+      });
   }
 
   async fetch(req: Request): Promise<Response> {

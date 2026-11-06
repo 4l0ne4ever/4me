@@ -19,8 +19,13 @@ import {
 // development and tests (MemoryTables below). The game itself is in @4me/shared; this keeps the table, hands it what
 // players send and the clock, sends each of them their own view, and passes WebRTC messages between players.
 
-/** A browser at the table. */
-export type Conn = { uid: number; send(data: string): void; close?(code: number, reason: string): void };
+/** A browser at the table; `until`: when its player's proof of being signed in runs out. */
+export type Conn = {
+  uid: number;
+  until?: number;
+  send(data: string): void;
+  close?(code: number, reason: string): void;
+};
 
 export interface TableStore {
   conns(): Conn[];
@@ -30,7 +35,14 @@ export interface TableStore {
   schedule(at: number): Promise<void>;
   /** Tells the list of open tables about this one (null: take it off). */
   list(code: string, l: TableListing | null): Promise<void>;
+  /** Every socket of this player is good until then (a fresh ticket, or just connected with one). */
+  renew?(uid: number, until: number): void;
 }
+
+/** A socket stays this long after its last ticket; the browser sends a new one every eight minutes. */
+export const SIGNED_IN_MS = 15 * 60_000;
+/** What a socket whose player is no longer signed in is told as it closes. */
+export const SIGN_IN_AGAIN = "sign in again";
 
 /** An empty table is put away after this long; a table nobody touched for a day, too. */
 const EMPTY_MS = 10 * 60_000;
@@ -78,7 +90,19 @@ export class TableRoom {
     private store: TableStore,
     private rand: () => number = fairRand,
     private clock: () => number = Date.now,
+    /** Whose ticket this is (null: not a good one). */
+    private verify: (ticket: string) => Promise<number | null> = async () => null,
   ) {}
+
+  /** Lets go of every socket whose player hasn't shown a fresh ticket in time. */
+  private expire() {
+    const now = this.clock();
+    for (const c of this.store.conns())
+      if (c.until !== undefined && c.until < now) {
+        safeSend(c, JSON.stringify({ t: "closed", reason: SIGN_IN_AGAIN } satisfies TableEvent));
+        c.close?.(4001, SIGN_IN_AGAIN);
+      }
+  }
 
   private async get(): Promise<Table | null> {
     if (this.table === undefined) this.table = await this.store.load();
@@ -101,6 +125,8 @@ export class TableRoom {
     if (!t) return { error: "this table has been put away" };
     const r = arrive(t, seat, this.clock());
     if ("error" in r) return r;
+    // it came with a good ticket (the Worker checked it)
+    this.store.renew?.(seat.id, this.clock() + SIGNED_IN_MS);
     await this.commit();
     return null;
   }
@@ -129,6 +155,11 @@ export class TableRoom {
     const msg = tableMessage.safeParse(parsed);
     if (!msg.success) return this.tell(uid, { t: "error", error: "that didn't make sense" });
     const m = msg.data;
+    if (m.t === "renew") {
+      if ((await this.verify(m.ticket)) === uid) this.store.renew?.(uid, this.clock() + SIGNED_IN_MS);
+      return;
+    }
+    this.expire();
     const seated = (id: number) => t.players.some((p) => p.id === id);
     if (!seated(uid)) return;
     if (m.t === "signal") {
@@ -180,6 +211,7 @@ export class TableRoom {
   async alarm() {
     const t = await this.get();
     if (!t) return;
+    this.expire();
     const now = this.clock();
     let moved = false;
     if (this.botDue === null || now >= this.botDue - 50) {
@@ -195,7 +227,7 @@ export class TableRoom {
     if (moved) return this.commit();
     const anyone = this.store.conns().length > 0;
     if ((!anyone && now - t.updatedAt >= EMPTY_MS) || now - t.updatedAt >= STALE_MS) return this.putAway();
-    await this.store.schedule(t.deadline ?? now + EMPTY_MS);
+    await this.store.schedule(Math.min(t.deadline ?? now + EMPTY_MS, this.nextExpiry()));
   }
 
   private async putAway() {
@@ -204,6 +236,13 @@ export class TableRoom {
     this.table = null;
     await this.store.save(null);
     if (code) await this.store.list(code, null);
+  }
+
+  /** When the next socket's ticket runs out (a moment after, so the alarm finds it gone). */
+  private nextExpiry(): number {
+    let at = Number.POSITIVE_INFINITY;
+    for (const c of this.store.conns()) if (c.until !== undefined) at = Math.min(at, c.until + 1000);
+    return at;
   }
 
   private flooding(uid: number): boolean {
@@ -239,7 +278,9 @@ export class TableRoom {
     if (botMoves(t, () => 0.5).length > 0)
       this.botDue ??= now + BOT_THINK_MS + Math.floor(this.rand() * BOT_THINK_MORE_MS);
     else this.botDue = null;
-    await this.store.schedule(Math.min(t.deadline ?? now + EMPTY_MS, this.botDue ?? Number.POSITIVE_INFINITY));
+    await this.store.schedule(
+      Math.min(t.deadline ?? now + EMPTY_MS, this.botDue ?? Number.POSITIVE_INFINITY, this.nextExpiry()),
+    );
     const listing = t.settings.listed ? listingOf(t) : null;
     const key = JSON.stringify(listing && { ...listing, updatedAt: 0 });
     if (key !== this.listed) {
@@ -265,30 +306,41 @@ export class MemoryTables {
   private tables = new Map<string, Held>();
   private listings = new Map<string, TableListing>();
 
+  /** `verify`: whose a fresh ticket is (development checks them as the Worker does). */
+  constructor(private verify?: (ticket: string) => Promise<number | null>) {}
+
   private held(code: string): Held {
     let h = this.tables.get(code);
     if (h) return h;
     const fresh: Held = { table: null, conns: new Set(), timer: null, room: null as unknown as TableRoom };
-    fresh.room = new TableRoom({
-      conns: () => [...fresh.conns],
-      load: async () => fresh.table,
-      save: async (t) => {
-        fresh.table = t ? structuredClone(t) : null;
-        if (!t) {
+    fresh.room = new TableRoom(
+      {
+        conns: () => [...fresh.conns],
+        load: async () => fresh.table,
+        save: async (t) => {
+          fresh.table = t ? structuredClone(t) : null;
+          if (!t) {
+            if (fresh.timer) clearTimeout(fresh.timer);
+            this.tables.delete(code);
+          }
+        },
+        schedule: async (at) => {
           if (fresh.timer) clearTimeout(fresh.timer);
-          this.tables.delete(code);
-        }
+          fresh.timer = setTimeout(() => void fresh.room.alarm(), Math.max(0, at - Date.now()));
+          fresh.timer.unref?.();
+        },
+        list: async (_code, l) => {
+          if (l) this.listings.set(code, l);
+          else this.listings.delete(code);
+        },
+        renew: (uid, until) => {
+          for (const c of fresh.conns) if (c.uid === uid) c.until = until;
+        },
       },
-      schedule: async (at) => {
-        if (fresh.timer) clearTimeout(fresh.timer);
-        fresh.timer = setTimeout(() => void fresh.room.alarm(), Math.max(0, at - Date.now()));
-        fresh.timer.unref?.();
-      },
-      list: async (_code, l) => {
-        if (l) this.listings.set(code, l);
-        else this.listings.delete(code);
-      },
-    });
+      fairRand,
+      Date.now,
+      this.verify,
+    );
     h = fresh;
     this.tables.set(code, h);
     return h;
