@@ -22,7 +22,19 @@ import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useStat
 import { API_URL } from "@/lib/api";
 import { openTable, unlockTable } from "@/lib/table-actions";
 import { ROLE_SHORT, RoleIcon } from "./RoleIcon";
-import { setWolfSoundOn, sounds, unlockSound, wolfSoundOn } from "./sounds";
+import {
+  type Bed,
+  duckMusic,
+  onSoundChange,
+  setBed,
+  setEffectsVolume,
+  setMusicVolume,
+  setWolfSoundOn,
+  soundPrefs,
+  sounds,
+  unlockSound,
+  wolfSoundOn,
+} from "./sounds";
 import { useTable } from "./useTable";
 import { type HouseMark, Village } from "./Village";
 import { keyName, Voice, type VoiceState } from "./voice";
@@ -278,6 +290,7 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
     // the night's turns: a card for each role as it wakes
     if (!turned && view.step && before.step !== view.step) {
       setScene({ ...stepScene(view, view.step), id: Date.now() });
+      if (view.step === "wolves") sounds.wolves();
       return;
     }
     if (!turned) return;
@@ -288,13 +301,23 @@ function AtTable({ me, code, onLeave }: { me: Me; code: string; onLeave: () => v
     else if (view.phase === "dawn") sounds.dawn();
     else if (view.phase === "vote" || view.phase === "election") sounds.vote();
     else if (view.phase === "verdict") sounds.verdict();
-    else if (view.phase === "over") sounds.end(Boolean(view.winner?.ids.includes(me.id)));
+    else if (view.phase === "over")
+      sounds.end(Boolean(view.winner?.ids.includes(me.id)), view.winner?.team === "wolves");
   }, [view, me.id]);
   useEffect(() => {
     if (!scene) return;
     const t = window.setTimeout(() => setScene(null), scene.long ? 5600 : 3600);
     return () => window.clearTimeout(t);
   }, [scene]);
+  // The music under the game follows it: the square while the table fills, the village by day, the dark at night, a
+  // tense one for the vote; it steps back while anyone talks, and stops when the table is left.
+  const bed = view ? bedFor(view.phase) : null;
+  useEffect(() => {
+    setBed(bed);
+  }, [bed]);
+  useEffect(() => () => setBed(null), []);
+  const talking = (voice?.speaking.size ?? 0) > 0;
+  useEffect(() => duckMusic(talking), [talking]);
   // Browsers play sound only after a click somewhere: the first one in the window unlocks it.
   useEffect(() => {
     const on = () => unlockSound();
@@ -908,6 +931,14 @@ const WINNERS: Record<string, string> = {
   nobody: "Nobody wins",
 };
 
+/** The music for each part of the game. */
+function bedFor(phase: TableView["phase"]): Bed {
+  if (phase === "lobby" || phase === "over") return "lobby";
+  if (phase === "deal" || phase === "night" || phase === "witch") return "night";
+  if (phase === "vote" || phase === "verdict") return "vote";
+  return "day";
+}
+
 /** A role wakes in the night: whose turn it is, and whether it's yours. */
 function stepScene(view: TableView, step: NightStep): Omit<Scene, "id"> {
   const you = view.me;
@@ -972,7 +1003,10 @@ function sceneFor(view: TableView, me: number, fresh: LogLine[]): Omit<Scene, "i
 
 function SoundToggle() {
   const [on, setOn] = useState(true);
-  useEffect(() => setOn(wolfSoundOn()), []);
+  useEffect(() => {
+    setOn(wolfSoundOn());
+    return onSoundChange(() => setOn(wolfSoundOn()));
+  }, []);
   return (
     <button
       type="button"
@@ -982,7 +1016,6 @@ function SoundToggle() {
       title={on ? "Sounds on: click to turn them off" : "Sounds off: click to turn them on"}
       onClick={() => {
         setWolfSoundOn(!on);
-        setOn(!on);
         if (!on) {
           unlockSound();
           sounds.turn();
@@ -1103,8 +1136,8 @@ function VoiceBar({
         type="button"
         className={`btn ww-gear${open ? " on" : ""}`}
         aria-expanded={open}
-        aria-label="Voice settings"
-        title="Voice settings"
+        aria-label="Sound and voice settings"
+        title="Sound and voice settings"
         onClick={() => setOpen(!open)}
       >
         <GearIcon />
@@ -1164,13 +1197,15 @@ function VoicePanel({
   }, [capturing, ctl, setCapturing]);
   const people = view.players.filter((p) => p.id !== me && !p.bot);
   return (
-    <div className="ww-vpanel" role="dialog" aria-label="Voice settings">
+    <div className="ww-vpanel" role="dialog" aria-label="Sound and voice settings">
       <div className="ww-vp-head">
-        <b>Voice</b>
+        <b>Sound and voice</b>
         <button type="button" className="linkish" onClick={onClose}>
           Close
         </button>
       </div>
+      <SoundLevels />
+      <h4>Voice</h4>
       <label className="ww-check">
         <input
           type="checkbox"
@@ -1246,6 +1281,48 @@ function VoicePanel({
         </>
       )}
     </div>
+  );
+}
+
+/** The game's own sounds: the effects (the howl, the bell, the gavel…) and the music under them. */
+function SoundLevels() {
+  const [p, setP] = useState(soundPrefs);
+  useEffect(() => onSoundChange(() => setP(soundPrefs())), []);
+  const row = (id: string, label: string, value: number, set: (v: number) => void) => (
+    <div className="ww-vp-row">
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        type="range"
+        min={0}
+        max={100}
+        value={Math.round(value * 100)}
+        disabled={!p.on}
+        onChange={(e) => {
+          set(Number(e.target.value) / 100);
+          setP(soundPrefs());
+        }}
+      />
+      <span className="ww-vp-n">{Math.round(value * 100)}%</span>
+    </div>
+  );
+  return (
+    <>
+      <label className="ww-check">
+        <input
+          type="checkbox"
+          checked={p.on}
+          onChange={(e) => {
+            setWolfSoundOn(e.target.checked);
+            setP(soundPrefs());
+            if (e.target.checked) unlockSound();
+          }}
+        />
+        The game's sounds and music
+      </label>
+      {row("ww-fx", "Effects", p.effects, setEffectsVolume)}
+      {row("ww-music", "Music", p.music, setMusicVolume)}
+    </>
   );
 }
 

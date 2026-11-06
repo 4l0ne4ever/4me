@@ -1,0 +1,22 @@
+The Werewolf window's sounds. Every one is released under CC0 (no rights reserved) by its author on Freesound;
+they are credited here anyway, with thanks. Each was cut, faded and levelled for the game; the beds were made into
+seamless loops (their end crossfaded into their start).
+
+howl.mp3         "wolf-howling-sound-effect.mp3" by cactustt          https://freesound.org/s/490256/
+howl-far.mp3     "S28-04 Wolf howls with reverb.wav" by craigsmith    https://freesound.org/s/675445/
+pack.mp3         "wolves.wav" by Paresh                               https://freesound.org/s/158780/
+rooster.mp3      "Rooster crow" by jsbarrett                          https://freesound.org/s/200339/
+toll.mp3         "Church Bell.wav" by MVMTech                         https://freesound.org/s/569356/
+knock.mp3        "Gavel on wooden desk" by Aerny                      https://freesound.org/s/618138/
+gavel.mp3        "wood hammer, gavel, knock, pound, jury, court.mp3" by JohnsonBrandEditing
+                                                                      https://freesound.org/s/173941/
+tick.mp3         "Clock Tick (Tik Tak)" by KaosMakinesi               https://freesound.org/s/403001/
+vision.mp3       "Echo Chime Chime.mp3" by husky70                    https://freesound.org/s/161316/
+fanfare.mp3      "Game Success Fanfare" by el_boss                    https://freesound.org/s/677859/
+crickets.mp3     "crickets night forest with 2 sharp close cicadas" by kyles
+                                                                      https://freesound.org/s/453862/
+day.mp3          "morning ambience of a small mountain village" by gladkiy
+                                                                      https://freesound.org/s/276946/
+lobby.mp3        "Medieval music played at town plaza" by bolkmar     https://freesound.org/s/424789/
+night-drone.mp3  "Thriller Ambient" by unfa                           https://freesound.org/s/157133/
+vote.mp3         "Mystery And Thriller Music" by akisloukas           https://freesound.org/s/418210/

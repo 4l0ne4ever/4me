@@ -162,9 +162,18 @@ narrates; the sky is the clock, and every player is a house on the ring around t
   table with only computer players left is put away.
 - **Asking people to leave**: before a game or after it, the host can ask someone to leave (they may come back) or
   ban them from the table (they may not); their browser is told and let go at once.
-- **Sounds and title cards**: a howl when night falls, a bell at daybreak and for a death, knocks for the vote, a
-  ping when it's your turn and ticks in its last seconds, all made with Web Audio (no files) and switched off with the
-  speaker in the header; a title card over the sky as the game turns.
+- **Sounds, music and title cards**: real recordings, all CC0 from Freesound (`apps/web/public/sounds/werewolf`,
+  with `CREDITS.txt`), cut, levelled and looped for the game: a wolf howls when night falls and another when the
+  wolves wake, a rooster at daybreak, a church bell for a death, the gavel for the vote and the verdict, a chime when
+  the Seer looks, a clock in the last seconds of your turn, a fanfare or the pack at the end. Under them, music that
+  follows the game: a little medieval music on the square while the table fills, the village's birds by day, a dark
+  drone and crickets at night, a tense piece for the vote. It steps back while anyone talks, rests in a hidden tab,
+  and the desktop's own night sounds step back for it. The speaker in the header switches it all off; the gear has
+  the effects' and the music's levels. A title card over the sky as the game turns, and for each role as it wakes.
+- **Checked by playing**: besides the rules' own tests, three hundred whole games of computer players, every table
+  size and mix of roles, check at every turn that the night keeps its order, only whoever's turn it is acts, the
+  dead do nothing, lovers die together, nobody sees a card they shouldn't, and the right side wins
+  (`werewolf.sim.test.ts`).
 - **Who can sit down**: anyone with the link (and anyone at all, when the table is listed), or only who has the
   host's password. The host sets it in the table's settings; a listed table with one shows a lock. The table keeps
   only a salted PBKDF2 hash of it; a newcomer gives it through the web server (`POST

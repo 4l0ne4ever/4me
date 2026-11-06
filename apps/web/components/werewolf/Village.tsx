@@ -3,6 +3,7 @@
 import { type PlayerView, ROLES, type TableView } from "@4me/shared";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { ROLE_SHORT, RoleIcon } from "./RoleIcon";
+import { sounds } from "./sounds";
 
 // The table, drawn as a village around its square at the foot of the sky: each player is a house on the ring, the
 // viewer's own at the front. The sky is the clock: the moon (or the sun, by day) crosses it as the phase runs out.
@@ -259,6 +260,7 @@ export function Village({
     if (!before) return;
     const fresh = [...now].filter((id) => !before.has(id));
     if (!fresh.length) return;
+    sounds.vision();
     setVisions((v) => new Set([...v, ...fresh]));
     timers.current.push(
       window.setTimeout(() => setVisions((v) => new Set([...v].filter((id) => !fresh.includes(id)))), 5200),
