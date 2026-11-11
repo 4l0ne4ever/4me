@@ -1,8 +1,8 @@
 // The table's voice: every two players who have joined it talk straight to each other (WebRTC, one connection per
 // pair, audio only), so it is as quick as the network between them allows. The table only carries the handshakes,
-// and tells each player whose ears their microphone may reach: at night a villager's microphone reaches nobody and
-// only the wolves hear each other. That is enforced where the sound leaves: a player's browser simply sends no
-// sound to someone it may not reach.
+// and tells each player whose ears their microphone may reach: there is one voice, the village's, which everyone
+// alive speaks in by day and nobody alive at night (the wolves whisper in their chat); the dead are heard only by the
+// dead. That is enforced where the sound leaves: a player's browser simply sends no sound to someone it may not reach.
 
 export type IceServer = { urls: string | string[]; username?: string; credential?: string };
 type Signal =

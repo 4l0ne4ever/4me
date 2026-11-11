@@ -160,10 +160,10 @@ narrates; the sky is the clock, and every player is a house on the ring around t
   it did: in the morning the Bodyguard sees a shield rise over the house they kept safe, the Witch her potion or her
   poison, the Elder their fight; the one saved learns only that someone saved them. The village hears that someone
   was kept safe, not who or by whom.
+- **One voice, the village's.** Everyone alive talks in it by day; at night nobody alive speaks, and the wolves
+  whisper in their own chat (text only), which only the living wolves read.
 - **The dead stay dead.** They talk only with each other, by voice and in the chat, and nobody alive hears them;
-  they see no more cards than they did alive, don't read the pack, and don't hear the wolves at night.
-- **The pack's room**: the wolves talk at night, and by day they have their own room in the chat as well (text only:
-  a voice would carry across the square), which only the living wolves read.
+  they see no more cards than they did alive, and don't read the pack.
 - **The table** is one Durable Object per table (`apps/api/src/live/table-do.ts`): the players' WebSockets with the
   hibernation API, the game in its storage, the phase clock as an alarm. Another object lists the open tables.
   Development and tests keep tables in memory with the same code (`live/table.ts`).
@@ -193,7 +193,8 @@ narrates; the sky is the clock, and every player is a house on the ring around t
   /internal/users/:id/tables/:code/unlock`, ten tries per ten minutes), and whoever was already sitting stays.
 - **The voice** goes straight between the players' browsers (WebRTC, audio only, one connection per pair), so the
   delay is the network's own. The table only passes the handshakes along and says who may hear whom: at night only
-  the wolves hear each other, the dead only each other. A player's browser sends no sound at all to someone who may
+  by day everyone alive is heard by all; at night nobody alive speaks (the wolves use their chat); the dead are
+  heard only by the dead. A player's browser sends no sound at all to someone who may
   not hear it. Everyone is in the voice and hears the table from the moment they sit down, as in a game; the
   microphone is asked for only when it's first needed. The gear by the talk button has the settings, remembered in
   the browser: push to talk (hold the button, or a key you choose; V at first) or an open mic, which microphone,

@@ -1472,29 +1472,23 @@ function MicIcon({ off }: { off?: boolean }) {
 /* ---------- the dock ---------- */
 
 /**
- * The table's chat. A wolf by day has two rooms: the village, and the pack's own, which only the wolves read (text
- * only: their voices would carry to the whole square). At night the pack's room is the only one open; the dead have
- * theirs, which only the dead read.
+ * The table's chat: the village by day; at night only the pack, which only the wolves read (text only: the one voice,
+ * the village's, is silent at night); the dead have theirs, which only the dead read.
  */
 function Chat({ view, me, send }: { view: TableView; me: number; send: ReturnType<typeof useTable>["send"] }) {
   const [text, setText] = useState("");
-  const [room, setRoom] = useState<"all" | "wolves">("all");
   const list = useRef<HTMLOListElement>(null);
-  const rooms = view.channels.length > 1;
-  const channel = rooms ? (view.channels.includes(room) ? room : view.channels[0]!) : view.channel;
-  const lines = rooms
-    ? view.chat.filter((c) => (channel === "wolves" ? c.channel === "wolves" : c.channel !== "wolves"))
-    : view.chat;
-  const count = lines.length;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on each new line, and on changing room
+  const channel = view.channel;
+  const count = view.chat.length;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on each new line
   useEffect(() => {
     list.current?.scrollTo({ top: list.current.scrollHeight });
-  }, [count, channel]);
+  }, [count]);
   const say = (e: FormEvent) => {
     e.preventDefault();
     const body = text.trim();
     if (!body || !channel) return;
-    send(channel === "all" || channel === "wolves" ? { t: "chat", body, channel } : { t: "chat", body });
+    send({ t: "chat", body });
     setText("");
   };
   const placeholder =
@@ -1504,30 +1498,12 @@ function Chat({ view, me, send }: { view: TableView; me: number; send: ReturnTyp
         ? "Talk with the dead (only the dead read this)"
         : channel === "all"
           ? "Say something to the village"
-          : "It's night. Only the wolves can talk.";
-  const packUnread = rooms && channel !== "wolves" ? view.chat.filter((c) => c.channel === "wolves").length : 0;
+          : "It's night. Only the wolves can write, in their own chat.";
   return (
     <div className="ww-chat">
-      {rooms && (
-        <div className="ww-rooms" role="tablist" aria-label="Where you talk">
-          <button type="button" role="tab" aria-selected={channel === "all"} onClick={() => setRoom("all")}>
-            Village
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={channel === "wolves"}
-            className="pack"
-            onClick={() => setRoom("wolves")}
-          >
-            Pack
-            {packUnread > 0 && <span className="ww-count">{packUnread}</span>}
-          </button>
-        </div>
-      )}
       <ol ref={list}>
-        {lines.length === 0 && <li className="ww-quiet">Nothing said yet.</li>}
-        {lines.map((c) => (
+        {view.chat.length === 0 && <li className="ww-quiet">Nothing said yet.</li>}
+        {view.chat.map((c) => (
           <li key={c.id} className={`ch-${c.channel}${c.from === me ? " mine" : ""}`}>
             {c.channel !== "all" && <span className="ww-chan">{c.channel === "wolves" ? "pack" : "ghosts"}</span>}
             <b>{c.from === me ? "you" : c.name}</b> {c.body}
@@ -1615,9 +1591,9 @@ function Rules() {
         everyone else.
       </p>
       <p>
-        The dead talk only with the dead, by voice and in the chat, and the living don't hear them; they see no more
-        cards than they did alive. The wolves talk at night, and by day they have their own room in the chat too, which
-        only they read.
+        There is one voice, the village's: everyone alive talks by day, and nobody at night. At night the wolves whisper
+        in their own chat, which only they read. The dead talk only with the dead, by voice and in the chat, and the
+        living don't hear them; they see no more cards than they did alive.
       </p>
       <dl>
         {ROLE_ORDER.map((r) => (

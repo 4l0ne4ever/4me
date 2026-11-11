@@ -485,12 +485,7 @@ export const tableCommand = z.discriminatedUnion("t", [
   z.object({ t: z.literal("leave") }),
   z.object({ t: z.literal("again") }),
   z.object({ t: z.literal("ready"), ready: z.boolean() }),
-  z.object({
-    t: z.literal("chat"),
-    body: z.string().trim().min(1).max(300),
-    /** The pack's own channel, which the wolves may use by day too (night is theirs anyway). */
-    channel: z.enum(["all", "wolves"]).optional(),
-  }),
+  z.object({ t: z.literal("chat"), body: z.string().trim().min(1).max(300) }),
   z.object({ t: z.literal("pick"), ids: z.array(z.number().int().min(0)).max(2) }),
   z.object({
     t: z.literal("witch"),
@@ -569,8 +564,7 @@ export function command(t: Table, by: number, cmd: TableCommand, now: number, ra
       break;
     }
     case "chat": {
-      const open = chatChannels(t, me);
-      const channel = cmd.channel && open.includes(cmd.channel) ? cmd.channel : open[0];
+      const channel = chatChannel(t, me);
       if (!channel) return { error: "it's night: only the wolves can talk" };
       t.seq += 1;
       t.chat.push({ id: t.seq, from: by, name: me.name, body: cmd.body, channel, at: now });
@@ -593,20 +587,15 @@ export function command(t: Table, by: number, cmd: TableCommand, now: number, ra
 }
 
 /**
- * Where this player may write right now, the usual one first (none: they must stay quiet). The dead talk only among
- * themselves; at night only the wolves talk, in their own channel; by day everyone talks, and the wolves also have
- * their own channel, which only they read.
+ * Where this player's words go right now, or null when they must stay quiet. The dead talk only among themselves; by
+ * day everyone talks in the village; at night only the wolves write, in the pack's own chat (text only: there is one
+ * voice, the village's, and nobody speaks in it at night).
  */
-export function chatChannels(t: Table, p: Player): Channel[] {
-  if (t.phase === "lobby" || t.phase === "over") return ["all"];
-  if (!p.alive) return ["dead"];
-  if (NIGHT_PHASES.includes(t.phase)) return isWolf(p.role) ? ["wolves"] : [];
-  return isWolf(p.role) ? ["all", "wolves"] : ["all"];
-}
-
-/** Where this player's words go by default right now, or null when they must stay quiet. */
 export function chatChannel(t: Table, p: Player): Channel | null {
-  return chatChannels(t, p)[0] ?? null;
+  if (t.phase === "lobby" || t.phase === "over") return "all";
+  if (!p.alive) return "dead";
+  if (NIGHT_PHASES.includes(t.phase)) return isWolf(p.role) ? "wolves" : null;
+  return "all";
 }
 
 /**
@@ -1385,8 +1374,6 @@ export type TableView = {
   chat: ChatLine[];
   /** Where this viewer's words would go now, or null when they must keep quiet. */
   channel: Channel | null;
-  /** Every channel this viewer may write in now, the usual one first (a wolf by day: the village and the pack). */
-  channels: Channel[];
   /** What this viewer's own power did last night, shown on the houses this morning. */
   signs: Sign[];
   winner: Winner | null;
@@ -1397,14 +1384,15 @@ export type TableView = {
 };
 
 /**
- * Whether `from`'s voice reaches `to` now. The same rule as the chat: the dead are heard only by the dead (they still
- * hear the village by day); at night only the living wolves talk, and only to each other.
+ * Whether `from`'s voice reaches `to` now. There is one voice, the village's: by day every living player is heard by
+ * everyone; at night nobody alive speaks (the wolves whisper in their chat). The dead are heard only by the dead,
+ * and still hear the village by day.
  */
 export function canSpeakTo(t: Table, from: Player, to: Player): boolean {
   if (from.id === to.id) return false;
   if (t.phase === "lobby" || t.phase === "over") return true;
   if (!from.alive) return !to.alive;
-  if (NIGHT_PHASES.includes(t.phase)) return isWolf(from.role) && isWolf(to.role) && to.alive;
+  if (NIGHT_PHASES.includes(t.phase)) return false;
   return true;
 }
 
@@ -1464,7 +1452,6 @@ export function viewFor(t: Table, viewer: number, now: number): TableView {
     log: t.log,
     chat: t.chat.filter((c) => canRead(t, me, c)),
     channel: me ? chatChannel(t, me) : null,
-    channels: me ? chatChannels(t, me) : [],
     // (kept until the next night falls)
     signs: t.signs?.[String(viewer)] ?? [],
     winner: t.winner,
