@@ -351,7 +351,7 @@ describe("the day", () => {
 });
 
 describe("what each player may know, see and hear", () => {
-  it("keeps roles secret, shows the pack to the wolves, and keeps the night's voices among them", () => {
+  it("keeps roles secret, shows the pack to the wolves, and keeps the night silent but for the pack's chat", () => {
     const t = game(["werewolf", "werewolf", "seer", "villager", "villager", "villager", "villager"]);
     const villager = viewFor(t, 4, clock);
     expect(villager.players.filter((p) => p.role !== null).map((p) => p.id)).toEqual([4]);
@@ -361,7 +361,9 @@ describe("what each player may know, see and hear", () => {
 
     const wolf = viewFor(t, 1, clock);
     expect(wolf.players.filter((p) => p.role === "werewolf").map((p) => p.id)).toEqual([1, 2]);
-    expect(wolf.voice).toEqual({ speakTo: [2], hear: [2] });
+    // one voice, the village's: nobody alive speaks at night, the wolves included; they write in their own chat
+    expect(wolf.voice).toEqual({ speakTo: [], hear: [] });
+    expect(wolf.channel).toBe("wolves");
     act(t, 1, { t: "chat", body: "the quiet one" });
     expect(viewFor(t, 2, clock).chat.at(-1)?.body).toBe("the quiet one");
     expect(viewFor(t, 4, clock).chat).toHaveLength(0);
@@ -386,15 +388,8 @@ describe("what each player may know, see and hear", () => {
     act(t, 7, { t: "chat", body: "it was P1" });
     expect(t.chat.at(-1)?.channel).toBe("dead");
     expect(viewFor(t, 4, clock).chat.some((c) => c.channel === "dead")).toBe(false);
-    // by day the wolves have their own channel too, which only they read
-    expect(viewFor(t, 1, clock).channels).toEqual(["all", "wolves"]);
-    expect(viewFor(t, 4, clock).channels).toEqual(["all"]);
-    act(t, 1, { t: "chat", body: "vote the seer", channel: "wolves" });
-    expect(t.chat.at(-1)?.channel).toBe("wolves");
-    expect(viewFor(t, 2, clock).chat.at(-1)?.body).toBe("vote the seer");
-    expect(viewFor(t, 4, clock).chat.some((c) => c.body === "vote the seer")).toBe(false);
-    act(t, 4, { t: "chat", body: "sneaky", channel: "wolves" });
-    expect(t.chat.at(-1)?.channel).toBe("all");
+    // by day there is no pack's room: the wolves talk in the village like everyone
+    expect(viewFor(t, 1, clock).channel).toBe("all");
     // the next night, the dead hear nobody but the dead: not the wolves
     while (t.phase !== "night") pass(t);
     expect(viewFor(t, 7, clock).voice.hear).toEqual([]);
